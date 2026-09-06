@@ -1,0 +1,228 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@source './**/*.{ts,tsx}';
+@source '../components/**/*.{ts,tsx}';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  /* Inter for everything readable, Plus Jakarta Sans for headings. Both are
+     humanist sans faces — the register healthcare products want. */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Primary call-to-action. Kept as its own token so the button colour can be
+     retuned without touching component files. */
+  --color-cta: var(--cta);
+  --color-cta-foreground: var(--cta-foreground);
+
+  --color-soft: var(--soft);
+  --color-surface: var(--surface);
+  --color-elevated: var(--elevated);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+
+  --color-banner: var(--banner);
+  --color-banner-foreground: var(--banner-foreground);
+  --color-banner-muted: var(--banner-muted);
+
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.875rem;
+}
+
+/* ---------------------------------------------------------- light theme */
+:root {
+  color-scheme: light;
+
+  --background: #ffffff;
+  --foreground: #0e1533;
+  --card: #ffffff;
+  --card-foreground: #0e1533;
+  --popover: #ffffff;
+  --popover-foreground: #0e1533;
+
+  /* Deep navy carries the brand in light mode. */
+  --primary: #16265e;
+  --primary-foreground: #ffffff;
+  --soft: #eef1fb;
+
+  --cta: #16265e;
+  --cta-foreground: #ffffff;
+
+  --secondary: #eef1fb;
+  --secondary-foreground: #16265e;
+
+  /* Marigold accent for badges, ratings and highlights. */
+  --accent: #f5a524;
+  --accent-foreground: #2a1a00;
+
+  --muted: #f4f6fb;
+  --muted-foreground: #5a6280;
+  --surface: #f6f8fd;
+  --elevated: #ffffff;
+
+  --border: #e1e5f0;
+  --input: #cbd2e4;
+  --ring: #2743a6;
+
+  --success: #1a7f5a;
+  --warning: #b4530a;
+
+  --banner: #16265e;
+  --banner-foreground: #ffffff;
+  --banner-muted: #c3ccea;
+}
+
+/* ----------------------------------------------------------- dark theme */
+.dark {
+  color-scheme: dark;
+
+  --background: #0d0a1a;
+  --foreground: #ece8fb;
+  --card: #171129;
+  --card-foreground: #ece8fb;
+  --popover: #1c1533;
+  --popover-foreground: #ece8fb;
+
+  /* Violet takes over as the brand colour after dark. */
+  --primary: #8b5cf6;
+  --primary-foreground: #12061f;
+  --soft: #241a3d;
+
+  --cta: #8b5cf6;
+  --cta-foreground: #12061f;
+
+  --secondary: #241a3d;
+  --secondary-foreground: #d9ccff;
+
+  --accent: #f5a524;
+  --accent-foreground: #2a1a00;
+
+  --muted: #1e1733;
+  --muted-foreground: #a79fc4;
+  --surface: #120e22;
+  --elevated: #1c1533;
+
+  --border: #2e2447;
+  --input: #3b2f5c;
+  --ring: #a78bfa;
+
+  --success: #3ddc97;
+  --warning: #f5a524;
+
+  --banner: #1a1233;
+  --banner-foreground: #ece8fb;
+  --banner-muted: #a79fc4;
+}
+
+* {
+  @apply border-border;
+}
+
+html {
+  background: var(--background);
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-background text-foreground antialiased;
+  font-size: 1rem;
+  line-height: 1.6;
+  /* Lining figures of even width, so ₹ amounts line up in tables. */
+  font-variant-numeric: tabular-nums;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Headings use the display face at tight tracking. Referencing
+   `--font-jakarta` directly (not the `--font-display` theme token) because
+   `@theme inline` inlines its values into utilities rather than emitting
+   custom properties. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  line-height: 1.18;
+}
+
+/* Small label above a section heading. */
+.eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+/* Wide-tracked uppercase, used sparingly on primary buttons. */
+.tracked {
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* A short accent rule under a section heading. */
+.gold-rule::after {
+  content: '';
+  display: block;
+  width: 3rem;
+  height: 3px;
+  margin-top: 1rem;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+/* Theme swap: one composited cross-fade rather than thousands of
+   independently transitioning elements. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 260ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  mix-blend-mode: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
+@supports not (view-transition-name: root) {
+  @media (prefers-reduced-motion: no-preference) {
+    html.theme-ready body {
+      transition: background-color 200ms ease, color 200ms ease;
+    }
+  }
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
