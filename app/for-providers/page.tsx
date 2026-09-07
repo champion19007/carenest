@@ -10,8 +10,10 @@ import {
   Stethoscope,
   Users,
 } from 'lucide-react'
+import { Photo } from '@/components/photo'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
+import { photos } from '@/lib/images'
 import { hospitalGroups } from '@/lib/data'
 
 const scale = [
@@ -103,11 +105,31 @@ export default function ForProvidersPage() {
 
       {/* Audiences ------------------------------------------------------ */}
       <section className="mx-auto max-w-[1320px] px-5 py-14 lg:px-8">
-        <h2 className="text-2xl font-extrabold sm:text-3xl">What we build</h2>
-        <p className="mt-2 max-w-2xl text-muted-foreground">
-          Whether you run a single-doctor clinic in a tier-2 city or a multi-speciality hospital
-          group, the tools are the same underneath.
-        </p>
+        <div className="grid items-center gap-10 lg:grid-cols-[0.85fr_1fr]">
+          {/* Clinicians are the audience here, so the page shows the work
+              rather than the patient-facing product. */}
+          <div className="grid grid-cols-2 gap-4">
+            <Photo
+              photo={photos.providerStethoscope}
+              ratio={3 / 4}
+              width={380}
+              className="rounded-2xl shadow-lg"
+            />
+            <Photo
+              photo={photos.teleconsult}
+              ratio={3 / 4}
+              width={380}
+              className="mt-8 rounded-2xl shadow-lg"
+            />
+          </div>
+          <div>
+            <h2 className="text-2xl font-extrabold sm:text-3xl">What we build</h2>
+            <p className="mt-2 max-w-2xl text-muted-foreground">
+              Whether you run a single-doctor clinic in a tier-2 city or a multi-speciality hospital
+              group, the tools are the same underneath.
+            </p>
+          </div>
+        </div>
 
         <div className="mt-9 grid gap-6 lg:grid-cols-3">
           {audiences.map(({ Icon, title, lede, points, cta }) => (

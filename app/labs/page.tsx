@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import { Clock, FlaskConical, Home, IndianRupee, ShieldCheck } from 'lucide-react'
+import { Photo } from '@/components/photo'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
 import { labPackages } from '@/lib/data'
+import { photos } from '@/lib/images'
 
 const assurances = [
   { Icon: Home, title: 'Free home collection', body: 'A trained phlebotomist visits you, 7 am to 9 pm.' },
@@ -26,14 +28,26 @@ export default function LabsPage() {
 
       <section className="border-b border-border bg-surface">
         <div className="mx-auto max-w-[1320px] px-5 py-12 lg:px-8">
-          <h1 className="inline-flex items-center gap-3 text-3xl font-extrabold sm:text-4xl">
-            <FlaskConical className="size-8 text-primary" />
-            Lab tests at home
-          </h1>
-          <p className="mt-3 max-w-2xl text-lg text-muted-foreground">
-            Book a test or a full-body package, get your sample collected at home, and receive
-            reports on your phone.
-          </p>
+          <div className="grid items-center gap-10 lg:grid-cols-[1fr_0.8fr]">
+            <div>
+              <h1 className="inline-flex items-center gap-3 text-3xl font-extrabold sm:text-4xl">
+                <FlaskConical className="size-8 text-primary" />
+                Lab tests at home
+              </h1>
+              <p className="mt-3 max-w-2xl text-lg text-muted-foreground">
+                Book a test or a full-body package, get your sample collected at home, and receive
+                reports on your phone.
+              </p>
+            </div>
+            {/* Where the sample actually ends up — the part of the service the
+                patient never sees. */}
+            <Photo
+              photo={photos.lab}
+              ratio={16 / 10}
+              width={620}
+              className="rounded-2xl shadow-lg"
+            />
+          </div>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
             {assurances.map(({ Icon, title, body }) => (

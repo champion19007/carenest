@@ -17,8 +17,10 @@ import {
   Video,
 } from 'lucide-react'
 import { Disclosure } from '@/components/disclosure'
+import { Photo } from '@/components/photo'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
+import { photos } from '@/lib/images'
 import {
   petConcerns,
   petServices,
@@ -52,6 +54,8 @@ export default function PetsPage() {
       {/* Hero ---------------------------------------------------------- */}
       <section className="border-b border-border bg-surface">
         <div className="mx-auto max-w-[1320px] px-5 py-12 lg:px-8">
+          <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+            <div>
           <span className="inline-flex items-center gap-2 rounded-full bg-soft px-4 py-1.5 text-sm font-semibold text-primary">
             <PawPrint className="size-4" />
             CareNest for pets
@@ -63,6 +67,21 @@ export default function PetsPage() {
             Vaccination, deworming, grooming, surgery and diagnostics from registered veterinary
             doctors. Clinic visits from ₹500, home visits across Navi Mumbai.
           </p>
+            </div>
+
+            {/* Three species in one glance, which the copy would need a
+                paragraph to say. */}
+            <div className="grid grid-cols-2 gap-4">
+              <Photo
+                photo={photos.petDog}
+                ratio={3 / 4}
+                width={460}
+                className="row-span-2 rounded-2xl shadow-lg"
+              />
+              <Photo photo={photos.petCat} ratio={4 / 3} width={340} className="rounded-2xl shadow-lg" />
+              <Photo photo={photos.petSmall} ratio={4 / 3} width={340} className="rounded-2xl shadow-lg" />
+            </div>
+          </div>
 
           {/* Species picker */}
           <div className="mt-8">

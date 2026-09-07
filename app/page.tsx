@@ -3,28 +3,18 @@ import {
   ArrowRight,
   BadgeCheck,
   Check,
-  FlaskConical,
   IndianRupee,
   Lock,
-  PawPrint,
   Phone,
-  Scissors,
-  Stethoscope,
-  Video,
 } from 'lucide-react'
 import { Disclosure } from '@/components/disclosure'
+import { Photo } from '@/components/photo'
+import { serviceArt } from '@/components/service-art'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
 import { faqs, glossary, services, trustPoints } from '@/lib/content'
+import { photos } from '@/lib/images'
 import { cities, healthConcerns, insurers } from '@/lib/data'
-
-const serviceIcon: Record<string, typeof Stethoscope> = {
-  doctors: Stethoscope,
-  video: Video,
-  labs: FlaskConical,
-  surgeries: Scissors,
-  pets: PawPrint,
-}
 
 const steps = [
   {
@@ -57,7 +47,8 @@ export default function HomePage() {
       {/* Hero ----------------------------------------------------------- */}
       <section className="border-b border-border bg-surface">
         <div className="mx-auto max-w-[1320px] px-5 py-16 lg:px-8 lg:py-24">
-          <div className="max-w-3xl">
+          <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr]">
+          <div>
             <p className="eyebrow">Healthcare booking · India</p>
             <h1 className="mt-6 text-balance text-5xl leading-[1.05] sm:text-6xl lg:text-[4.5rem]">
               Find the right doctor,
@@ -92,6 +83,32 @@ export default function HomePage() {
             </p>
           </div>
 
+            {/* The photograph carries the warmth the copy deliberately does
+                not: the text stays plain about what we are and are not. */}
+            <div className="relative">
+              <Photo
+                photo={photos.heroConsult}
+                ratio={4 / 5}
+                width={720}
+                priority
+                className="rounded-2xl shadow-xl"
+              />
+              <div className="absolute -bottom-8 -left-6 hidden w-48 sm:block lg:-left-10 lg:w-56">
+                <Photo
+                  photo={photos.clinicianPhone}
+                  ratio={1}
+                  width={320}
+                  scrim="none"
+                  className="rounded-2xl border-4 border-background shadow-lg"
+                />
+              </div>
+              <div className="absolute -right-4 -top-5 hidden rounded-xl border border-border bg-card px-4 py-3 shadow-lg sm:block">
+                <p className="text-xs text-muted-foreground">Average wait after booking</p>
+                <p className="font-display text-2xl font-semibold text-accent">12 min</p>
+              </div>
+            </div>
+          </div>
+
           <dl className="mt-16 grid gap-8 border-t border-border pt-10 sm:grid-cols-2 lg:grid-cols-4">
             {[
               ['38,000+', 'Registered doctors, each checked against the medical council register'],
@@ -121,16 +138,16 @@ export default function HomePage() {
 
         <div className="mt-14 space-y-6">
           {services.map((service) => {
-            const Icon = serviceIcon[service.slug] ?? Stethoscope
+            const Art = serviceArt[service.slug] ?? serviceArt.doctors
             return (
               <article
                 key={service.slug}
                 className="grid gap-8 border border-border bg-card p-7 lg:grid-cols-[1fr_1.4fr] lg:p-10"
               >
                 <div>
-                  <span className="flex size-14 items-center justify-center rounded-full bg-soft text-primary">
-                    <Icon className="size-6" />
-                  </span>
+                  <div className="w-40">
+                    <Art />
+                  </div>
                   <h3 className="mt-6 text-3xl">{service.name}</h3>
                   <p className="mt-3 text-lg text-accent">{service.oneLine}</p>
                   <p className="mt-6 inline-flex items-baseline gap-1.5 text-sm text-muted-foreground">

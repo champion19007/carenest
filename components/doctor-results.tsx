@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+import { Avatar } from '@/components/avatar'
+import { EmptyArt } from '@/components/empty-art'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import {
@@ -234,7 +236,8 @@ export function DoctorResults({
 
             {doctors.length === 0 && (
               <div className="rounded-xl border border-dashed border-border p-12 text-center">
-                <p className="text-lg font-semibold">No doctors match these filters</p>
+                <EmptyArt />
+                <p className="mt-6 text-lg font-semibold">No doctors match these filters</p>
                 <p className="mt-2 text-muted-foreground">
                   Try widening the fee range or removing a speciality.
                 </p>
@@ -330,21 +333,12 @@ function Toggle({
 }
 
 function DoctorCard({ doctor }: { doctor: DoctorRow }) {
-  const initials = doctor.name
-    .replace(/^Dr\.?\s*/i, '')
-    .split(' ')
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-
   return (
     <article className="rounded-xl border border-border bg-card p-5 transition-shadow hover:shadow-md sm:p-6">
       <div className="flex flex-col gap-6 lg:flex-row">
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-4">
-            <span className="flex size-16 shrink-0 items-center justify-center rounded-xl bg-soft text-xl font-bold text-primary">
-              {initials}
-            </span>
+            <Avatar name={doctor.name} speciality={doctor.speciality} size={64} />
             <div className="min-w-0">
               <h3 className="flex flex-wrap items-center gap-2 text-xl">
                 <Link href={`/doctor/${doctor.slug}`} className="hover:underline">

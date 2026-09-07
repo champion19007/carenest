@@ -2,9 +2,11 @@
 
 import { FormEvent, useState } from 'react'
 import { BadgeCheck, ChevronDown, IndianRupee, Phone, ShieldCheck } from 'lucide-react'
+import { Photo } from '@/components/photo'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
 import { cities, surgeryAssurances, surgeryCategories } from '@/lib/data'
+import { photos } from '@/lib/images'
 
 export default function SurgeriesPage() {
   const [open, setOpen] = useState<string>('Popular')
@@ -45,6 +47,25 @@ export default function SurgeriesPage() {
                 </div>
               ))}
             </dl>
+
+            {/* A theatre band rather than a portrait: the reassurance being
+                offered is the setting and the team, not any one surgeon. */}
+            <Photo
+              photo={photos.theatre}
+              ratio={21 / 9}
+              width={900}
+              scrim="strong"
+              className="mt-8 rounded-2xl shadow-lg"
+            >
+              <div className="flex h-full flex-col justify-end p-6 sm:p-8">
+                <p className="text-sm font-semibold uppercase tracking-wide text-white/80">
+                  NABH-accredited partner hospitals
+                </p>
+                <p className="mt-1 max-w-md text-lg font-semibold leading-snug text-white sm:text-xl">
+                  Your surgeon, theatre and admission date are confirmed before you pay anything.
+                </p>
+              </div>
+            </Photo>
           </div>
 
           {/* Lead capture — the standard flow for surgery enquiries in India */}
