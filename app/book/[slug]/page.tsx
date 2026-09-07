@@ -12,7 +12,7 @@ export const metadata = { title: 'Confirm your appointment · CareNest', robots:
 
 export default async function BookPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const doctor = findDoctorBySlug(slug)
+  const doctor = await findDoctorBySlug(slug)
   if (!doctor) notFound()
 
   /* Booking is the point where an account becomes necessary. */
@@ -37,7 +37,7 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
           <BookingForm
             slug={doctor.slug}
             doctorName={doctor.name}
-            offersVideo={doctor.video === 1}
+            offersVideo={doctor.video}
             patientName={user.name || `+91 ${user.phone}`}
           />
 

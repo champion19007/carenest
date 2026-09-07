@@ -25,7 +25,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const params = await searchParams
   const raw = typeof params.area === 'string' ? params.area : ''
-  const area = raw ? resolveArea(raw) : undefined
+  const area = raw ? await resolveArea(raw) : undefined
 
   const title = area
     ? `Doctors in ${area.name}, ${area.city} (${area.pin_code})`
@@ -68,7 +68,7 @@ export default async function SearchPage({
 
   const rawArea = typeof params.area === 'string' ? params.area.trim() : ''
   /* Step 1 — resolve whatever was typed to a known area, by indexed lookup. */
-  const area = rawArea ? resolveArea(rawArea) : undefined
+  const area = rawArea ? await resolveArea(rawArea) : undefined
 
   const fees = typeof params.fees === 'string' ? params.fees : ''
   const experience = typeof params.experience === 'string' ? params.experience : ''
@@ -91,11 +91,11 @@ export default async function SearchPage({
   }
 
   /* Step 2 — the primary query. */
-  const doctors = rawArea && !area ? [] : searchDoctors(query)
+  const doctors = rawArea && !area ? [] : await searchDoctors(query)
 
   /* Step 3 — the fork. Only fall back when an area was actually asked for. */
   const showFallback = Boolean(rawArea) && doctors.length === 0
-  const suggestions = showFallback && area ? neighbouringAreas(area.pin_code, 'human') : []
+  const suggestions = showFallback && area ? await neighbouringAreas(area.locality_id, 'human') : []
 
   /* Carry the other filters across so a suggestion chip doesn't reset them. */
   const preserved = new URLSearchParams()
@@ -105,7 +105,7 @@ export default async function SearchPage({
   }
   const preservedQuery = preserved.toString() ? `&${preserved.toString()}` : ''
 
-  const specialities = distinctSpecialities('human')
+  const specialities = await distinctSpecialities('human')
 
   return (
     <main className="min-h-screen bg-background">

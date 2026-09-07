@@ -35,29 +35,30 @@ export async function bookAppointment(
   const slot = String(formData.get('slot') ?? '')
   const kind = String(formData.get('kind') ?? 'clinic')
 
-  const doctor = findDoctorBySlug(slug)
+  const doctor = await findDoctorBySlug(slug)
   if (!doctor) return { error: 'That doctor is no longer listed.' }
   if (!slot) return { error: 'Choose a time slot first.' }
 
   const user = await requireUser(`/book/${slug}`)
 
-  const limit = hitRateLimit('booking:user', user.id, 10, 60)
+  const limit = await hitRateLimit('booking:user', user.id, 10, 60)
   if (!limit.allowed) {
     return { error: 'You have made a lot of bookings recently. Please try again later.' }
   }
 
   /* Don't let the same person hold the same slot twice. */
-  const existing = listBookingsForUser(user.id).find(
+  const mine = await listBookingsForUser(user.id)
+  const existing = mine.find(
     (booking) =>
       booking.doctor_id === doctor.id && booking.slot === slot && booking.status === 'confirmed',
   )
   if (existing) return { error: 'You already have this slot booked.' }
 
   const id = newId('bkg')
-  createBooking({
+  await createBooking({
     id,
-    user_id: user.id,
-    doctor_id: doctor.id,
+    userId: user.id,
+    doctorId: doctor.id,
     kind,
     slot,
     fee: doctor.fee,
@@ -94,7 +95,7 @@ export async function submitReview(
     return { error: 'Please keep the review under 1000 characters.' }
   }
 
-  const doctor = findDoctorBySlug(slug)
+  const doctor = await findDoctorBySlug(slug)
   if (!doctor) return { error: 'That doctor is no longer listed.' }
 
   const user = await currentUser()
@@ -114,7 +115,7 @@ export async function submitReview(
 
   /* Keep the denormalised average on the doctor row in step. */
   const { average, count } = await ratingFor(slug)
-  updateDoctorRating(slug, average, count)
+  await updateDoctorRating(slug, average, count)
 
   await logActivity({
     kind: 'review.created',

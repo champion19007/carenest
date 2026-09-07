@@ -1,165 +1,25 @@
 import 'server-only'
-import { DatabaseSync } from 'node:sqlite'
-import { mkdirSync } from 'node:fs'
-import path from 'node:path'
+import { getDb, ensureSchema } from './client'
 
 /**
- * Relational store (SQLite via Node's built-in driver — no native build step).
+ * Relational data access.
  *
- * SQL holds the things with a fixed shape and real relationships: accounts,
- * doctors, sessions, bookings. Anything free-form (chart notes, prescriptions,
- * reviews) lives in the document store instead — see `lib/db/docs.ts`.
+ * Every function is async because the driver is — Neon speaks HTTP, and PGlite
+ * runs a WASM Postgres. Schema application is idempotent and awaited on first
+ * use, so a cold serverless start against an empty database self-heals rather
+ * than 500s.
  */
 
-const DATA_DIR = path.join(process.cwd(), '.data')
-mkdirSync(DATA_DIR, { recursive: true })
-
-declare global {
-  // eslint-disable-next-line no-var
-  var __carenestSql: DatabaseSync | undefined
+async function db() {
+  await ensureSchema()
+  return getDb()
 }
 
-function connect() {
-  const db = new DatabaseSync(path.join(DATA_DIR, 'carenest.sqlite'))
-  db.exec('PRAGMA journal_mode = WAL')
-  db.exec('PRAGMA foreign_keys = ON')
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id            TEXT PRIMARY KEY,
-      phone         TEXT NOT NULL UNIQUE,
-      name          TEXT NOT NULL DEFAULT '',
-      email         TEXT,
-      dob           TEXT,
-      gender        TEXT,
-      city          TEXT,
-      role          TEXT NOT NULL DEFAULT 'patient',
-      created_at    TEXT NOT NULL,
-      last_login_at TEXT
-    );
-
-    CREATE TABLE IF NOT EXISTS doctors (
-      id             TEXT PRIMARY KEY,
-      user_id        TEXT REFERENCES users(id) ON DELETE SET NULL,
-      name           TEXT NOT NULL,
-      speciality     TEXT NOT NULL,
-      qualification  TEXT NOT NULL DEFAULT '',
-      experience     INTEGER NOT NULL DEFAULT 0,
-      clinic         TEXT NOT NULL DEFAULT '',
-      locality       TEXT NOT NULL DEFAULT '',
-      city           TEXT NOT NULL DEFAULT '',
-      fee            INTEGER NOT NULL DEFAULT 0,
-      reg_number     TEXT,
-      council        TEXT,
-      verified       INTEGER NOT NULL DEFAULT 0,
-      created_at     TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS sessions (
-      token      TEXT PRIMARY KEY,
-      user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      created_at TEXT NOT NULL,
-      expires_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS otps (
-      phone      TEXT PRIMARY KEY,
-      code       TEXT NOT NULL,
-      expires_at TEXT NOT NULL,
-      attempts   INTEGER NOT NULL DEFAULT 0
-    );
-
-    CREATE TABLE IF NOT EXISTS bookings (
-      id         TEXT PRIMARY KEY,
-      user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      doctor_id  TEXT NOT NULL,
-      kind       TEXT NOT NULL,
-      slot       TEXT NOT NULL,
-      fee        INTEGER NOT NULL DEFAULT 0,
-      status     TEXT NOT NULL DEFAULT 'confirmed',
-      created_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS admins (
-      id            TEXT PRIMARY KEY,
-      username      TEXT NOT NULL UNIQUE,
-      password_hash TEXT NOT NULL,
-      salt          TEXT NOT NULL,
-      created_at    TEXT NOT NULL,
-      last_login_at TEXT
-    );
-
-    /* Separate from the patient sessions table, which has a FK to users(id). */
-    CREATE TABLE IF NOT EXISTS admin_sessions (
-      token      TEXT PRIMARY KEY,
-      admin_id   TEXT NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
-      created_at TEXT NOT NULL,
-      expires_at TEXT NOT NULL
-    );
-
-    /* Areas the platform knows about, keyed by PIN code. */
-    CREATE TABLE IF NOT EXISTS localities (
-      pin_code TEXT PRIMARY KEY,
-      name     TEXT NOT NULL,
-      city     TEXT NOT NULL
-    );
-
-    /* Hardcoded adjacency: which areas border which. Distances are never
-       computed at request time — the neighbours are authored, so they can be
-       pruned by hand when an area has nothing useful in it. Stored one row
-       per direction so lookups stay a single indexed read. */
-    CREATE TABLE IF NOT EXISTS locality_neighbours (
-      pin_code      TEXT NOT NULL REFERENCES localities(pin_code) ON DELETE CASCADE,
-      neighbour_pin TEXT NOT NULL REFERENCES localities(pin_code) ON DELETE CASCADE,
-      PRIMARY KEY (pin_code, neighbour_pin)
-    );
-
-    /* Sliding-window counters. One row per (bucket, key) pair. */
-    CREATE TABLE IF NOT EXISTS rate_limits (
-      bucket      TEXT NOT NULL,
-      key         TEXT NOT NULL,
-      count       INTEGER NOT NULL DEFAULT 0,
-      window_start TEXT NOT NULL,
-      PRIMARY KEY (bucket, key)
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
-    CREATE INDEX IF NOT EXISTS idx_bookings_user ON bookings(user_id);
-    CREATE INDEX IF NOT EXISTS idx_doctors_speciality ON doctors(speciality);
-    CREATE INDEX IF NOT EXISTS idx_doctors_city ON doctors(city);
-    CREATE INDEX IF NOT EXISTS idx_doctors_pin ON doctors(pin_code);
-    CREATE INDEX IF NOT EXISTS idx_localities_name ON localities(name);
-  `)
-
-  /* Columns added after the first release. SQLite has no ADD COLUMN IF NOT
-     EXISTS, so check the table shape first. */
-  const doctorCols = new Set(
-    (db.prepare('PRAGMA table_info(doctors)').all() as { name: string }[]).map((c) => c.name),
-  )
-  const additions: [string, string][] = [
-    ['rating', 'REAL NOT NULL DEFAULT 0'],
-    ['reviews_count', 'INTEGER NOT NULL DEFAULT 0'],
-    ['video', 'INTEGER NOT NULL DEFAULT 0'],
-    ['cashless', 'INTEGER NOT NULL DEFAULT 0'],
-    ['home_visit', 'INTEGER NOT NULL DEFAULT 0'],
-    ['gender', "TEXT NOT NULL DEFAULT 'Female'"],
-    ['languages', "TEXT NOT NULL DEFAULT ''"],
-    ['next_slot', "TEXT NOT NULL DEFAULT ''"],
-    ['kind', "TEXT NOT NULL DEFAULT 'human'"],
-    ['slug', "TEXT NOT NULL DEFAULT ''"],
-    ['about', "TEXT NOT NULL DEFAULT ''"],
-    ['pin_code', "TEXT NOT NULL DEFAULT ''"],
-  ]
-  for (const [name, decl] of additions) {
-    if (!doctorCols.has(name)) db.exec(`ALTER TABLE doctors ADD COLUMN ${name} ${decl}`)
-  }
-
-  return db
+export function nowIso() {
+  return new Date().toISOString()
 }
 
-/* Reuse one connection across hot reloads in development. */
-export const sql = globalThis.__carenestSql ?? connect()
-if (process.env.NODE_ENV !== 'production') globalThis.__carenestSql = sql
+/* ─────────────────────────────────────────────────────────────── types */
 
 export type User = {
   id: string
@@ -170,24 +30,39 @@ export type User = {
   gender: string | null
   city: string | null
   role: string
+  tenant_region: string
+  kyc_level: string
   created_at: string
   last_login_at: string | null
 }
 
-export type Doctor = {
+export type DoctorRow = {
   id: string
   user_id: string | null
+  slug: string
   name: string
   speciality: string
   qualification: string
   experience: number
   clinic: string
+  locality_id: number | null
+  pin_code: string
   locality: string
   city: string
   fee: number
-  reg_number: string | null
+  registration_no: string | null
   council: string | null
-  verified: number
+  status: string
+  rating: number
+  reviews_count: number
+  video: boolean
+  cashless: boolean
+  home_visit: boolean
+  gender: string
+  languages: string
+  next_slot: string
+  kind: string
+  about: string
   created_at: string
 }
 
@@ -195,253 +70,217 @@ export type Booking = {
   id: string
   user_id: string
   doctor_id: string
+  slot_id: string | null
   kind: string
   slot: string
   fee: number
   status: string
+  payment_ref: string | null
   created_at: string
 }
 
-export function nowIso() {
-  return new Date().toISOString()
+export type Admin = {
+  id: string
+  username: string
+  password_hash: string
+  salt: string
+  created_at: string
+  last_login_at: string | null
 }
 
-/**
- * node:sqlite returns rows with a null prototype. React Server Components
- * refuse to serialise those to a client component ("Classes or null
- * prototypes are not supported"), so every row leaves this module as a plain
- * object.
- */
-function plain<T>(row: unknown): T {
-  return { ...(row as Record<string, unknown>) } as T
+export type Locality = {
+  locality_id: number
+  pin_code: string
+  name: string
+  city: string
 }
 
-function plainAll<T>(rows: unknown[]): T[] {
-  return rows.map((row) => plain<T>(row))
+export type AreaSuggestion = Locality & { doctor_count: number; ring: number }
+
+/* ─────────────────────────────────────────────────────────────── users */
+
+export async function findUserByPhone(phone: string): Promise<User | undefined> {
+  const d = await db()
+  return d.one<User>('SELECT * FROM users WHERE phone = $1', [phone])
 }
 
-/* ------------------------------------------------------------------ users */
-
-export function findUserByPhone(phone: string): User | undefined {
-  const row = sql.prepare('SELECT * FROM users WHERE phone = ?').get(phone)
-  return row ? plain<User>(row) : undefined
+export async function findUserById(id: string): Promise<User | undefined> {
+  const d = await db()
+  return d.one<User>('SELECT * FROM users WHERE id = $1', [id])
 }
 
-export function findUserById(id: string): User | undefined {
-  const row = sql.prepare('SELECT * FROM users WHERE id = ?').get(id)
-  return row ? plain<User>(row) : undefined
-}
-
-export function createUser(input: {
+export async function createUser(input: {
   id: string
   phone: string
   name?: string
-  email?: string | null
-  dob?: string | null
-  gender?: string | null
-  city?: string | null
   role?: string
-}): User {
-  sql
-    .prepare(
-      `INSERT INTO users (id, phone, name, email, dob, gender, city, role, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-    .run(
-      input.id,
-      input.phone,
-      input.name ?? '',
-      input.email ?? null,
-      input.dob ?? null,
-      input.gender ?? null,
-      input.city ?? null,
-      input.role ?? 'patient',
-      nowIso(),
-    )
-  return findUserById(input.id)!
+  tenantRegion?: string
+}): Promise<User> {
+  const d = await db()
+  const row = await d.one<User>(
+    `INSERT INTO users (id, phone, name, role, tenant_region)
+     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+    [input.id, input.phone, input.name ?? '', input.role ?? 'patient', input.tenantRegion ?? 'IN-MH'],
+  )
+  return row!
 }
 
-export function setUserName(userId: string, name: string) {
-  sql.prepare('UPDATE users SET name = ? WHERE id = ?').run(name, userId)
+export async function setUserName(userId: string, name: string) {
+  const d = await db()
+  await d.query('UPDATE users SET name = $1 WHERE id = $2', [name, userId])
 }
 
-export function touchLogin(userId: string) {
-  sql.prepare('UPDATE users SET last_login_at = ? WHERE id = ?').run(nowIso(), userId)
+export async function setUserRole(userId: string, role: string) {
+  const d = await db()
+  await d.query('UPDATE users SET role = $1 WHERE id = $2', [role, userId])
 }
 
-export function listUsers(limit = 200): User[] {
-  const rows = sql
-    .prepare('SELECT * FROM users ORDER BY datetime(created_at) DESC LIMIT ?')
-    .all(limit) as unknown[]
-  return plainAll<User>(rows)
+export async function touchLogin(userId: string) {
+  const d = await db()
+  await d.query('UPDATE users SET last_login_at = now() WHERE id = $1', [userId])
 }
 
-export function countUsers(): number {
-  const row = sql.prepare('SELECT COUNT(*) AS n FROM users').get() as { n: number }
-  return row.n
+export async function listUsers(limit = 200): Promise<User[]> {
+  const d = await db()
+  return d.query<User>('SELECT * FROM users ORDER BY created_at DESC LIMIT $1', [limit])
 }
 
-/* ---------------------------------------------------------------- doctors */
-
-export function listDoctors(limit = 200): Doctor[] {
-  const rows = sql
-    .prepare('SELECT * FROM doctors ORDER BY datetime(created_at) DESC LIMIT ?')
-    .all(limit) as unknown[]
-  return plainAll<Doctor>(rows)
+export async function countUsers(): Promise<number> {
+  const d = await db()
+  const row = await d.one<{ n: string }>('SELECT COUNT(*) AS n FROM users')
+  return Number(row?.n ?? 0)
 }
 
-export function countDoctors(): number {
-  const row = sql.prepare('SELECT COUNT(*) AS n FROM doctors').get() as { n: number }
-  return row.n
+/* ─────────────────────────────────────────────────────────── sessions */
+
+export async function createSession(token: string, userId: string, days = 30) {
+  const d = await db()
+  await d.query(
+    `INSERT INTO sessions (token, user_id, expires_at)
+     VALUES ($1, $2, now() + ($3 || ' days')::interval)`,
+    [token, userId, String(days)],
+  )
 }
 
-export function createDoctor(input: Omit<Doctor, 'created_at'>): Doctor {
-  sql
-    .prepare(
-      `INSERT INTO doctors
-       (id, user_id, name, speciality, qualification, experience, clinic, locality, city, fee, reg_number, council, verified, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-    .run(
-      input.id,
-      input.user_id,
-      input.name,
-      input.speciality,
-      input.qualification,
-      input.experience,
-      input.clinic,
-      input.locality,
-      input.city,
-      input.fee,
-      input.reg_number,
-      input.council,
-      input.verified,
-      nowIso(),
-    )
-  return sql.prepare('SELECT * FROM doctors WHERE id = ?').get(input.id) as Doctor
+export async function findSession(token: string) {
+  const d = await db()
+  return d.one<{ user_id: string; expires_at: string }>(
+    'SELECT user_id, expires_at FROM sessions WHERE token = $1',
+    [token],
+  )
 }
 
-export function setDoctorVerified(id: string, verified: boolean) {
-  sql.prepare('UPDATE doctors SET verified = ? WHERE id = ?').run(verified ? 1 : 0, id)
+export async function deleteSession(token: string) {
+  const d = await db()
+  await d.query('DELETE FROM sessions WHERE token = $1', [token])
 }
 
-/* --------------------------------------------------------------- sessions */
-
-export function createSession(token: string, userId: string, days = 30) {
-  const expires = new Date(Date.now() + days * 86_400_000).toISOString()
-  sql
-    .prepare('INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
-    .run(token, userId, nowIso(), expires)
-  return expires
+export async function countActiveSessions(): Promise<number> {
+  const d = await db()
+  const row = await d.one<{ n: string }>(
+    'SELECT COUNT(*) AS n FROM sessions WHERE expires_at > now()',
+  )
+  return Number(row?.n ?? 0)
 }
 
-export function findSession(token: string): { user_id: string; expires_at: string } | undefined {
-  return sql.prepare('SELECT user_id, expires_at FROM sessions WHERE token = ?').get(token) as
-    | { user_id: string; expires_at: string }
-    | undefined
+/* ──────────────────────────────────────────────────────────────── otps */
+
+export async function putOtp(phone: string, code: string, minutes = 10) {
+  const d = await db()
+  await d.query(
+    `INSERT INTO otps (phone, code, expires_at, attempts)
+     VALUES ($1, $2, now() + ($3 || ' minutes')::interval, 0)
+     ON CONFLICT (phone) DO UPDATE
+       SET code = excluded.code, expires_at = excluded.expires_at, attempts = 0`,
+    [phone, code, String(minutes)],
+  )
 }
 
-export function deleteSession(token: string) {
-  sql.prepare('DELETE FROM sessions WHERE token = ?').run(token)
+export async function takeOtp(phone: string) {
+  const d = await db()
+  return d.one<{ code: string; expires_at: string; attempts: number }>(
+    'SELECT code, expires_at, attempts FROM otps WHERE phone = $1',
+    [phone],
+  )
 }
 
-export function countActiveSessions(): number {
-  const row = sql
-    .prepare("SELECT COUNT(*) AS n FROM sessions WHERE datetime(expires_at) > datetime('now')")
-    .get() as { n: number }
-  return row.n
+export async function bumpOtpAttempts(phone: string) {
+  const d = await db()
+  await d.query('UPDATE otps SET attempts = attempts + 1 WHERE phone = $1', [phone])
 }
 
-/* ------------------------------------------------------------------- otps */
-
-export function putOtp(phone: string, code: string, minutes = 10) {
-  const expires = new Date(Date.now() + minutes * 60_000).toISOString()
-  sql
-    .prepare(
-      `INSERT INTO otps (phone, code, expires_at, attempts) VALUES (?, ?, ?, 0)
-       ON CONFLICT(phone) DO UPDATE SET code = excluded.code, expires_at = excluded.expires_at, attempts = 0`,
-    )
-    .run(phone, code, expires)
+export async function clearOtp(phone: string) {
+  const d = await db()
+  await d.query('DELETE FROM otps WHERE phone = $1', [phone])
 }
 
-export function takeOtp(phone: string): { code: string; expires_at: string; attempts: number } | undefined {
-  return sql.prepare('SELECT code, expires_at, attempts FROM otps WHERE phone = ?').get(phone) as
-    | { code: string; expires_at: string; attempts: number }
-    | undefined
+/* ─────────────────────────────────────────────────────── rate limiting */
+
+/**
+ * Fixed-window counter. Done in a single statement so two concurrent requests
+ * cannot both read a stale count and both decide they are under the limit.
+ */
+export async function hitRateLimit(
+  bucket: string,
+  key: string,
+  limit: number,
+  windowMinutes: number,
+): Promise<{ allowed: boolean; remaining: number; retryAfterSeconds: number }> {
+  const d = await db()
+
+  const row = await d.one<{ count: number; window_start: string; expired: boolean }>(
+    `INSERT INTO rate_limits (bucket, key, count, window_start)
+     VALUES ($1, $2, 1, now())
+     ON CONFLICT (bucket, key) DO UPDATE SET
+       count = CASE
+         WHEN rate_limits.window_start < now() - ($3 || ' minutes')::interval THEN 1
+         ELSE rate_limits.count + 1
+       END,
+       window_start = CASE
+         WHEN rate_limits.window_start < now() - ($3 || ' minutes')::interval THEN now()
+         ELSE rate_limits.window_start
+       END
+     RETURNING count, window_start, false AS expired`,
+    [bucket, key, String(windowMinutes)],
+  )
+
+  const count = Number(row?.count ?? 1)
+  if (count <= limit) {
+    return { allowed: true, remaining: limit - count, retryAfterSeconds: 0 }
+  }
+
+  const started = new Date(row!.window_start).getTime()
+  const retry = Math.max(0, Math.ceil((started + windowMinutes * 60_000 - Date.now()) / 1000))
+  return { allowed: false, remaining: 0, retryAfterSeconds: retry }
 }
 
-export function bumpOtpAttempts(phone: string) {
-  sql.prepare('UPDATE otps SET attempts = attempts + 1 WHERE phone = ?').run(phone)
+/* ────────────────────────────────────────────────────── doctor search */
+
+/**
+ * Postgres returns NUMERIC as a string — JS floats cannot safely represent
+ * arbitrary-precision decimals, so the driver refuses to guess. Coerce the
+ * columns the UI does arithmetic on, once, here.
+ */
+function normaliseDoctor(row: DoctorRow): DoctorRow {
+  return {
+    ...row,
+    rating: Number(row.rating),
+    reviews_count: Number(row.reviews_count),
+    fee: Number(row.fee),
+    experience: Number(row.experience),
+  }
 }
 
-export function clearOtp(phone: string) {
-  sql.prepare('DELETE FROM otps WHERE phone = ?').run(phone)
-}
 
-/* --------------------------------------------------------------- bookings */
-
-export function createBooking(input: Omit<Booking, 'created_at' | 'status'> & { status?: string }) {
-  sql
-    .prepare(
-      `INSERT INTO bookings (id, user_id, doctor_id, kind, slot, fee, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-    .run(
-      input.id,
-      input.user_id,
-      input.doctor_id,
-      input.kind,
-      input.slot,
-      input.fee,
-      input.status ?? 'confirmed',
-      nowIso(),
-    )
-}
-
-export function listBookings(limit = 200): Booking[] {
-  const rows = sql
-    .prepare('SELECT * FROM bookings ORDER BY datetime(created_at) DESC LIMIT ?')
-    .all(limit) as unknown[]
-  return plainAll<Booking>(rows)
-}
-
-export function listBookingsForUser(userId: string): Booking[] {
-  const rows = sql
-    .prepare('SELECT * FROM bookings WHERE user_id = ? ORDER BY datetime(created_at) DESC')
-    .all(userId) as unknown[]
-  return plainAll<Booking>(rows)
-}
-
-export function countBookings(): number {
-  const row = sql.prepare('SELECT COUNT(*) AS n FROM bookings').get() as { n: number }
-  return row.n
-}
-
-/* ----------------------------------------------------------- doctor search */
-
-export type DoctorRow = Doctor & {
-  rating: number
-  reviews_count: number
-  video: number
-  cashless: number
-  home_visit: number
-  gender: string
-  /** Comma-separated; split on read. */
-  languages: string
-  next_slot: string
-  kind: string
-  slug: string
-  about: string
-  pin_code: string
-}
 
 export type DoctorQuery = {
   kind?: 'human' | 'vet'
+  text?: string
   specialities?: string[]
   languages?: string[]
-  city?: string
-  /** Exact area match — the primary query in the area-search flow. */
+  localityIds?: number[]
   pinCode?: string
+  city?: string
   minFee?: number
   maxFee?: number
   minExperience?: number
@@ -451,57 +290,44 @@ export type DoctorQuery = {
   homeVisit?: boolean
   femaleOnly?: boolean
   sort?: 'relevance' | 'rating' | 'fee-low' | 'experience'
+  limit?: number
 }
 
-/**
- * Filtered doctor search, executed in SQL rather than in JavaScript so it
- * still works once the table is larger than a page of results.
- */
-export function searchDoctors(query: DoctorQuery = {}): DoctorRow[] {
-  const where: string[] = ['verified = 1']
-  const params: (string | number)[] = []
+export async function searchDoctors(query: DoctorQuery = {}): Promise<DoctorRow[]> {
+  const d = await db()
+  const where: string[] = [`status = 'ACTIVE'`]
+  const params: unknown[] = []
+  const p = (value: unknown) => {
+    params.push(value)
+    return `$${params.length}`
+  }
 
-  where.push('kind = ?')
-  params.push(query.kind ?? 'human')
+  where.push(`kind = ${p(query.kind ?? 'human')}`)
 
-  if (query.specialities?.length) {
-    where.push(`speciality IN (${query.specialities.map(() => '?').join(',')})`)
-    params.push(...query.specialities)
-  }
-  if (query.pinCode) {
-    where.push('pin_code = ?')
-    params.push(query.pinCode)
-  }
-  if (query.city) {
-    where.push('city = ?')
-    params.push(query.city)
-  }
-  if (query.minFee !== undefined) {
-    where.push('fee >= ?')
-    params.push(query.minFee)
-  }
-  if (query.maxFee !== undefined) {
-    where.push('fee <= ?')
-    params.push(query.maxFee)
-  }
-  if (query.minExperience !== undefined) {
-    where.push('experience >= ?')
-    params.push(query.minExperience)
-  }
-  if (query.maxExperience !== undefined) {
-    where.push('experience <= ?')
-    params.push(query.maxExperience)
-  }
-  if (query.video) where.push('video = 1')
-  if (query.cashless) where.push('cashless = 1')
-  if (query.homeVisit) where.push('home_visit = 1')
-  if (query.femaleOnly) where.push("gender = 'Female'")
+  if (query.specialities?.length) where.push(`speciality = ANY(${p(query.specialities)})`)
+  if (query.localityIds?.length) where.push(`locality_id = ANY(${p(query.localityIds)})`)
+  if (query.pinCode) where.push(`pin_code = ${p(query.pinCode)}`)
+  if (query.city) where.push(`city = ${p(query.city)}`)
+  if (query.minFee !== undefined) where.push(`fee >= ${p(query.minFee)}`)
+  if (query.maxFee !== undefined) where.push(`fee <= ${p(query.maxFee)}`)
+  if (query.minExperience !== undefined) where.push(`experience >= ${p(query.minExperience)}`)
+  if (query.maxExperience !== undefined) where.push(`experience <= ${p(query.maxExperience)}`)
+  if (query.video) where.push('video = true')
+  if (query.cashless) where.push('cashless = true')
+  if (query.homeVisit) where.push('home_visit = true')
+  if (query.femaleOnly) where.push(`gender = 'Female'`)
 
-  /* Languages are stored comma-separated; match any of the requested ones. */
+  /* Languages are a comma-separated list; match any requested one. */
   if (query.languages?.length) {
-    const clauses = query.languages.map(() => "(',' || languages || ',') LIKE ?")
-    where.push(`(${clauses.join(' OR ')})`)
-    params.push(...query.languages.map((language) => `%,${language},%`))
+    where.push(`string_to_array(languages, ',') && ${p(query.languages)}`)
+  }
+
+  /* Full-text, replacing the Elasticsearch index. */
+  if (query.text?.trim()) {
+    where.push(
+      `to_tsvector('english', name || ' ' || speciality || ' ' || locality || ' ' || about)
+       @@ plainto_tsquery('english', ${p(query.text.trim())})`,
+    )
   }
 
   const order =
@@ -513,238 +339,365 @@ export function searchDoctors(query: DoctorQuery = {}): DoctorRow[] {
           ? 'rating DESC, reviews_count DESC'
           : 'rating DESC, experience DESC'
 
-  const rows = sql
-    .prepare(`SELECT * FROM doctors WHERE ${where.join(' AND ')} ORDER BY ${order}`)
-    .all(...params) as unknown[]
-  return plainAll<DoctorRow>(rows)
+  const rows = await d.query<DoctorRow>(
+    `SELECT * FROM doctors WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT ${p(query.limit ?? 100)}`,
+    params,
+  )
+  return rows.map(normaliseDoctor)
 }
 
-export function findDoctorBySlug(slug: string): DoctorRow | undefined {
-  const row = sql.prepare('SELECT * FROM doctors WHERE slug = ?').get(slug)
-  return row ? plain<DoctorRow>(row) : undefined
+export async function findDoctorBySlug(slug: string): Promise<DoctorRow | undefined> {
+  const d = await db()
+  const row = await d.one<DoctorRow>('SELECT * FROM doctors WHERE slug = $1', [slug])
+  return row ? normaliseDoctor(row) : undefined
 }
 
-export function distinctSpecialities(kind: 'human' | 'vet' = 'human'): string[] {
-  return (
-    sql
-      .prepare('SELECT DISTINCT speciality FROM doctors WHERE kind = ? AND verified = 1 ORDER BY speciality')
-      .all(kind) as { speciality: string }[]
-  ).map((row) => row.speciality)
+export async function findDoctorById(id: string): Promise<DoctorRow | undefined> {
+  const d = await db()
+  const row = await d.one<DoctorRow>('SELECT * FROM doctors WHERE id = $1', [id])
+  return row ? normaliseDoctor(row) : undefined
 }
 
-export function updateDoctorRating(slug: string, rating: number, count: number) {
-  sql
-    .prepare('UPDATE doctors SET rating = ?, reviews_count = ? WHERE slug = ?')
-    .run(rating, count, slug)
+export async function listDoctors(limit = 200): Promise<DoctorRow[]> {
+  const d = await db()
+  const rows = await d.query<DoctorRow>(
+    'SELECT * FROM doctors ORDER BY created_at DESC LIMIT $1', [limit])
+  return rows.map(normaliseDoctor)
 }
 
-/* ------------------------------------------------------------------ admins */
+export async function countDoctors(): Promise<number> {
+  const d = await db()
+  const row = await d.one<{ n: string }>('SELECT COUNT(*) AS n FROM doctors')
+  return Number(row?.n ?? 0)
+}
 
-export type Admin = {
+export async function distinctSpecialities(kind: 'human' | 'vet' = 'human'): Promise<string[]> {
+  const d = await db()
+  const rows = await d.query<{ speciality: string }>(
+    `SELECT DISTINCT speciality FROM doctors WHERE kind = $1 AND status = 'ACTIVE' ORDER BY speciality`,
+    [kind],
+  )
+  return rows.map((r) => r.speciality)
+}
+
+export async function updateDoctorRating(slug: string, rating: number, count: number) {
+  const d = await db()
+  await d.query('UPDATE doctors SET rating = $1, reviews_count = $2 WHERE slug = $3', [
+    rating,
+    count,
+    slug,
+  ])
+}
+
+/* ─────────────────────────────────────── provider status (append-only) */
+
+/**
+ * Status is never mutated without a history row — medical-board disputes need
+ * the full transition trail.
+ */
+export async function transitionDoctorStatus(input: {
   id: string
-  username: string
-  password_hash: string
-  salt: string
-  created_at: string
-  last_login_at: string | null
+  doctorId: string
+  toStatus: string
+  reason?: string
+  actor?: string
+}) {
+  const d = await db()
+  const current = await d.one<{ status: string }>('SELECT status FROM doctors WHERE id = $1', [
+    input.doctorId,
+  ])
+
+  await d.query(
+    `INSERT INTO provider_status_history (id, doctor_id, from_status, to_status, reason, actor)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [input.id, input.doctorId, current?.status ?? null, input.toStatus, input.reason ?? null, input.actor ?? null],
+  )
+  await d.query('UPDATE doctors SET status = $1, updated_at = now() WHERE id = $2', [
+    input.toStatus,
+    input.doctorId,
+  ])
 }
 
-export function findAdmin(username: string): Admin | undefined {
-  const row = sql.prepare('SELECT * FROM admins WHERE username = ?').get(username)
-  return row ? plain<Admin>(row) : undefined
+export async function doctorStatusHistory(doctorId: string) {
+  const d = await db()
+  return d.query<{
+    id: string
+    from_status: string | null
+    to_status: string
+    reason: string | null
+    actor: string | null
+    created_at: string
+  }>(
+    'SELECT * FROM provider_status_history WHERE doctor_id = $1 ORDER BY created_at DESC',
+    [doctorId],
+  )
 }
 
-export function countAdmins(): number {
-  const row = sql.prepare('SELECT COUNT(*) AS n FROM admins').get() as { n: number }
-  return row.n
+/* ─────────────────────────────────────────────────────────── documents */
+
+export async function addProviderDocument(input: {
+  id: string
+  doctorId: string
+  docType: string
+  blobUrl: string
+}) {
+  const d = await db()
+  await d.query(
+    `INSERT INTO provider_documents (id, doctor_id, doc_type, blob_url) VALUES ($1, $2, $3, $4)`,
+    [input.id, input.doctorId, input.docType, input.blobUrl],
+  )
 }
 
-export function createAdmin(input: {
+export async function listProviderDocuments(doctorId: string) {
+  const d = await db()
+  return d.query<{
+    id: string
+    doc_type: string
+    blob_url: string
+    status: string
+    created_at: string
+  }>('SELECT * FROM provider_documents WHERE doctor_id = $1 ORDER BY created_at DESC', [doctorId])
+}
+
+export async function setDocumentStatus(id: string, status: string, notes?: string) {
+  const d = await db()
+  await d.query('UPDATE provider_documents SET status = $1, notes = $2 WHERE id = $3', [
+    status,
+    notes ?? null,
+    id,
+  ])
+}
+
+/* ──────────────────────────────────────────────────────────── admins */
+
+export async function findAdmin(username: string): Promise<Admin | undefined> {
+  const d = await db()
+  return d.one<Admin>('SELECT * FROM admins WHERE username = $1', [username])
+}
+
+export async function findAdminById(id: string) {
+  const d = await db()
+  return d.one<{ id: string; username: string }>(
+    'SELECT id, username FROM admins WHERE id = $1',
+    [id],
+  )
+}
+
+export async function countAdmins(): Promise<number> {
+  const d = await db()
+  const row = await d.one<{ n: string }>('SELECT COUNT(*) AS n FROM admins')
+  return Number(row?.n ?? 0)
+}
+
+export async function createAdmin(input: {
   id: string
   username: string
   passwordHash: string
   salt: string
 }) {
-  sql
-    .prepare(
-      'INSERT INTO admins (id, username, password_hash, salt, created_at) VALUES (?, ?, ?, ?, ?)',
-    )
-    .run(input.id, input.username, input.passwordHash, input.salt, nowIso())
+  const d = await db()
+  await d.query(
+    'INSERT INTO admins (id, username, password_hash, salt) VALUES ($1, $2, $3, $4)',
+    [input.id, input.username, input.passwordHash, input.salt],
+  )
 }
 
-export function touchAdminLogin(id: string) {
-  sql.prepare('UPDATE admins SET last_login_at = ? WHERE id = ?').run(nowIso(), id)
+export async function touchAdminLogin(id: string) {
+  const d = await db()
+  await d.query('UPDATE admins SET last_login_at = now() WHERE id = $1', [id])
 }
 
-/* ------------------------------------------------------------ rate limits */
+export async function createAdminSession(token: string, adminId: string, hours = 8) {
+  const d = await db()
+  await d.query(
+    `INSERT INTO admin_sessions (token, admin_id, expires_at)
+     VALUES ($1, $2, now() + ($3 || ' hours')::interval)`,
+    [token, adminId, String(hours)],
+  )
+}
+
+export async function findAdminSession(token: string) {
+  const d = await db()
+  return d.one<{ admin_id: string; expires_at: string }>(
+    'SELECT admin_id, expires_at FROM admin_sessions WHERE token = $1',
+    [token],
+  )
+}
+
+export async function deleteAdminSession(token: string) {
+  const d = await db()
+  await d.query('DELETE FROM admin_sessions WHERE token = $1', [token])
+}
+
+/* ────────────────────────────────────────────────────────── bookings */
+
+export async function createBooking(input: {
+  id: string
+  userId: string
+  doctorId: string
+  slotId?: string | null
+  kind: string
+  slot: string
+  fee: number
+  status?: string
+  paymentRef?: string | null
+}) {
+  const d = await db()
+  await d.query(
+    `INSERT INTO bookings (id, user_id, doctor_id, slot_id, kind, slot, fee, status, payment_ref)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [
+      input.id,
+      input.userId,
+      input.doctorId,
+      input.slotId ?? null,
+      input.kind,
+      input.slot,
+      input.fee,
+      input.status ?? 'confirmed',
+      input.paymentRef ?? null,
+    ],
+  )
+}
+
+export async function listBookings(limit = 200): Promise<Booking[]> {
+  const d = await db()
+  return d.query<Booking>('SELECT * FROM bookings ORDER BY created_at DESC LIMIT $1', [limit])
+}
+
+export async function listBookingsForUser(userId: string): Promise<Booking[]> {
+  const d = await db()
+  return d.query<Booking>(
+    'SELECT * FROM bookings WHERE user_id = $1 ORDER BY created_at DESC',
+    [userId],
+  )
+}
+
+export async function countBookings(): Promise<number> {
+  const d = await db()
+  const row = await d.one<{ n: string }>('SELECT COUNT(*) AS n FROM bookings')
+  return Number(row?.n ?? 0)
+}
+
+export async function setBookingStatus(id: string, status: string) {
+  const d = await db()
+  await d.query('UPDATE bookings SET status = $1 WHERE id = $2', [status, id])
+}
+
+/* ──────────────────────────────────────────────── areas (map-free) */
 
 /**
- * Fixed-window counter. Returns whether the caller is under the limit and how
- * many attempts remain. Cheap and good enough to stop OTP abuse.
+ * Resolves free text to a canonical area: PIN code, exact name, then prefix.
+ * Three indexed lookups; no geocoding call anywhere on this path.
  */
-export function hitRateLimit(
-  bucket: string,
-  key: string,
-  limit: number,
-  windowMinutes: number,
-): { allowed: boolean; remaining: number; retryAfterSeconds: number } {
-  const now = Date.now()
-  const row = sql
-    .prepare('SELECT count, window_start FROM rate_limits WHERE bucket = ? AND key = ?')
-    .get(bucket, key) as { count: number; window_start: string } | undefined
-
-  const windowMs = windowMinutes * 60_000
-  const started = row ? new Date(row.window_start).getTime() : 0
-  const expired = !row || now - started >= windowMs
-
-  if (expired) {
-    sql
-      .prepare(
-        `INSERT INTO rate_limits (bucket, key, count, window_start) VALUES (?, ?, 1, ?)
-         ON CONFLICT(bucket, key) DO UPDATE SET count = 1, window_start = excluded.window_start`,
-      )
-      .run(bucket, key, new Date(now).toISOString())
-    return { allowed: true, remaining: limit - 1, retryAfterSeconds: 0 }
-  }
-
-  if (row.count >= limit) {
-    return {
-      allowed: false,
-      remaining: 0,
-      retryAfterSeconds: Math.ceil((started + windowMs - now) / 1000),
-    }
-  }
-
-  sql
-    .prepare('UPDATE rate_limits SET count = count + 1 WHERE bucket = ? AND key = ?')
-    .run(bucket, key)
-  return { allowed: true, remaining: limit - row.count - 1, retryAfterSeconds: 0 }
-}
-
-/* ------------------------------------------------------------------ roles */
-
-export function setUserRole(userId: string, role: string) {
-  sql.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, userId)
-}
-
-/* ------------------------------------------------------- admin sessions */
-
-export function createAdminSession(token: string, adminId: string, hours = 8) {
-  const expires = new Date(Date.now() + hours * 3_600_000).toISOString()
-  sql
-    .prepare(
-      'INSERT INTO admin_sessions (token, admin_id, created_at, expires_at) VALUES (?, ?, ?, ?)',
-    )
-    .run(token, adminId, nowIso(), expires)
-}
-
-export function findAdminSession(
-  token: string,
-): { admin_id: string; expires_at: string } | undefined {
-  const row = sql
-    .prepare('SELECT admin_id, expires_at FROM admin_sessions WHERE token = ?')
-    .get(token)
-  return row ? plain<{ admin_id: string; expires_at: string }>(row) : undefined
-}
-
-export function deleteAdminSession(token: string) {
-  sql.prepare('DELETE FROM admin_sessions WHERE token = ?').run(token)
-}
-
-export function findAdminById(id: string): { id: string; username: string } | undefined {
-  return sql.prepare('SELECT id, username FROM admins WHERE id = ?').get(id) as
-    | { id: string; username: string }
-    | undefined
-}
-
-/* --------------------------------------------------------------- areas */
-
-export type Locality = { pin_code: string; name: string; city: string }
-export type AreaSuggestion = Locality & { doctor_count: number }
-
-/**
- * Resolves whatever the patient typed to a known area.
- *
- * Accepts a 6-digit PIN code or a locality name, matched case-insensitively.
- * This is a plain indexed string lookup — no geocoding call, no distance
- * maths, so it costs the same whether there are ten areas or ten thousand.
- */
-export function resolveArea(input: string): Locality | undefined {
+export async function resolveArea(input: string): Promise<Locality | undefined> {
   const term = input.trim()
   if (!term) return undefined
+  const d = await db()
 
   if (/^\d{6}$/.test(term)) {
-    const row = sql.prepare('SELECT * FROM localities WHERE pin_code = ?').get(term)
-    if (row) return plain<Locality>(row)
+    const byPin = await d.one<Locality>('SELECT * FROM localities WHERE pin_code = $1', [term])
+    if (byPin) return byPin
   }
 
-  const exact = sql
-    .prepare('SELECT * FROM localities WHERE lower(name) = lower(?)')
-    .get(term)
-  if (exact) return plain<Locality>(exact)
+  const exact = await d.one<Locality>('SELECT * FROM localities WHERE lower(name) = lower($1)', [
+    term,
+  ])
+  if (exact) return exact
 
-  /* Last resort: a prefix match, so "Mira Road" finds "Mira Road East". */
-  const prefix = sql
-    .prepare('SELECT * FROM localities WHERE lower(name) LIKE lower(?) ORDER BY name LIMIT 1')
-    .get(`${term}%`)
-  return prefix ? plain<Locality>(prefix) : undefined
+  return d.one<Locality>(
+    'SELECT * FROM localities WHERE lower(name) LIKE lower($1) ORDER BY name LIMIT 1',
+    [`${term}%`],
+  )
 }
 
-export function listLocalities(): AreaSuggestion[] {
-  const rows = sql
-    .prepare(
-      `SELECT l.*, (
-         SELECT COUNT(*) FROM doctors d WHERE d.pin_code = l.pin_code AND d.verified = 1
-       ) AS doctor_count
-       FROM localities l ORDER BY l.city, l.name`,
-    )
-    .all() as unknown[]
-  return plainAll<AreaSuggestion>(rows)
+export async function listLocalities(): Promise<AreaSuggestion[]> {
+  const d = await db()
+  return d.query<AreaSuggestion>(
+    `SELECT l.*, 0 AS ring,
+       (SELECT COUNT(*) FROM doctors dd
+        WHERE dd.locality_id = l.locality_id AND dd.status = 'ACTIVE')::int AS doctor_count
+     FROM localities l ORDER BY l.city, l.name`,
+  )
 }
 
 /**
- * The fallback path: pre-authored neighbours of an area, each annotated with
- * how many verified doctors it actually holds.
+ * Neighbours of an area, by ring, annotated with live doctor counts.
  *
- * Areas with no doctors are dropped, so a suggestion chip always leads to a
- * populated result rather than a second empty page. Ordering is by doctor
- * count so the most useful option comes first.
+ * Pure indexed join against the pre-materialised adjacency table — the
+ * request path never touches lat/lng. Areas with no doctors are dropped so a
+ * suggestion chip never leads to a second empty page.
  */
-export function neighbouringAreas(pinCode: string, kind: 'human' | 'vet' = 'human'): AreaSuggestion[] {
-  const rows = sql
-    .prepare(
-      `SELECT l.*, (
-         SELECT COUNT(*) FROM doctors d
-         WHERE d.pin_code = l.pin_code AND d.verified = 1 AND d.kind = ?
-       ) AS doctor_count
-       FROM locality_neighbours n
-       JOIN localities l ON l.pin_code = n.neighbour_pin
-       WHERE n.pin_code = ?
-       ORDER BY doctor_count DESC, l.name`,
-    )
-    .all(kind, pinCode) as unknown[]
-
-  return plainAll<AreaSuggestion>(rows).filter((area) => area.doctor_count > 0)
+export async function neighbouringAreas(
+  localityId: number,
+  kind: 'human' | 'vet' = 'human',
+  maxRing = 2,
+): Promise<AreaSuggestion[]> {
+  const d = await db()
+  const rows = await d.query<AreaSuggestion>(
+    `SELECT l.locality_id, l.pin_code, l.name, l.city, a.ring,
+       (SELECT COUNT(*) FROM doctors dd
+        WHERE dd.locality_id = l.locality_id AND dd.status = 'ACTIVE' AND dd.kind = $2)::int
+        AS doctor_count
+     FROM locality_adjacency a
+     JOIN localities l ON l.locality_id = a.neighbor_locality_id
+     WHERE a.locality_id = $1 AND a.ring <= $3
+     ORDER BY a.ring ASC, doctor_count DESC, l.name`,
+    [localityId, kind, maxRing],
+  )
+  return rows.filter((r) => r.doctor_count > 0)
 }
 
-export function upsertLocality(pinCode: string, name: string, city: string) {
-  sql
-    .prepare(
-      `INSERT INTO localities (pin_code, name, city) VALUES (?, ?, ?)
-       ON CONFLICT(pin_code) DO UPDATE SET name = excluded.name, city = excluded.city`,
-    )
-    .run(pinCode, name, city)
+export async function countLocalities(): Promise<number> {
+  const d = await db()
+  const row = await d.one<{ n: string }>('SELECT COUNT(*) AS n FROM localities')
+  return Number(row?.n ?? 0)
 }
 
-export function linkNeighbours(pinCode: string, neighbourPin: string) {
-  sql
-    .prepare(
-      'INSERT OR IGNORE INTO locality_neighbours (pin_code, neighbour_pin) VALUES (?, ?)',
+/* ───────────────────────────────────────────────────────── audit log */
+
+export async function writeAudit(entry: {
+  actorId?: string | null
+  actorRole?: string | null
+  action: string
+  resource?: string | null
+  tenantRegion?: string | null
+  detail?: unknown
+}) {
+  try {
+    const d = await db()
+    await d.query(
+      `INSERT INTO audit_log (actor_id, actor_role, action, resource, tenant_region, detail)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        entry.actorId ?? null,
+        entry.actorRole ?? null,
+        entry.action,
+        entry.resource ?? null,
+        entry.tenantRegion ?? null,
+        JSON.stringify(entry.detail ?? {}),
+      ],
     )
-    .run(pinCode, neighbourPin)
+  } catch {
+    /* Auditing must never break the user's action. */
+  }
 }
 
-export function countLocalities(): number {
-  const row = sql.prepare('SELECT COUNT(*) AS n FROM localities').get() as { n: number }
-  return row.n
+export async function recentAudit(limit = 50) {
+  const d = await db()
+  return d.query<{
+    id: number
+    actor_id: string | null
+    actor_role: string | null
+    action: string
+    resource: string | null
+    detail: unknown
+    created_at: string
+  }>('SELECT * FROM audit_log ORDER BY created_at DESC LIMIT $1', [limit])
+}
+
+export async function countAudit(): Promise<number> {
+  const d = await db()
+  const row = await d.one<{ n: string }>('SELECT COUNT(*) AS n FROM audit_log')
+  return Number(row?.n ?? 0)
 }

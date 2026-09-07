@@ -387,13 +387,13 @@ function DoctorCard({ doctor }: { doctor: DoctorRow }) {
               <ThumbsUp className="size-3.5" />
               Registration verified
             </span>
-            {doctor.video === 1 && (
+            {doctor.video && (
               <span className="inline-flex items-center gap-1.5 rounded-md bg-soft px-2.5 py-1 font-semibold text-primary">
                 <Video className="size-3.5" />
                 Video consult
               </span>
             )}
-            {doctor.cashless === 1 && (
+            {doctor.cashless && (
               <span className="inline-flex items-center rounded-md bg-muted px-2.5 py-1 font-semibold">
                 Cashless available
               </span>

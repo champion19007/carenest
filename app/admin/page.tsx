@@ -21,20 +21,20 @@ export const dynamic = 'force-dynamic'
 
 export default async function AdminPage() {
   const admin = await currentAdmin()
-  if (!admin) return <AdminGate firstRun={countAdmins() === 0} />
+  if (!admin) return <AdminGate firstRun={await countAdmins() === 0} />
 
   const [users, doctors, bookings, feed] = [
-    listUsers(50),
-    listDoctors(50),
-    listBookings(50),
+    await listUsers(50),
+    await listDoctors(50),
+    await listBookings(50),
     await recentActivity(40),
   ]
 
   const stats = [
-    { Icon: UsersRound, label: 'Patients', value: countUsers(), source: 'SQL' },
-    { Icon: Stethoscope, label: 'Doctors', value: countDoctors(), source: 'SQL' },
-    { Icon: FileText, label: 'Bookings', value: countBookings(), source: 'SQL' },
-    { Icon: Activity, label: 'Active sessions', value: countActiveSessions(), source: 'SQL' },
+    { Icon: UsersRound, label: 'Patients', value: await countUsers(), source: 'SQL' },
+    { Icon: Stethoscope, label: 'Doctors', value: await countDoctors(), source: 'SQL' },
+    { Icon: FileText, label: 'Bookings', value: await countBookings(), source: 'SQL' },
+    { Icon: Activity, label: 'Active sessions', value: await countActiveSessions(), source: 'SQL' },
     { Icon: Database, label: 'Prescriptions', value: await countDocs(prescriptions), source: 'NoSQL' },
     { Icon: Database, label: 'Chart notes', value: await countDocs(chartNotes), source: 'NoSQL' },
     { Icon: Database, label: 'Reviews', value: await countDocs(reviews), source: 'NoSQL' },
@@ -167,12 +167,12 @@ export default async function AdminPage() {
                       <td className="px-5 py-3">
                         <span
                           className={`rounded px-2 py-0.5 text-xs font-bold ${
-                            doctor.verified
+                            doctor.status === 'ACTIVE'
                               ? 'bg-success/10 text-success'
                               : 'bg-accent/15 text-warning'
                           }`}
                         >
-                          {doctor.verified ? 'Verified' : 'Pending'}
+                          {doctor.status === 'ACTIVE' ? 'Verified' : doctor.status}
                         </span>
                       </td>
                     </tr>

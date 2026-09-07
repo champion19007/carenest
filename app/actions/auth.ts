@@ -62,7 +62,7 @@ export async function requestOtp(
     return { error: 'Enter a valid 10-digit Indian mobile number.' }
   }
 
-  const byPhone = hitRateLimit('otp:phone', phone, OTP_PER_PHONE.limit, OTP_PER_PHONE.windowMinutes)
+  const byPhone = await hitRateLimit('otp:phone', phone, OTP_PER_PHONE.limit, OTP_PER_PHONE.windowMinutes)
   if (!byPhone.allowed) {
     await logActivity({ kind: 'otp.rate_limited', message: `Rate limit hit for ${mask(phone)}` })
     return {
@@ -73,14 +73,14 @@ export async function requestOtp(
   }
 
   const ip = await clientIp()
-  const byIp = hitRateLimit('otp:ip', ip, OTP_PER_IP.limit, OTP_PER_IP.windowMinutes)
+  const byIp = await hitRateLimit('otp:ip', ip, OTP_PER_IP.limit, OTP_PER_IP.windowMinutes)
   if (!byIp.allowed) {
     await logActivity({ kind: 'otp.rate_limited', message: `Rate limit hit for IP ${ip}` })
     return { error: 'Too many requests from this network. Please try again later.' }
   }
 
   const code = newOtp()
-  putOtp(phone, code)
+  await putOtp(phone, code)
 
   const result = await sendOtpSms(phone, code)
   if (smsIsLive() && !result.deliveredToDevice) {
@@ -111,41 +111,41 @@ export async function verifyOtp(
   const name = String(formData.get('name') ?? '').trim()
   const next = String(formData.get('next') ?? '/dashboard/patient')
 
-  const record = takeOtp(phone)
+  const record = await takeOtp(phone)
   if (!record) return { phone, error: 'That code has expired. Request a new one.' }
 
   if (new Date(record.expires_at).getTime() < Date.now()) {
-    clearOtp(phone)
+    await clearOtp(phone)
     return { phone, error: 'That code has expired. Request a new one.' }
   }
 
   if (record.attempts >= 5) {
-    clearOtp(phone)
+    await clearOtp(phone)
     return { phone, error: 'Too many incorrect attempts. Request a new code.' }
   }
 
   if (record.code !== code) {
-    bumpOtpAttempts(phone)
+    await bumpOtpAttempts(phone)
     return { phone, error: 'That code is not correct. Please check and try again.' }
   }
 
-  clearOtp(phone)
+  await clearOtp(phone)
 
-  let user = findUserByPhone(phone)
+  let user = await findUserByPhone(phone)
   const isNew = !user
   if (!user) {
-    user = createUser({ id: newId('usr'), phone, name })
+    user = await createUser({ id: newId('usr'), phone, name })
     await logActivity({
       kind: 'user.created',
       message: `New patient account ${mask(phone)}`,
       userId: user.id,
     })
   } else if (name && !user.name) {
-    setUserName(user.id, name)
-    user = findUserById(user.id) ?? user
+    await setUserName(user.id, name)
+    user = await findUserById(user.id) ?? user
   }
 
-  touchLogin(user.id)
+  await touchLogin(user.id)
   await startSession(user.id)
   await logActivity({
     kind: isNew ? 'user.signup' : 'user.login',
@@ -182,23 +182,23 @@ export async function adminLogin(
   }
 
   const ip = await clientIp()
-  const limit = hitRateLimit('admin:login', ip, ADMIN_LOGIN.limit, ADMIN_LOGIN.windowMinutes)
+  const limit = await hitRateLimit('admin:login', ip, ADMIN_LOGIN.limit, ADMIN_LOGIN.windowMinutes)
   if (!limit.allowed) {
     await logActivity({ kind: 'admin.rate_limited', message: `Admin login throttled for ${ip}` })
     return { error: 'Too many attempts. Try again shortly.' }
   }
 
   /* Bootstrap: the very first login on an empty table becomes the admin. */
-  if (countAdmins() === 0) {
+  if (await countAdmins() === 0) {
     const { salt, hash } = await hashPassword(password)
     const id = newId('adm')
-    createAdmin({ id, username, passwordHash: hash, salt })
+    await createAdmin({ id, username, passwordHash: hash, salt })
     await startAdminSession(id)
     await logActivity({ kind: 'admin.created', message: `Admin account created: ${username}` })
     redirect('/admin')
   }
 
-  const admin = findAdmin(username)
+  const admin = await findAdmin(username)
   /* Run the hash even when the user is unknown, so a missing username and a
      wrong password take the same time. */
   const ok = admin
@@ -210,7 +210,7 @@ export async function adminLogin(
     return { error: 'Incorrect username or password.' }
   }
 
-  touchAdminLogin(admin.id)
+  await touchAdminLogin(admin.id)
   await startAdminSession(admin.id)
   await logActivity({ kind: 'admin.login', message: `Admin signed in: ${admin.username}` })
   redirect('/admin')

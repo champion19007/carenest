@@ -27,7 +27,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const doctor = findDoctorBySlug(slug)
+  const doctor = await findDoctorBySlug(slug)
   if (!doctor) return { title: 'Doctor not found · CareNest' }
 
   const title = `${doctor.name} — ${doctor.speciality} in ${doctor.locality}, ${doctor.city}`
@@ -49,16 +49,15 @@ function safeJsonLd(value: unknown) {
 
 export default async function DoctorProfile({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const doctor = findDoctorBySlug(slug)
+  const doctor = await findDoctorBySlug(slug)
   if (!doctor) notFound()
 
-  const [reviews, user] = await Promise.all([listReviews(doctor.slug), currentUser()])
-  const similar = searchDoctors({
+  const [reviews, user] = await Promise.all([await listReviews(doctor.slug), currentUser()])
+  const similarAll = await searchDoctors({
     kind: doctor.kind as 'human' | 'vet',
     specialities: [doctor.speciality],
   })
-    .filter((item) => item.slug !== doctor.slug)
-    .slice(0, 3)
+  const similar = similarAll.filter((item) => item.slug !== doctor.slug).slice(0, 3)
 
   /* Structured data so search engines can render a rich result. */
   const jsonLd = {
@@ -140,13 +139,13 @@ export default async function DoctorProfile({ params }: { params: Promise<{ slug
                         {doctor.rating.toFixed(1)} · {doctor.reviews_count} reviews
                       </span>
                     )}
-                    {doctor.video === 1 && (
+                    {doctor.video && (
                       <span className="inline-flex items-center gap-1.5 rounded-md bg-soft px-2.5 py-1 font-semibold text-primary">
                         <Video className="size-3.5" />
                         Video consult
                       </span>
                     )}
-                    {doctor.cashless === 1 && (
+                    {doctor.cashless && (
                       <span className="inline-flex items-center rounded-md bg-muted px-2.5 py-1 font-semibold">
                         Cashless available
                       </span>
@@ -193,7 +192,7 @@ export default async function DoctorProfile({ params }: { params: Promise<{ slug
                   <div>
                     <dt className="font-semibold">Registration</dt>
                     <dd className="text-muted-foreground">
-                      {doctor.reg_number} · {doctor.council}
+                      {doctor.registration_no} · {doctor.council}
                     </dd>
                   </div>
                 </div>

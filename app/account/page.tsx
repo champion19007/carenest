@@ -26,11 +26,19 @@ export default async function AccountPage({
   const { booked, denied } = await searchParams
   const user = await requireUser('/account')
 
-  const bookings = listBookingsForUser(user.id)
+  const bookings = await listBookingsForUser(user.id)
   const [prescriptions, notes] = await Promise.all([
     listPrescriptions(user.id),
     listChartNotes(user.id),
   ])
+
+  /* Resolve every doctor once, up front — a server component cannot await
+     inside a .map() callback. */
+  const doctorBySlug = new Map(
+    (await Promise.all(bookings.map((b) => findDoctorBySlug(b.doctor_id))))
+      .filter((d) => d != null)
+      .map((d) => [d!.slug, d!]),
+  )
 
   return (
     <main className="min-h-screen bg-background">
@@ -91,7 +99,7 @@ export default async function AccountPage({
 
           <div className="mt-5 space-y-4">
             {bookings.map((booking) => {
-              const doctor = findDoctorBySlug(booking.doctor_id)
+              const doctor = doctorBySlug.get(booking.doctor_id)
               return (
                 <article
                   key={booking.id}

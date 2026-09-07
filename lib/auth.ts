@@ -59,7 +59,7 @@ export async function verifyPassword(password: string, salt: string, expected: s
 
 export async function startSession(userId: string) {
   const token = newToken()
-  createSession(token, userId)
+  await createSession(token, userId)
   const jar = await cookies()
   jar.set(SESSION_COOKIE, token, {
     httpOnly: true,
@@ -73,7 +73,7 @@ export async function startSession(userId: string) {
 export async function endSession() {
   const jar = await cookies()
   const token = jar.get(SESSION_COOKIE)?.value
-  if (token) deleteSession(token)
+  if (token) await deleteSession(token)
   jar.delete(SESSION_COOKIE)
 }
 
@@ -83,15 +83,15 @@ export async function currentUser(): Promise<User | null> {
   const token = jar.get(SESSION_COOKIE)?.value
   if (!token) return null
 
-  const session = findSession(token)
+  const session = await findSession(token)
   if (!session) return null
 
   if (new Date(session.expires_at).getTime() < Date.now()) {
-    deleteSession(token)
+    await deleteSession(token)
     return null
   }
 
-  return findUserById(session.user_id) ?? null
+  return await findUserById(session.user_id) ?? null
 }
 
 /** Sends the caller to /sign-in unless a session exists. */
@@ -120,7 +120,7 @@ export async function requireRole(role: string, next: string): Promise<User> {
  */
 export async function startAdminSession(adminId: string) {
   const token = newToken()
-  createAdminSession(token, adminId)
+  await createAdminSession(token, adminId)
   const jar = await cookies()
   jar.set(ADMIN_COOKIE, token, {
     httpOnly: true,
@@ -134,7 +134,7 @@ export async function startAdminSession(adminId: string) {
 export async function endAdminSession() {
   const jar = await cookies()
   const token = jar.get(ADMIN_COOKIE)?.value
-  if (token) deleteAdminSession(token)
+  if (token) await deleteAdminSession(token)
   jar.delete(ADMIN_COOKIE)
 }
 
@@ -143,14 +143,14 @@ export async function currentAdmin(): Promise<{ id: string; username: string } |
   const token = jar.get(ADMIN_COOKIE)?.value
   if (!token) return null
 
-  const session = findAdminSession(token)
+  const session = await findAdminSession(token)
   if (!session) return null
   if (new Date(session.expires_at).getTime() < Date.now()) {
-    deleteAdminSession(token)
+    await deleteAdminSession(token)
     return null
   }
 
-  return findAdminById(session.admin_id) ?? null
+  return await findAdminById(session.admin_id) ?? null
 }
 
 export { findAdmin }
