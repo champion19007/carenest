@@ -13,6 +13,7 @@
  */
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
+import { splitStatements } from './split-sql.mjs'
 
 /* ── connection ─────────────────────────────────────────────────────── */
 
@@ -43,13 +44,7 @@ if (url) {
 const schemaSrc = readFileSync(path.join(process.cwd(), 'lib', 'db', 'schema.ts'), 'utf8')
 const SCHEMA = schemaSrc.slice(schemaSrc.indexOf('`') + 1, schemaSrc.lastIndexOf('`'))
 
-// Strip `--` comments before splitting: a semicolon inside a comment would
-// otherwise cut a statement in half.
-const statements = SCHEMA
-  .replace(/^\s*--.*$/gm, '')
-  .split(';')
-  .map((line) => line.trim())
-  .filter(Boolean)
+const statements = splitStatements(SCHEMA)
 
 for (const stmt of statements) {
   await query(stmt)

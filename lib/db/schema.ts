@@ -217,6 +217,21 @@ CREATE TABLE IF NOT EXISTS audit_log (
 CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_log(actor_id, created_at DESC);
 
+-- Append-only by rule, not convention. A trigger is used rather than a GRANT
+-- because the app connects as the owner on managed Postgres, and an owner can
+-- always re-grant itself. This cannot be bypassed without dropping the trigger,
+-- which itself shows up in the database's own DDL history.
+CREATE OR REPLACE FUNCTION audit_log_is_append_only() RETURNS trigger AS $$
+BEGIN
+  RAISE EXCEPTION 'audit_log is append-only: % is not permitted', TG_OP;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS audit_log_no_mutate ON audit_log;
+CREATE TRIGGER audit_log_no_mutate
+  BEFORE UPDATE OR DELETE ON audit_log
+  FOR EACH ROW EXECUTE FUNCTION audit_log_is_append_only();
+
 -- ───────────────────────────────────────────────── double-entry ledger
 CREATE TABLE IF NOT EXISTS ledger_accounts (
   account_id   TEXT PRIMARY KEY,

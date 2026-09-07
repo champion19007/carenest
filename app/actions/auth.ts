@@ -146,7 +146,7 @@ export async function verifyOtp(
   }
 
   await touchLogin(user.id)
-  await startSession(user.id)
+  await startSession(user)
   await logActivity({
     kind: isNew ? 'user.signup' : 'user.login',
     message: `${isNew ? 'Signed up' : 'Logged in'}: ${mask(phone)}`,

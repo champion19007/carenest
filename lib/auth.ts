@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { randomBytes, randomInt, scrypt as scryptCb, timingSafeEqual } from 'node:crypto'
 import { promisify } from 'node:util'
+import { CLAIMS_COOKIE, scopeForRole, signClaims, type Claims } from '@/lib/jwt'
 import {
   createAdminSession,
   createSession,
@@ -57,17 +58,48 @@ export async function verifyPassword(password: string, salt: string, expected: s
 
 /* -------------------------------------------------------- patient session */
 
-export async function startSession(userId: string) {
+/**
+ * Opens a session and issues the matching signed claims.
+ *
+ * Two cookies, two jobs: the opaque session token is the revocable source of
+ * truth checked against Postgres, and the JWT carries claims middleware can
+ * verify on the edge without a database connection.
+ */
+export async function startSession(user: {
+  id: string
+  role: string
+  tenant_region: string
+  kyc_level: string
+}) {
   const token = newToken()
-  await createSession(token, userId)
+  await createSession(token, user.id)
+
+  const role = (['patient', 'doctor', 'pharmacy', 'admin'] as const).includes(
+    user.role as Claims['role'],
+  )
+    ? (user.role as Claims['role'])
+    : 'patient'
+
+  const claims: Claims = {
+    sub: user.id,
+    role,
+    tenant_region: user.tenant_region,
+    /* Derived from role, never accepted from the client. */
+    data_scope: scopeForRole(role),
+    kyc_level: (user.kyc_level as Claims['kyc_level']) ?? 'unverified',
+  }
+
+  const jwt = await signClaims(claims)
   const jar = await cookies()
-  jar.set(SESSION_COOKIE, token, {
+  const options = {
     httpOnly: true,
-    sameSite: 'lax',
+    sameSite: 'lax' as const,
     secure: process.env.NODE_ENV === 'production',
     path: '/',
     maxAge: 60 * 60 * 24 * 30,
-  })
+  }
+  jar.set(SESSION_COOKIE, token, options)
+  jar.set(CLAIMS_COOKIE, jwt, options)
 }
 
 export async function endSession() {
@@ -75,6 +107,15 @@ export async function endSession() {
   const token = jar.get(SESSION_COOKIE)?.value
   if (token) await deleteSession(token)
   jar.delete(SESSION_COOKIE)
+  jar.delete(CLAIMS_COOKIE)
+}
+
+/** The verified claims for this request, or null. */
+export async function currentClaims(): Promise<Claims | null> {
+  const { verifyClaims } = await import('@/lib/jwt')
+  const jar = await cookies()
+  const token = jar.get(CLAIMS_COOKIE)?.value
+  return token ? verifyClaims(token) : null
 }
 
 /** The signed-in user, or null. Safe from any server component. */

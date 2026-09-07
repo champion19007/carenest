@@ -8,16 +8,12 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
+import { splitStatements } from '../scripts/split-sql.mjs'
 
 /** The schema the app actually applies, read from its single source. */
 export function schemaStatements() {
   const src = readFileSync(path.join(process.cwd(), 'lib', 'db', 'schema.ts'), 'utf8')
-  const schema = src.slice(src.indexOf('`') + 1, src.lastIndexOf('`'))
-  return schema
-    .replace(/^\s*--.*$/gm, '')
-    .split(';')
-    .map((s) => s.trim())
-    .filter(Boolean)
+  return splitStatements(src.slice(src.indexOf('`') + 1, src.lastIndexOf('`')))
 }
 
 export async function freshDb() {

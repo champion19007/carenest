@@ -1,30 +1,58 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { CLAIMS_COOKIE, verifyClaims } from '@/lib/jwt'
 
 /**
- * Browsing is public; booking and private data are not.
+ * Edge routing and a first authorisation pass.
  *
- * Search, provider profiles, lab packages, surgeries and pet care are all
- * indexable — that is how patients find the site from Google, and it is the
- * model Practo and Zocdoc use. The account gate falls at the moment someone
- * tries to reserve a slot or open records that belong to a person.
+ * Browsing is public — search, doctor profiles, labs, surgeries and pet care
+ * are all indexable, which is how patients arrive from a search engine. The
+ * gate falls when someone tries to reserve a slot or open records that belong
+ * to a person.
  *
- * This only checks that a session cookie is present. The cookie is opaque and
- * the session is validated against SQLite in `currentUser()` — middleware runs
- * on the edge runtime and cannot open the database, so it must never be the
- * only check.
+ * This verifies the JWT signature rather than trusting the cookie's presence,
+ * so an obviously-wrong role is rejected before a function even starts. It is
+ * NOT the only check: middleware runs on the edge and cannot open a database
+ * connection, so it cannot know whether a session has been revoked. Every
+ * protected page re-checks against Postgres via `currentUser()`.
  */
-const PRIVATE = ['/account', '/dashboard', '/practice', '/book']
 
-export function middleware(request: NextRequest) {
+const PRIVATE = ['/account', '/dashboard', '/book']
+const CLINICIAN_ONLY = '/practice'
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  const isPrivate = PRIVATE.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  )
-  if (!isPrivate) return NextResponse.next()
+  const needsClinician = pathname === CLINICIAN_ONLY || pathname.startsWith(`${CLINICIAN_ONLY}/`)
+  const needsAuth =
+    needsClinician || PRIVATE.some((p) => pathname === p || pathname.startsWith(`${p}/`))
 
-  if (request.cookies.get('carenest_session')) return NextResponse.next()
+  if (!needsAuth) return NextResponse.next()
 
+  const token = request.cookies.get(CLAIMS_COOKIE)?.value
+  const claims = token ? await verifyClaims(token) : null
+
+  if (!claims) return redirectToLogin(request, pathname)
+
+  /* A patient must not reach the clinic app, which holds other people's
+     records. The page re-checks this against the database too. */
+  if (needsClinician && claims.role !== 'doctor') {
+    const denied = request.nextUrl.clone()
+    denied.pathname = '/account'
+    denied.search = '?denied=practice'
+    return NextResponse.redirect(denied)
+  }
+
+  /* Hand the verified claims downstream as headers the app can trust —
+     services never read these from the client, only from here. */
+  const headers = new Headers(request.headers)
+  headers.set('x-data-scope', claims.data_scope)
+  headers.set('x-tenant-region', claims.tenant_region)
+  headers.set('x-subject-role', claims.role)
+
+  return NextResponse.next({ request: { headers } })
+}
+
+function redirectToLogin(request: NextRequest, pathname: string) {
   const login = request.nextUrl.clone()
   login.pathname = '/sign-in'
   login.search = ''

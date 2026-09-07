@@ -656,30 +656,44 @@ export async function countLocalities(): Promise<number> {
 
 /* ───────────────────────────────────────────────────────── audit log */
 
-export async function writeAudit(entry: {
+export type AuditEntry = {
   actorId?: string | null
   actorRole?: string | null
   action: string
   resource?: string | null
   tenantRegion?: string | null
   detail?: unknown
-}) {
+}
+
+/**
+ * Appends to the audit log and *throws* if it cannot.
+ *
+ * The caller decides what a failure means: for a page view that is a shrug,
+ * for a PHI read it may mean the read must not be served. Swallowing the error
+ * here would take that decision away from every caller at once.
+ */
+export async function writeAudit(entry: AuditEntry) {
+  const d = await db()
+  await d.query(
+    `INSERT INTO audit_log (actor_id, actor_role, action, resource, tenant_region, detail)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [
+      entry.actorId ?? null,
+      entry.actorRole ?? null,
+      entry.action,
+      entry.resource ?? null,
+      entry.tenantRegion ?? null,
+      JSON.stringify(entry.detail ?? {}),
+    ],
+  )
+}
+
+/** For non-PHI bookkeeping, where losing a row is preferable to a 500. */
+export async function writeAuditQuiet(entry: AuditEntry) {
   try {
-    const d = await db()
-    await d.query(
-      `INSERT INTO audit_log (actor_id, actor_role, action, resource, tenant_region, detail)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [
-        entry.actorId ?? null,
-        entry.actorRole ?? null,
-        entry.action,
-        entry.resource ?? null,
-        entry.tenantRegion ?? null,
-        JSON.stringify(entry.detail ?? {}),
-      ],
-    )
+    await writeAudit(entry)
   } catch {
-    /* Auditing must never break the user's action. */
+    /* Best effort by design. */
   }
 }
 
