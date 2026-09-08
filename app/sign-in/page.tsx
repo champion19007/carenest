@@ -4,18 +4,34 @@ import { ShieldCheck } from 'lucide-react'
 import { Logo } from '@/components/logo'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { SignInForm } from '@/components/sign-in-form'
+import { destinationForUser } from '@/lib/routes'
 import { currentUser } from '@/lib/auth'
+import { googleIsConfigured } from '@/lib/google'
 
 export const metadata = { title: 'Log in · CareNest' }
+
+/**
+ * What the Google callback's error codes mean to a person.
+ *
+ * Written for the reader rather than the log: "google-state" tells a developer
+ * the CSRF check failed and tells everyone else nothing at all.
+ */
+const GOOGLE_ERRORS: Record<string, string> = {
+  'google-not-configured': 'Google sign-in is not switched on for this site. Use your mobile number instead.',
+  'google-cancelled': 'You cancelled the Google sign-in. Nothing was changed.',
+  'google-state': 'That sign-in link expired or did not come from here. Please try again.',
+  'google-exchange': 'Google could not confirm that sign-in. Please try again.',
+  'google-unverified': 'That Google account has an unverified email address, so we cannot use it to sign you in.',
+}
 
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>
+  searchParams: Promise<{ next?: string; error?: string }>
 }) {
-  const { next } = await searchParams
+  const { next, error } = await searchParams
   const user = await currentUser()
-  if (user) redirect(next ?? '/dashboard/patient')
+  if (user) redirect(destinationForUser(user, next))
 
   return (
     <main className="min-h-screen bg-surface">
@@ -38,7 +54,16 @@ export default async function SignInPage({
             nobody can sign in without your phone.
           </p>
 
-          <SignInForm next={next} />
+          {error && (
+            <p
+              role="alert"
+              className="mt-6 rounded-lg bg-warning/10 px-4 py-3 text-sm font-medium text-warning"
+            >
+              {GOOGLE_ERRORS[error] ?? 'Something went wrong signing you in. Please try again.'}
+            </p>
+          )}
+
+          <SignInForm next={next} google={googleIsConfigured()} />
         </div>
 
         <aside className="h-fit rounded-xl border border-border bg-background p-6">

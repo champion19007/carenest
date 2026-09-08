@@ -4,8 +4,9 @@
 
 | Concern | Local (default) | Deployed (recommended) |
 | --- | --- | --- |
-| Relational data | SQLite via `node:sqlite`, file in `./.data` | Postgres (Neon, Supabase, RDS) |
-| Documents | NeDB, files in `./.data` | MongoDB Atlas |
+| Database | PGlite (Postgres in WASM), files in `./.data` | Neon Postgres, free tier |
+| Documents | JSONB `documents` table, same database | same |
+| Google sign-in | hidden unless configured | OAuth client, free |
 | OTP delivery | printed to the console | MSG91 (India) or Twilio |
 | Admin auth | scrypt-hashed row in `admins` | same, plus SSO if you have it |
 
@@ -27,17 +28,24 @@ as a document it is one object.
 
 Both stores are behind a single module each, so the change is contained.
 
-**Postgres.** Rewrite `lib/db/sql.ts` against `pg` or Prisma. The exported
-function signatures (`findUserByPhone`, `searchDoctors`, `hitRateLimit`, …)
-are the contract — keep them and nothing else has to change. Watch for:
+**Postgres.** Already done — `lib/db/sql.ts` speaks Postgres and nothing needs
+rewriting. Create a Neon project, copy the pooled connection string into
+`DATABASE_URL`, and `lib/db/client.ts` switches from PGlite to Neon's HTTP
+driver on the next cold start. The schema applies itself, idempotently, on
+first use.
 
-- `datetime()` in the ORDER BY clauses becomes a `timestamptz` column
-- SQLite has no real boolean; the `INTEGER NOT NULL DEFAULT 0` flags become `boolean`
-- the `ON CONFLICT … DO UPDATE` upserts are already Postgres syntax
+The one thing to know: **Neon returns `NUMERIC` as a string**, because a JS
+float cannot represent arbitrary-precision decimals safely. `normaliseDoctor()`
+in `lib/db/sql.ts` coerces the affected columns. This is also the reason the
+tests run on PGlite rather than SQLite — SQLite would have returned a number
+and stayed green all the way to production.
 
-**MongoDB.** `lib/db/docs.ts` already uses Mongo's query API (NeDB implements
-it), so swapping in the official driver is close to a find-and-replace of the
-datastore construction. Add indexes on `doctorId`, `patientId` and `createdAt`.
+**Google sign-in.** Optional and free. Create an OAuth client (Web
+application) in the Google Cloud console, add
+`https://<your-domain>/api/auth/google/callback` as an authorised redirect URI,
+and set `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`. Set `APP_URL` too if the
+app sits behind a proxy — Google matches the redirect URI exactly. Leave them
+unset and the button never renders; phone and OTP keep working.
 
 ## Before going live
 

@@ -18,11 +18,14 @@ export function BookingForm({
   doctorName,
   offersVideo,
   patientName,
+  family,
 }: {
   slug: string
   doctorName: string
   offersVideo: boolean
   patientName: string
+  /** The household. The account holder's own row is marked is_self. */
+  family: { id: string; name: string; relation: string; is_self: boolean }[]
 }) {
   const [state, action] = useActionState(bookAppointment, {} as BookingState)
   const [kind, setKind] = useState<'clinic' | 'video'>('clinic')
@@ -35,9 +38,32 @@ export function BookingForm({
       <input type="hidden" name="kind" value={kind} />
       <input type="hidden" name="slot" value={time ? `${day}, ${time}` : ''} />
 
-      <p className="text-sm text-muted-foreground">
-        Booking as <span className="font-semibold text-foreground">{patientName}</span>
-      </p>
+      {family.length > 1 ? (
+        <label className="block">
+          <span className="font-semibold">Who is this appointment for?</span>
+          <select
+            name="patientFor"
+            defaultValue={family.find((member) => member.is_self)?.id ?? ''}
+            className="field mt-2"
+          >
+            {family.map((member) => (
+              <option key={member.id} value={member.id}>
+                {member.name}
+                {member.is_self ? ' (you)' : ` · ${member.relation}`}
+              </option>
+            ))}
+          </select>
+          {/* The clinic's calendar shows this name, not the account holder's,
+              so a visit booked for a parent arrives under the parent's name. */}
+          <span className="mt-1.5 block text-sm text-muted-foreground">
+            The clinic sees this person&apos;s name and age on their calendar.
+          </span>
+        </label>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Booking as <span className="font-semibold text-foreground">{patientName}</span>
+        </p>
+      )}
 
       <fieldset className="mt-6">
         <legend className="font-semibold">How would you like to be seen?</legend>

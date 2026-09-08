@@ -1,21 +1,20 @@
 'use client'
 
-import { FormEvent, useState } from 'react'
+import { useActionState, useState } from 'react'
 import { BadgeCheck, ChevronDown, IndianRupee, Phone, ShieldCheck } from 'lucide-react'
 import { Photo } from '@/components/photo'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
 import { cities, surgeryAssurances, surgeryCategories } from '@/lib/data'
+import { submitSurgeryLead, type LeadState } from '@/app/actions/leads'
+
+const emptyLead: LeadState = {}
 import { photos } from '@/lib/images'
 
 export default function SurgeriesPage() {
   const [open, setOpen] = useState<string>('Popular')
-  const [submitted, setSubmitted] = useState(false)
-
-  function submit(event: FormEvent) {
-    event.preventDefault()
-    setSubmitted(true)
-  }
+  const [state, submit] = useActionState(submitSurgeryLead, emptyLead)
+  const submitted = state.done === true
 
   return (
     <main className="min-h-screen bg-background">
@@ -85,10 +84,11 @@ export default function SurgeriesPage() {
                 </p>
               </div>
             ) : (
-              <form onSubmit={submit} className="mt-6 space-y-4">
+              <form action={submit} className="mt-6 space-y-4">
                 <label className="block">
                   <span className="font-semibold">Procedure</span>
                   <select
+                    name="procedure"
                     required
                     className="mt-2 min-h-13 w-full rounded-lg border border-input bg-background px-3 outline-none focus:ring-2 focus:ring-ring"
                   >
@@ -112,6 +112,7 @@ export default function SurgeriesPage() {
                 <label className="block">
                   <span className="font-semibold">City</span>
                   <select
+                    name="city"
                     required
                     className="mt-2 min-h-13 w-full rounded-lg border border-input bg-background px-3 outline-none focus:ring-2 focus:ring-ring"
                   >
@@ -126,7 +127,9 @@ export default function SurgeriesPage() {
                 <label className="block">
                   <span className="font-semibold">Name</span>
                   <input
+                    name="name"
                     required
+                    maxLength={80}
                     placeholder="Your full name"
                     className="mt-2 min-h-13 w-full rounded-lg border border-input bg-background px-3 outline-none focus:ring-2 focus:ring-ring"
                   />
@@ -139,6 +142,7 @@ export default function SurgeriesPage() {
                       +91
                     </span>
                     <input
+                      name="phone"
                       required
                       type="tel"
                       inputMode="numeric"
@@ -149,12 +153,33 @@ export default function SurgeriesPage() {
                   </div>
                 </label>
 
+                <label className="block">
+                  <span className="font-semibold">Anything we should know?</span>
+                  <textarea
+                    name="notes"
+                    rows={3}
+                    maxLength={1000}
+                    placeholder="Reports, existing conditions, preferred dates…"
+                    className="mt-2 w-full rounded-lg border border-input bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </label>
+
+                {state.error && (
+                  <p role="alert" className="rounded-lg bg-warning/10 px-4 py-3 text-sm font-medium text-warning">
+                    {state.error}
+                  </p>
+                )}
+
                 <button
                   type="submit"
                   className="min-h-13 w-full rounded-lg bg-cta font-semibold text-cta-foreground transition-opacity hover:opacity-90"
                 >
                   Request a call back
                 </button>
+
+                <p className="text-center text-xs leading-5 text-muted-foreground">
+                  A coordinator reads every enquiry before it reaches a surgeon.
+                </p>
               </form>
             )}
 

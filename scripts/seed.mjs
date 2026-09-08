@@ -174,9 +174,25 @@ console.log(`Doctors: ${(await query('SELECT COUNT(*) AS n FROM provider.doctors
 
 const DEMO_PHONE = '9000000001'
 await query(
-  `INSERT INTO patient.users (id, phone, name, role) VALUES ($1,$2,$3,'doctor')
-   ON CONFLICT (phone) DO UPDATE SET role = 'doctor'`,
+  `INSERT INTO patient.users (id, phone, name, role, kyc_level)
+   VALUES ($1,$2,$3,'doctor','verified')
+   ON CONFLICT (phone) DO UPDATE SET role = 'doctor', kyc_level = 'verified'`,
   ['usr_demo_doctor', DEMO_PHONE, 'Dr. Ananya Deshmukh'],
+)
+
+/* Link the demo login to an actual provider row. Without it the account has
+   the doctor role but no practice, so the request queue has nothing to key on
+   and the clinic app is empty for the one login meant to demonstrate it. */
+const linked = await query(
+  `UPDATE provider.doctors SET user_id = 'usr_demo_doctor'
+   WHERE slug = (SELECT slug FROM provider.doctors WHERE name = $1 LIMIT 1)
+   RETURNING id, name`,
+  ['Dr. Ananya Deshmukh'],
+)
+console.log(
+  linked.length
+    ? `Demo doctor linked to provider row ${linked[0].id}`
+    : 'WARNING: no provider row matched the demo doctor name',
 )
 
 /* ── coverage report ────────────────────────────────────────────────── */

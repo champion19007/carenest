@@ -226,3 +226,19 @@ h3 {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* Shared form control. Declared once so every field on the profile and family
+   forms has the same height, focus ring and dark-mode surface. */
+.field {
+  width: 100%;
+  min-height: 3rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--input);
+  background: var(--background);
+  color: var(--foreground);
+  padding: 0.5rem 0.9rem;
+  outline: none;
+}
+.field:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}

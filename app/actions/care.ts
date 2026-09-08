@@ -50,9 +50,15 @@ export async function bookAppointment(
   const mine = await listBookingsForUser(user.id)
   const existing = mine.find(
     (booking) =>
-      booking.doctor_id === doctor.id && booking.slot === slot && booking.status === 'confirmed',
+      booking.doctor_id === doctor.id &&
+      booking.slot === slot &&
+      (booking.status === 'confirmed' || booking.status === 'requested'),
   )
   if (existing) return { error: 'You already have this slot booked.' }
+
+  /* Who the appointment is for. An empty value means the account holder, so
+     bookings made before family members existed still make sense. */
+  const patientFor = String(formData.get('patientFor') ?? '') || null
 
   const id = newId('bkg')
   await createBooking({
@@ -62,11 +68,15 @@ export async function bookAppointment(
     kind,
     slot,
     fee: doctor.fee,
+    /* Not 'confirmed': a clinic that cannot decline a booking has no control
+       over its own calendar. The clinician answers it from their queue. */
+    status: 'requested',
+    patientFor,
   })
 
   await logActivity({
     kind: 'booking.created',
-    message: `${user.name || 'A patient'} booked ${doctor.name} · ${slot}`,
+    message: `${user.name || 'A patient'} requested ${doctor.name} · ${slot}`,
     userId: user.id,
     meta: { doctor: doctor.slug, slot, kind },
   })

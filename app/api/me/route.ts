@@ -16,7 +16,7 @@ export async function GET() {
   }
 
   return NextResponse.json(
-    { user: { name: user.name, phone: user.phone } },
+    { user: { name: user.name, phone: user.phone, role: user.role } },
     { headers: { 'cache-control': 'no-store' } },
   )
 }

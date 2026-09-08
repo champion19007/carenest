@@ -2,25 +2,28 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   BarChart3,
   CalendarDays,
-  ChevronDown,
   HelpCircle,
   Menu,
   Plug,
   Plus,
+  LogOut,
   Search,
   Settings,
   UsersRound,
   Wallet,
+  Inbox,
   X,
 } from 'lucide-react'
+import { signOut } from '@/app/actions/auth'
 import { Logo } from './logo'
 import { ThemeToggle } from './theme-toggle'
 
 const nav = [
+  { href: '/practice/requests', label: 'Requests', Icon: Inbox },
   { href: '/practice/calendar', label: 'Calendar', Icon: CalendarDays },
   { href: '/practice/patients', label: 'Patients', Icon: UsersRound },
   { href: '/practice/reports', label: 'Reports', Icon: BarChart3 },
@@ -36,6 +39,25 @@ const nav = [
 export function PracticeShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
+  /* The shell is a client component and cannot call `currentUser()`, so the
+     signed-in clinician's name comes from the same probe the site header uses.
+     Until it lands the button shows nothing rather than someone else's name. */
+  const [name, setName] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/me')
+      .then((response) => response.json())
+      .then((data) => {
+        if (!cancelled) setName(data?.user?.name ?? null)
+      })
+      .catch(() => {
+        /* The name is decoration; failing to load it must not blank the app. */
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   return (
     <div className="flex min-h-screen bg-surface">
@@ -87,6 +109,15 @@ export function PracticeShell({ children }: { children: React.ReactNode }) {
           <Link href="/" className="text-sm text-banner-muted hover:text-banner-foreground">
             ← Back to carenest.in
           </Link>
+          <form action={signOut} className="mt-3">
+            <button
+              type="submit"
+              className="inline-flex items-center gap-2 text-sm text-banner-muted hover:text-banner-foreground"
+            >
+              <LogOut className="size-4" />
+              Log out
+            </button>
+          </form>
         </div>
       </aside>
 
@@ -137,13 +168,18 @@ export function PracticeShell({ children }: { children: React.ReactNode }) {
               >
                 <HelpCircle className="size-5" />
               </button>
-              <button
-                type="button"
-                className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 text-sm font-semibold"
-              >
-                Dr. Deshmukh
-                <ChevronDown className="size-4" />
-              </button>
+              <form action={signOut}>
+                <button
+                  type="submit"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 text-sm font-semibold hover:border-warning hover:text-warning"
+                >
+                  <span className="hidden max-w-[10rem] truncate sm:inline">
+                    {name ?? 'Signed in'}
+                  </span>
+                  <LogOut className="size-4" />
+                  <span className="sr-only">Log out</span>
+                </button>
+              </form>
             </div>
           </div>
         </header>

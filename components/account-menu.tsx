@@ -2,16 +2,46 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import { CalendarClock, ChevronDown, FileText, LogOut, UserRound } from 'lucide-react'
+import {
+  CalendarClock,
+  ChevronDown,
+  FileText,
+  LogOut,
+  Stethoscope,
+  UserRound,
+} from 'lucide-react'
 import { signOut } from '@/app/actions/auth'
 
-const links = [
-  { href: '/dashboard/patient', label: 'My health', Icon: CalendarClock },
-  { href: '/account', label: 'Records & bookings', Icon: FileText },
-]
+/**
+ * The menu differs by role because the destinations do. "My health" means
+ * nothing to a clinician, whose account exists to run a practice.
+ */
+function linksFor(role: string) {
+  if (role === 'doctor') {
+    return [
+      { href: '/practice/requests', label: 'Appointment requests', Icon: Stethoscope },
+      { href: '/practice/patients', label: 'My practice', Icon: CalendarClock },
+      { href: '/account/profile', label: 'Profile & details', Icon: UserRound },
+    ]
+  }
+  return [
+    { href: '/dashboard/patient', label: 'My health', Icon: CalendarClock },
+    { href: '/account/profile', label: 'Profile & family', Icon: UserRound },
+    { href: '/account', label: 'Records & bookings', Icon: FileText },
+  ]
+}
 
 /** Signed-in menu. Replaces the Login / Sign up pair once a session exists. */
-export function AccountMenu({ name, phone }: { name: string; phone: string }) {
+export function AccountMenu({
+  name,
+  phone,
+  role = 'patient',
+}: {
+  name: string
+  phone: string
+  role?: string
+}) {
+  const links = linksFor(role)
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
 
@@ -31,7 +61,7 @@ export function AccountMenu({ name, phone }: { name: string; phone: string }) {
     }
   }, [open])
 
-  const label = name || `+91 ${phone}`
+  const label = name || (phone ? `+91 ${phone}` : 'Your account')
   /* Digits from a phone number are not initials, so fall back to an icon. */
   const initials = name
     .split(' ')

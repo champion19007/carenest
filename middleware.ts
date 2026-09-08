@@ -16,7 +16,7 @@ import { CLAIMS_COOKIE, verifyClaims } from '@/lib/jwt'
  * protected page re-checks against Postgres via `currentUser()`.
  */
 
-const PRIVATE = ['/account', '/dashboard', '/book']
+const PRIVATE = ['/account', '/dashboard', '/book', '/welcome']
 const CLINICIAN_ONLY = '/practice'
 
 export async function middleware(request: NextRequest) {
@@ -61,5 +61,11 @@ function redirectToLogin(request: NextRequest, pathname: string) {
 }
 
 export const config = {
-  matcher: ['/account/:path*', '/dashboard/:path*', '/practice/:path*', '/book/:path*'],
+  matcher: [
+    '/account/:path*',
+    '/dashboard/:path*',
+    '/practice/:path*',
+    '/book/:path*',
+    '/welcome',
+  ],
 }

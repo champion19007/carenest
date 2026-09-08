@@ -26,7 +26,7 @@ export function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false)
   /* `undefined` while the session is still being read, so the header doesn't
      flash "Log in" at someone who is already signed in. */
-  const [account, setAccount] = useState<{ name: string; phone: string } | null | undefined>(
+  const [account, setAccount] = useState<{ name: string; phone: string; role?: string } | null | undefined>(
     undefined,
   )
   const root = useRef<HTMLElement>(null)
@@ -185,7 +185,7 @@ export function SiteHeader() {
                 className="h-11 w-28 animate-pulse rounded-lg bg-muted"
               />
             ) : account ? (
-              <AccountMenu name={account.name} phone={account.phone} />
+              <AccountMenu name={account.name} phone={account.phone} role={account.role} />
             ) : (
               <AuthButtons />
             )}

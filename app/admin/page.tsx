@@ -15,6 +15,8 @@ import {
   countAdmins,
 } from '@/lib/db/sql'
 import { chartNotes, countDocs, prescriptions, recentActivity, reviews } from '@/lib/db/docs'
+import { listLeads } from '@/lib/db/leads'
+import { LeadQueue } from '@/components/lead-queue'
 
 export const metadata = { title: 'Admin console · CareNest' }
 export const dynamic = 'force-dynamic'
@@ -22,6 +24,10 @@ export const dynamic = 'force-dynamic'
 export default async function AdminPage() {
   const admin = await currentAdmin()
   if (!admin) return <AdminGate firstRun={await countAdmins() === 0} />
+
+  const [leads, allDoctors] = await Promise.all([listLeads(), listDoctors()])
+  /* Only listed, active clinicians can receive a referral. */
+  const routable = allDoctors.filter((doctor) => doctor.status === 'ACTIVE')
 
   const [users, doctors, bookings, feed] = [
     await listUsers(50),
@@ -63,11 +69,29 @@ export default async function AdminPage() {
       </header>
 
       <div className="mx-auto max-w-[1320px] space-y-8 px-5 py-8 lg:px-8">
+        <section className="rounded-xl border border-border bg-background p-6">
+          <h1 className="text-2xl">Surgery enquiries</h1>
+          <p className="mt-2 max-w-2xl text-muted-foreground">
+            Every enquiry is read here before it reaches anyone. Approving one lets you send it to
+            a surgeon, a diagnostic centre, or both.
+          </p>
+          <div className="mt-6">
+            <LeadQueue
+              leads={leads}
+              doctors={routable.map((d) => ({
+                id: d.id,
+                name: d.name,
+                speciality: d.speciality,
+              }))}
+            />
+          </div>
+        </section>
+
         <section>
           <h1 className="text-3xl">Overview</h1>
           <p className="mt-2 max-w-2xl text-muted-foreground">
-            Live counts straight from the two stores. Structured records sit in SQLite; anything
-            free-form sits in the document store.
+            Live counts straight from Postgres. Structured records sit in the patient, provider
+            and clinic schemas; anything free-form sits in the JSONB document store.
           </p>
 
           <dl className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

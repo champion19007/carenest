@@ -111,18 +111,76 @@ export async function findUserById(id: string): Promise<User | undefined> {
 
 export async function createUser(input: {
   id: string
-  phone: string
+  /** One of phone or email must be present; the table enforces it too. */
+  phone?: string | null
+  email?: string | null
+  googleSub?: string | null
   name?: string
   role?: string
   tenantRegion?: string
 }): Promise<User> {
   const d = await db()
   const row = await d.one<User>(
-    `INSERT INTO patient.users (id, phone, name, role, tenant_region)
-     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-    [input.id, input.phone, input.name ?? '', input.role ?? 'patient', input.tenantRegion ?? 'IN-MH'],
+    `INSERT INTO patient.users (id, phone, email, google_sub, name, role, tenant_region)
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+    [
+      input.id,
+      input.phone ?? null,
+      input.email ?? null,
+      input.googleSub ?? null,
+      input.name ?? '',
+      input.role ?? 'patient',
+      input.tenantRegion ?? 'IN-MH',
+    ],
   )
   return row!
+}
+
+export async function updateUserProfile(
+  id: string,
+  patch: { name: string; email?: string | null; dob?: string | null; gender?: string | null; city?: string | null },
+) {
+  const d = await db()
+  await d.query(
+    `UPDATE patient.users
+     SET name = $2, email = $3, dob = $4, gender = $5, city = $6
+     WHERE id = $1`,
+    [id, patch.name, patch.email || null, patch.dob || null, patch.gender || null, patch.city || null],
+  )
+}
+
+/**
+ * Name, date of birth and gender only.
+ *
+ * Separate from `updateUserProfile` because that one writes every column, so
+ * calling it from a form that has no email field would silently erase the
+ * address the person set on the profile page.
+ */
+export async function updateUserPerson(
+  id: string,
+  patch: { name: string; dob?: string | null; gender?: string | null },
+) {
+  const d = await db()
+  await d.query(
+    'UPDATE patient.users SET name = $2, dob = $3, gender = $4 WHERE id = $1',
+    [id, patch.name, patch.dob || null, patch.gender || null],
+  )
+}
+
+/** Used by the Google callback to attach an OAuth identity to an account. */
+export async function findUserByEmail(email: string) {
+  const d = await db()
+  return d.one<User>('SELECT * FROM patient.users WHERE lower(email) = lower($1)', [email])
+}
+
+export async function findUserByGoogleSub(sub: string) {
+  const d = await db()
+  return d.one<User>('SELECT * FROM patient.users WHERE google_sub = $1', [sub])
+}
+
+export async function linkGoogleAccount(id: string, sub: string) {
+  const d = await db()
+  await d.query('UPDATE patient.users SET google_sub = $2 WHERE id = $1', [id, sub])
 }
 
 export async function setUserName(userId: string, name: string) {
@@ -395,6 +453,19 @@ export async function updateDoctorRating(slug: string, rating: number, count: nu
  * Status is never mutated without a history row — medical-board disputes need
  * the full transition trail.
  */
+/**
+ * The provider row belonging to a signed-in clinician.
+ *
+ * A user with role 'doctor' and no linked provider row is a real state — the
+ * account was approved before the profile was created — so this returns
+ * undefined rather than throwing, and the caller shows an explanation.
+ */
+export async function findDoctorByUserId(userId: string) {
+  const d = await db()
+  const row = await d.one<DoctorRow>('SELECT * FROM provider.doctors WHERE user_id = $1', [userId])
+  return row ? normaliseDoctor(row) : undefined
+}
+
 export async function transitionDoctorStatus(input: {
   id: string
   doctorId: string
@@ -541,11 +612,12 @@ export async function createBooking(input: {
   fee: number
   status?: string
   paymentRef?: string | null
+  patientFor?: string | null
 }) {
   const d = await db()
   await d.query(
-    `INSERT INTO patient.bookings (id, user_id, doctor_id, slot_id, kind, slot, fee, status, payment_ref)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    `INSERT INTO patient.bookings (id, user_id, doctor_id, slot_id, kind, slot, fee, status, payment_ref, patient_for)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
     [
       input.id,
       input.userId,
@@ -556,6 +628,7 @@ export async function createBooking(input: {
       input.fee,
       input.status ?? 'confirmed',
       input.paymentRef ?? null,
+      input.patientFor ?? null,
     ],
   )
 }
@@ -571,6 +644,99 @@ export async function listBookingsForUser(userId: string): Promise<Booking[]> {
     'SELECT * FROM patient.bookings WHERE user_id = $1 ORDER BY created_at DESC',
     [userId],
   )
+}
+
+/**
+ * A patient's bookings with the clinician and the person seen attached.
+ *
+ * Joined in the database rather than resolved per row in the page: fifteen
+ * bookings would otherwise be fifteen extra round trips, and on Neon each one
+ * is an HTTP request.
+ */
+export async function bookingsForDashboard(userId: string) {
+  const d = await db()
+  return d.query<{
+    id: string
+    kind: string
+    slot: string
+    fee: number
+    status: string
+    created_at: string
+    doctor_name: string
+    doctor_slug: string
+    speciality: string
+    clinic: string
+    locality: string
+    seen_for: string | null
+  }>(
+    `SELECT b.id, b.kind, b.slot, b.fee, b.status, b.created_at,
+            d.name AS doctor_name, d.slug AS doctor_slug, d.speciality,
+            d.clinic, d.locality,
+            f.name AS seen_for
+     FROM patient.bookings b
+     JOIN provider.doctors d ON d.id = b.doctor_id
+     LEFT JOIN patient.family_members f ON f.id = b.patient_for
+     WHERE b.user_id = $1
+     ORDER BY b.created_at DESC`,
+    [userId],
+  )
+}
+
+/**
+ * The clinician's own queue: who has asked to see them.
+ *
+ * Scoped to one doctor id in the WHERE clause rather than filtered after the
+ * fact, so a bug in the page cannot leak another practice's patients.
+ */
+export async function requestsForDoctor(doctorId: string) {
+  const d = await db()
+  return d.query<{
+    id: string
+    kind: string
+    slot: string
+    fee: number
+    status: string
+    created_at: string
+    patient_name: string
+    patient_phone: string | null
+    seen_for: string | null
+    seen_for_dob: string | null
+    seen_for_relation: string | null
+  }>(
+    `SELECT b.id, b.kind, b.slot, b.fee, b.status, b.created_at,
+            u.name AS patient_name, u.phone AS patient_phone,
+            f.name AS seen_for, f.dob AS seen_for_dob, f.relation AS seen_for_relation
+     FROM patient.bookings b
+     JOIN patient.users u ON u.id = b.user_id
+     LEFT JOIN patient.family_members f ON f.id = b.patient_for
+     WHERE b.doctor_id = $1
+     ORDER BY
+       CASE b.status WHEN 'requested' THEN 0 WHEN 'confirmed' THEN 1 ELSE 2 END,
+       b.created_at DESC`,
+    [doctorId],
+  )
+}
+
+/**
+ * Answers one request.
+ *
+ * The doctor id and the expected current status are both in the WHERE clause:
+ * the first stops one clinician answering another's request, the second stops
+ * a double click from moving an already-answered booking.
+ */
+export async function answerRequest(input: {
+  bookingId: string
+  doctorId: string
+  to: 'confirmed' | 'declined'
+}): Promise<boolean> {
+  const d = await db()
+  const rows = await d.query<{ id: string }>(
+    `UPDATE patient.bookings SET status = $3
+     WHERE id = $1 AND doctor_id = $2 AND status = 'requested'
+     RETURNING id`,
+    [input.bookingId, input.doctorId, input.to],
+  )
+  return rows.length > 0
 }
 
 export async function countBookings(): Promise<number> {

@@ -33,7 +33,10 @@ CREATE SCHEMA IF NOT EXISTS clinic;
 -- ─────────────────────────────────────────────────────────── identity
 CREATE TABLE IF NOT EXISTS patient.users (
   id             TEXT PRIMARY KEY,
-  phone          TEXT NOT NULL UNIQUE,
+  -- Nullable: an account created through Google arrives with an email and no
+  -- phone number, and demanding one before the person has done anything would
+  -- be a worse first impression than asking for it at the first booking.
+  phone          TEXT UNIQUE,
   name           TEXT NOT NULL DEFAULT '',
   email          TEXT,
   dob            DATE,
@@ -45,6 +48,22 @@ CREATE TABLE IF NOT EXISTS patient.users (
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
   last_login_at  TIMESTAMPTZ
 );
+
+-- Existing databases were created when a phone number was mandatory. Both
+-- statements are safe to re-run, so they double as the migration.
+ALTER TABLE patient.users ALTER COLUMN phone DROP NOT NULL;
+ALTER TABLE patient.users ADD COLUMN IF NOT EXISTS google_sub TEXT;
+
+-- Partial, so the many rows with no email do not collide on NULL.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email
+  ON patient.users(lower(email)) WHERE email IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google
+  ON patient.users(google_sub) WHERE google_sub IS NOT NULL;
+
+-- An account must be reachable by something.
+ALTER TABLE patient.users DROP CONSTRAINT IF EXISTS users_have_an_identifier;
+ALTER TABLE patient.users ADD CONSTRAINT users_have_an_identifier
+  CHECK (phone IS NOT NULL OR email IS NOT NULL);
 
 CREATE TABLE IF NOT EXISTS patient.sessions (
   token      TEXT PRIMARY KEY,
@@ -234,6 +253,14 @@ CREATE TABLE IF NOT EXISTS patient.bookings (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_bookings_user ON patient.bookings(user_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_doctor ON patient.bookings(doctor_id, status);
+
+-- doctor_id was a bare TEXT column until now, so a booking could name a
+-- clinician who does not exist and nothing would object. Added as an ALTER
+-- rather than inline so existing databases pick it up too.
+ALTER TABLE patient.bookings DROP CONSTRAINT IF EXISTS bookings_doctor_fk;
+ALTER TABLE patient.bookings ADD CONSTRAINT bookings_doctor_fk
+  FOREIGN KEY (doctor_id) REFERENCES provider.doctors(id) ON DELETE CASCADE;
 
 -- ───────────────────────────────────────────────── clinic: surgery leads
 -- A surgery enquiry is a callback request, not a booking. It carries no slot

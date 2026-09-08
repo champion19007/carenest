@@ -19,6 +19,7 @@ import {
   touchLogin,
 } from '@/lib/db/sql'
 import { logActivity } from '@/lib/db/docs'
+import { ensureSelfMember, renameSelfMember } from '@/lib/db/family'
 import {
   endAdminSession,
   endSession,
@@ -30,8 +31,16 @@ import {
   verifyPassword,
 } from '@/lib/auth'
 import { sendOtpSms, smsIsLive } from '@/lib/sms'
+import { currentUser } from '@/lib/auth'
+import { destinationFor, destinationForUser } from '@/lib/routes'
 
-export type ActionState = { error?: string; notice?: string; otpHint?: string; phone?: string }
+export type ActionState = {
+  error?: string
+  notice?: string
+  otpHint?: string
+  phone?: string
+}
+
 
 const PHONE = /^[6-9]\d{9}$/
 
@@ -153,7 +162,41 @@ export async function verifyOtp(
     userId: user.id,
   })
 
-  redirect(next.startsWith('/') ? next : '/dashboard/patient')
+  /* The code was correct, so the person is signed in either way. Where they go
+     next depends on whether we know their name — asking is a route, not a
+     piece of form state, because the session now exists and any re-render of
+     this page would otherwise forward them straight past the question. */
+  if (user.name) await ensureSelfMember(user.id, user.name, newId('fam'))
+  redirect(destinationForUser(user, next === '/dashboard/patient' ? undefined : next))
+}
+
+/**
+ * The name step, after the code has already been accepted.
+ *
+ * A separate action because by this point the session exists: the person is
+ * authenticated and merely unnamed, so this must not be able to re-open the
+ * OTP path.
+ */
+export async function completeProfile(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await currentUser()
+  if (!user) return { error: 'Your session expired. Please sign in again.' }
+
+  const name = String(formData.get('name') ?? '').trim().replace(/\s+/g, ' ')
+  const next = String(formData.get('next') ?? '')
+
+  if (name.length < 2) return { error: 'Please enter your name.' }
+  if (name.length > 80) return { error: 'That name is too long.' }
+
+  await setUserName(user.id, name)
+  /* Ensure-then-rename, not ensure alone: the row may already exist from a
+     page visited before the name was known, and `ON CONFLICT DO NOTHING`
+     would leave it reading "You" forever. */
+  await ensureSelfMember(user.id, name, newId('fam'))
+  await renameSelfMember(user.id, name)
+  redirect(destinationFor(user.role, next))
 }
 
 export async function signOut() {
