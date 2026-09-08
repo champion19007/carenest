@@ -101,12 +101,12 @@ export type AreaSuggestion = Locality & { doctor_count: number; ring: number }
 
 export async function findUserByPhone(phone: string): Promise<User | undefined> {
   const d = await db()
-  return d.one<User>('SELECT * FROM users WHERE phone = $1', [phone])
+  return d.one<User>('SELECT * FROM patient.users WHERE phone = $1', [phone])
 }
 
 export async function findUserById(id: string): Promise<User | undefined> {
   const d = await db()
-  return d.one<User>('SELECT * FROM users WHERE id = $1', [id])
+  return d.one<User>('SELECT * FROM patient.users WHERE id = $1', [id])
 }
 
 export async function createUser(input: {
@@ -118,7 +118,7 @@ export async function createUser(input: {
 }): Promise<User> {
   const d = await db()
   const row = await d.one<User>(
-    `INSERT INTO users (id, phone, name, role, tenant_region)
+    `INSERT INTO patient.users (id, phone, name, role, tenant_region)
      VALUES ($1, $2, $3, $4, $5) RETURNING *`,
     [input.id, input.phone, input.name ?? '', input.role ?? 'patient', input.tenantRegion ?? 'IN-MH'],
   )
@@ -127,27 +127,27 @@ export async function createUser(input: {
 
 export async function setUserName(userId: string, name: string) {
   const d = await db()
-  await d.query('UPDATE users SET name = $1 WHERE id = $2', [name, userId])
+  await d.query('UPDATE patient.users SET name = $1 WHERE id = $2', [name, userId])
 }
 
 export async function setUserRole(userId: string, role: string) {
   const d = await db()
-  await d.query('UPDATE users SET role = $1 WHERE id = $2', [role, userId])
+  await d.query('UPDATE patient.users SET role = $1 WHERE id = $2', [role, userId])
 }
 
 export async function touchLogin(userId: string) {
   const d = await db()
-  await d.query('UPDATE users SET last_login_at = now() WHERE id = $1', [userId])
+  await d.query('UPDATE patient.users SET last_login_at = now() WHERE id = $1', [userId])
 }
 
 export async function listUsers(limit = 200): Promise<User[]> {
   const d = await db()
-  return d.query<User>('SELECT * FROM users ORDER BY created_at DESC LIMIT $1', [limit])
+  return d.query<User>('SELECT * FROM patient.users ORDER BY created_at DESC LIMIT $1', [limit])
 }
 
 export async function countUsers(): Promise<number> {
   const d = await db()
-  const row = await d.one<{ n: string }>('SELECT COUNT(*) AS n FROM users')
+  const row = await d.one<{ n: string }>('SELECT COUNT(*) AS n FROM patient.users')
   return Number(row?.n ?? 0)
 }
 
@@ -156,7 +156,7 @@ export async function countUsers(): Promise<number> {
 export async function createSession(token: string, userId: string, days = 30) {
   const d = await db()
   await d.query(
-    `INSERT INTO sessions (token, user_id, expires_at)
+    `INSERT INTO patient.sessions (token, user_id, expires_at)
      VALUES ($1, $2, now() + ($3 || ' days')::interval)`,
     [token, userId, String(days)],
   )
@@ -165,20 +165,20 @@ export async function createSession(token: string, userId: string, days = 30) {
 export async function findSession(token: string) {
   const d = await db()
   return d.one<{ user_id: string; expires_at: string }>(
-    'SELECT user_id, expires_at FROM sessions WHERE token = $1',
+    'SELECT user_id, expires_at FROM patient.sessions WHERE token = $1',
     [token],
   )
 }
 
 export async function deleteSession(token: string) {
   const d = await db()
-  await d.query('DELETE FROM sessions WHERE token = $1', [token])
+  await d.query('DELETE FROM patient.sessions WHERE token = $1', [token])
 }
 
 export async function countActiveSessions(): Promise<number> {
   const d = await db()
   const row = await d.one<{ n: string }>(
-    'SELECT COUNT(*) AS n FROM sessions WHERE expires_at > now()',
+    'SELECT COUNT(*) AS n FROM patient.sessions WHERE expires_at > now()',
   )
   return Number(row?.n ?? 0)
 }
@@ -340,7 +340,7 @@ export async function searchDoctors(query: DoctorQuery = {}): Promise<DoctorRow[
           : 'rating DESC, experience DESC'
 
   const rows = await d.query<DoctorRow>(
-    `SELECT * FROM doctors WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT ${p(query.limit ?? 100)}`,
+    `SELECT * FROM provider.doctors WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT ${p(query.limit ?? 100)}`,
     params,
   )
   return rows.map(normaliseDoctor)
@@ -348,33 +348,33 @@ export async function searchDoctors(query: DoctorQuery = {}): Promise<DoctorRow[
 
 export async function findDoctorBySlug(slug: string): Promise<DoctorRow | undefined> {
   const d = await db()
-  const row = await d.one<DoctorRow>('SELECT * FROM doctors WHERE slug = $1', [slug])
+  const row = await d.one<DoctorRow>('SELECT * FROM provider.doctors WHERE slug = $1', [slug])
   return row ? normaliseDoctor(row) : undefined
 }
 
 export async function findDoctorById(id: string): Promise<DoctorRow | undefined> {
   const d = await db()
-  const row = await d.one<DoctorRow>('SELECT * FROM doctors WHERE id = $1', [id])
+  const row = await d.one<DoctorRow>('SELECT * FROM provider.doctors WHERE id = $1', [id])
   return row ? normaliseDoctor(row) : undefined
 }
 
 export async function listDoctors(limit = 200): Promise<DoctorRow[]> {
   const d = await db()
   const rows = await d.query<DoctorRow>(
-    'SELECT * FROM doctors ORDER BY created_at DESC LIMIT $1', [limit])
+    'SELECT * FROM provider.doctors ORDER BY created_at DESC LIMIT $1', [limit])
   return rows.map(normaliseDoctor)
 }
 
 export async function countDoctors(): Promise<number> {
   const d = await db()
-  const row = await d.one<{ n: string }>('SELECT COUNT(*) AS n FROM doctors')
+  const row = await d.one<{ n: string }>('SELECT COUNT(*) AS n FROM provider.doctors')
   return Number(row?.n ?? 0)
 }
 
 export async function distinctSpecialities(kind: 'human' | 'vet' = 'human'): Promise<string[]> {
   const d = await db()
   const rows = await d.query<{ speciality: string }>(
-    `SELECT DISTINCT speciality FROM doctors WHERE kind = $1 AND status = 'ACTIVE' ORDER BY speciality`,
+    `SELECT DISTINCT speciality FROM provider.doctors WHERE kind = $1 AND status = 'ACTIVE' ORDER BY speciality`,
     [kind],
   )
   return rows.map((r) => r.speciality)
@@ -382,7 +382,7 @@ export async function distinctSpecialities(kind: 'human' | 'vet' = 'human'): Pro
 
 export async function updateDoctorRating(slug: string, rating: number, count: number) {
   const d = await db()
-  await d.query('UPDATE doctors SET rating = $1, reviews_count = $2 WHERE slug = $3', [
+  await d.query('UPDATE provider.doctors SET rating = $1, reviews_count = $2 WHERE slug = $3', [
     rating,
     count,
     slug,
@@ -403,16 +403,16 @@ export async function transitionDoctorStatus(input: {
   actor?: string
 }) {
   const d = await db()
-  const current = await d.one<{ status: string }>('SELECT status FROM doctors WHERE id = $1', [
+  const current = await d.one<{ status: string }>('SELECT status FROM provider.doctors WHERE id = $1', [
     input.doctorId,
   ])
 
   await d.query(
-    `INSERT INTO provider_status_history (id, doctor_id, from_status, to_status, reason, actor)
+    `INSERT INTO provider.status_history (id, doctor_id, from_status, to_status, reason, actor)
      VALUES ($1, $2, $3, $4, $5, $6)`,
     [input.id, input.doctorId, current?.status ?? null, input.toStatus, input.reason ?? null, input.actor ?? null],
   )
-  await d.query('UPDATE doctors SET status = $1, updated_at = now() WHERE id = $2', [
+  await d.query('UPDATE provider.doctors SET status = $1, updated_at = now() WHERE id = $2', [
     input.toStatus,
     input.doctorId,
   ])
@@ -428,7 +428,7 @@ export async function doctorStatusHistory(doctorId: string) {
     actor: string | null
     created_at: string
   }>(
-    'SELECT * FROM provider_status_history WHERE doctor_id = $1 ORDER BY created_at DESC',
+    'SELECT * FROM provider.status_history WHERE doctor_id = $1 ORDER BY created_at DESC',
     [doctorId],
   )
 }
@@ -443,7 +443,7 @@ export async function addProviderDocument(input: {
 }) {
   const d = await db()
   await d.query(
-    `INSERT INTO provider_documents (id, doctor_id, doc_type, blob_url) VALUES ($1, $2, $3, $4)`,
+    `INSERT INTO provider.documents (id, doctor_id, doc_type, blob_url) VALUES ($1, $2, $3, $4)`,
     [input.id, input.doctorId, input.docType, input.blobUrl],
   )
 }
@@ -456,12 +456,12 @@ export async function listProviderDocuments(doctorId: string) {
     blob_url: string
     status: string
     created_at: string
-  }>('SELECT * FROM provider_documents WHERE doctor_id = $1 ORDER BY created_at DESC', [doctorId])
+  }>('SELECT * FROM provider.documents WHERE doctor_id = $1 ORDER BY created_at DESC', [doctorId])
 }
 
 export async function setDocumentStatus(id: string, status: string, notes?: string) {
   const d = await db()
-  await d.query('UPDATE provider_documents SET status = $1, notes = $2 WHERE id = $3', [
+  await d.query('UPDATE provider.documents SET status = $1, notes = $2 WHERE id = $3', [
     status,
     notes ?? null,
     id,
@@ -544,7 +544,7 @@ export async function createBooking(input: {
 }) {
   const d = await db()
   await d.query(
-    `INSERT INTO bookings (id, user_id, doctor_id, slot_id, kind, slot, fee, status, payment_ref)
+    `INSERT INTO patient.bookings (id, user_id, doctor_id, slot_id, kind, slot, fee, status, payment_ref)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
     [
       input.id,
@@ -562,26 +562,26 @@ export async function createBooking(input: {
 
 export async function listBookings(limit = 200): Promise<Booking[]> {
   const d = await db()
-  return d.query<Booking>('SELECT * FROM bookings ORDER BY created_at DESC LIMIT $1', [limit])
+  return d.query<Booking>('SELECT * FROM patient.bookings ORDER BY created_at DESC LIMIT $1', [limit])
 }
 
 export async function listBookingsForUser(userId: string): Promise<Booking[]> {
   const d = await db()
   return d.query<Booking>(
-    'SELECT * FROM bookings WHERE user_id = $1 ORDER BY created_at DESC',
+    'SELECT * FROM patient.bookings WHERE user_id = $1 ORDER BY created_at DESC',
     [userId],
   )
 }
 
 export async function countBookings(): Promise<number> {
   const d = await db()
-  const row = await d.one<{ n: string }>('SELECT COUNT(*) AS n FROM bookings')
+  const row = await d.one<{ n: string }>('SELECT COUNT(*) AS n FROM patient.bookings')
   return Number(row?.n ?? 0)
 }
 
 export async function setBookingStatus(id: string, status: string) {
   const d = await db()
-  await d.query('UPDATE bookings SET status = $1 WHERE id = $2', [status, id])
+  await d.query('UPDATE patient.bookings SET status = $1 WHERE id = $2', [status, id])
 }
 
 /* ──────────────────────────────────────────────── areas (map-free) */
@@ -615,7 +615,7 @@ export async function listLocalities(): Promise<AreaSuggestion[]> {
   const d = await db()
   return d.query<AreaSuggestion>(
     `SELECT l.*, 0 AS ring,
-       (SELECT COUNT(*) FROM doctors dd
+       (SELECT COUNT(*) FROM provider.doctors dd
         WHERE dd.locality_id = l.locality_id AND dd.status = 'ACTIVE')::int AS doctor_count
      FROM localities l ORDER BY l.city, l.name`,
   )
@@ -636,7 +636,7 @@ export async function neighbouringAreas(
   const d = await db()
   const rows = await d.query<AreaSuggestion>(
     `SELECT l.locality_id, l.pin_code, l.name, l.city, a.ring,
-       (SELECT COUNT(*) FROM doctors dd
+       (SELECT COUNT(*) FROM provider.doctors dd
         WHERE dd.locality_id = l.locality_id AND dd.status = 'ACTIVE' AND dd.kind = $2)::int
         AS doctor_count
      FROM locality_adjacency a

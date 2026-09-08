@@ -74,7 +74,7 @@ describe('doctor search', () => {
     await addDoctor(db, 'a', { name: 'Dr Asha Rao', speciality: 'Cardiologist' })
     await addDoctor(db, 'b', { name: 'Dr Ben Roy', speciality: 'Dermatologist' })
     const rows = await db.query(
-      `SELECT id FROM doctors
+      `SELECT id FROM provider.doctors
        WHERE to_tsvector('english', name || ' ' || speciality || ' ' || locality || ' ' || about)
              @@ plainto_tsquery('english', $1)`,
       ['cardiologist'],
@@ -226,8 +226,8 @@ describe('users', () => {
   })
 
   test('new accounts default to the patient role', async () => {
-    await db.query('INSERT INTO users (id, phone) VALUES ($1,$2)', ['u1', '9876543211'])
-    const u = await db.one('SELECT role FROM users WHERE id = $1', ['u1'])
+    await db.query('INSERT INTO patient.users (id, phone) VALUES ($1,$2)', ['u1', '9876543211'])
+    const u = await db.one('SELECT role FROM patient.users WHERE id = $1', ['u1'])
     assert.equal(u.role, 'patient')
   })
 })

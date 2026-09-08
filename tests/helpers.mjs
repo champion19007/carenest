@@ -69,7 +69,7 @@ export async function addDoctor(db, id, overrides = {}) {
     ...overrides,
   }
   await db.query(
-    `INSERT INTO doctors
+    `INSERT INTO provider.doctors
       (id, slug, name, speciality, experience, fee, status, kind, locality_id,
        gender, languages, video, cashless, home_visit, rating)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
@@ -80,7 +80,7 @@ export async function addDoctor(db, id, overrides = {}) {
 }
 
 export async function addUser(db, id, phone, role = 'patient') {
-  await db.query('INSERT INTO users (id, phone, role) VALUES ($1,$2,$3)', [id, phone, role])
+  await db.query('INSERT INTO patient.users (id, phone, role) VALUES ($1,$2,$3)', [id, phone, role])
 }
 
 /* ── ports of the production queries ───────────────────────────────── */
@@ -105,13 +105,13 @@ export async function searchDoctors(db, query = {}) {
     : query.sort === 'experience' ? 'experience DESC'
     : 'rating DESC, experience DESC'
 
-  return db.query(`SELECT * FROM doctors WHERE ${where.join(' AND ')} ORDER BY ${order}`, params)
+  return db.query(`SELECT * FROM provider.doctors WHERE ${where.join(' AND ')} ORDER BY ${order}`, params)
 }
 
 export async function neighbouringAreas(db, localityId, kind = 'human', maxRing = 2) {
   const rows = await db.query(
     `SELECT l.locality_id, l.pin_code, l.name, a.ring,
-       (SELECT COUNT(*) FROM doctors dd
+       (SELECT COUNT(*) FROM provider.doctors dd
         WHERE dd.locality_id = l.locality_id AND dd.status='ACTIVE' AND dd.kind=$2)::int
         AS doctor_count
      FROM locality_adjacency a

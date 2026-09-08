@@ -152,7 +152,7 @@ for (const d of doctors) {
   const [slug,name,spec,qual,exp,clinic,pin,fee,reg,council,rating,reviews,video,cashless,home,gender,langs,slot,kind,about] = d
   const area = byPin.get(pin)
   await query(
-    `INSERT INTO doctors
+    `INSERT INTO provider.doctors
       (id, slug, name, speciality, qualification, experience, clinic, locality_id, pin_code,
        locality, city, fee, registration_no, council, status, rating, reviews_count,
        video, cashless, home_visit, gender, languages, next_slot, kind, about)
@@ -168,13 +168,13 @@ for (const d of doctors) {
      fee,reg,council,rating,reviews,video,cashless,home,gender,langs,slot,kind,about],
   )
 }
-console.log(`Doctors: ${(await query('SELECT COUNT(*) AS n FROM doctors'))[0].n}`)
+console.log(`Doctors: ${(await query('SELECT COUNT(*) AS n FROM provider.doctors'))[0].n}`)
 
 /* ── demo clinic login ──────────────────────────────────────────────── */
 
 const DEMO_PHONE = '9000000001'
 await query(
-  `INSERT INTO users (id, phone, name, role) VALUES ($1,$2,$3,'doctor')
+  `INSERT INTO patient.users (id, phone, name, role) VALUES ($1,$2,$3,'doctor')
    ON CONFLICT (phone) DO UPDATE SET role = 'doctor'`,
   ['usr_demo_doctor', DEMO_PHONE, 'Dr. Ananya Deshmukh'],
 )
@@ -183,7 +183,7 @@ await query(
 
 const coverage = await query(`
   SELECT l.pin_code, l.name,
-    (SELECT COUNT(*) FROM doctors d WHERE d.locality_id = l.locality_id AND d.status='ACTIVE') AS n
+    (SELECT COUNT(*) FROM provider.doctors d WHERE d.locality_id = l.locality_id AND d.status='ACTIVE') AS n
   FROM localities l ORDER BY n DESC, l.name`)
 
 console.log('\nCoverage:')

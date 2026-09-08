@@ -7,8 +7,31 @@ import 'server-only'
  * the two never drift.
  */
 export const SCHEMA = `
+-- ────────────────────────────────────────────────────────── namespaces
+--
+-- Three domain schemas, one database.
+--
+--   patient.*   people, their families, their bookings
+--   provider.*  clinicians, their credentials, their calendars
+--   clinic.*    the operational workflows a clinic runs — surgery leads,
+--               referrals, diagnostic orders
+--
+-- Separate physical databases were the other option and were rejected on one
+-- concrete ground: Postgres cannot enforce a foreign key across databases, so
+-- patient.bookings → provider.doctors would degrade from a constraint the
+-- engine guarantees into an id the application promises to check. Schemas keep
+-- that guarantee while still giving each domain its own namespace and its own
+-- GRANTs, which is what the separation was actually for.
+--
+-- Shared infrastructure and reference data (auth challenges, admins, rate
+-- limits, localities, the document store, the audit log, the ledger) stays in
+-- public: it belongs to no single domain and all three read it.
+CREATE SCHEMA IF NOT EXISTS patient;
+CREATE SCHEMA IF NOT EXISTS provider;
+CREATE SCHEMA IF NOT EXISTS clinic;
+
 -- ─────────────────────────────────────────────────────────── identity
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE IF NOT EXISTS patient.users (
   id             TEXT PRIMARY KEY,
   phone          TEXT NOT NULL UNIQUE,
   name           TEXT NOT NULL DEFAULT '',
@@ -23,13 +46,13 @@ CREATE TABLE IF NOT EXISTS users (
   last_login_at  TIMESTAMPTZ
 );
 
-CREATE TABLE IF NOT EXISTS sessions (
+CREATE TABLE IF NOT EXISTS patient.sessions (
   token      TEXT PRIMARY KEY,
-  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id    TEXT NOT NULL REFERENCES patient.users(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   expires_at TIMESTAMPTZ NOT NULL
 );
-CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON patient.sessions(user_id);
 
 CREATE TABLE IF NOT EXISTS otps (
   phone      TEXT PRIMARY KEY,
@@ -63,6 +86,29 @@ CREATE TABLE IF NOT EXISTS rate_limits (
   PRIMARY KEY (bucket, key)
 );
 
+-- ────────────────────────────────────────────────────── patient: family
+-- One account books for a household. In India that is the normal case, not an
+-- edge case: an adult books for a parent who does not use apps and for
+-- children who cannot consent, so the booking has to record *who the care is
+-- for* separately from who arranged it.
+CREATE TABLE IF NOT EXISTS patient.family_members (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL REFERENCES patient.users(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL,
+  relation    TEXT NOT NULL,
+  dob         DATE,
+  gender      TEXT,
+  blood_group TEXT,
+  phone       TEXT,
+  -- The account holder's own row, created with the account and not deletable.
+  is_self     BOOLEAN NOT NULL DEFAULT false,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_family_user ON patient.family_members(user_id, created_at);
+-- Exactly one "self" row per account.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_family_one_self
+  ON patient.family_members(user_id) WHERE is_self;
+
 -- ──────────────────────────────────────────────── geography (map-free)
 CREATE TABLE IF NOT EXISTS localities (
   locality_id SERIAL PRIMARY KEY,
@@ -88,9 +134,9 @@ CREATE TABLE IF NOT EXISTS locality_adjacency (
 CREATE INDEX IF NOT EXISTS idx_adjacency_ring ON locality_adjacency(locality_id, ring);
 
 -- ───────────────────────────────────────────────────────────── supply
-CREATE TABLE IF NOT EXISTS doctors (
+CREATE TABLE IF NOT EXISTS provider.doctors (
   id               TEXT PRIMARY KEY,
-  user_id          TEXT REFERENCES users(id) ON DELETE SET NULL,
+  user_id          TEXT REFERENCES patient.users(id) ON DELETE SET NULL,
   slug             TEXT NOT NULL UNIQUE,
   name             TEXT NOT NULL,
   speciality       TEXT NOT NULL,
@@ -118,21 +164,21 @@ CREATE TABLE IF NOT EXISTS doctors (
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX IF NOT EXISTS idx_doctors_locality ON doctors(locality_id);
-CREATE INDEX IF NOT EXISTS idx_doctors_pin ON doctors(pin_code);
-CREATE INDEX IF NOT EXISTS idx_doctors_speciality ON doctors(speciality);
-CREATE INDEX IF NOT EXISTS idx_doctors_status ON doctors(status);
+CREATE INDEX IF NOT EXISTS idx_doctors_locality ON provider.doctors(locality_id);
+CREATE INDEX IF NOT EXISTS idx_doctors_pin ON provider.doctors(pin_code);
+CREATE INDEX IF NOT EXISTS idx_doctors_speciality ON provider.doctors(speciality);
+CREATE INDEX IF NOT EXISTS idx_doctors_status ON provider.doctors(status);
 
 -- Full-text search, replacing the Elasticsearch index. One store means no CDC
 -- pipeline and no dual-write consistency problem.
-CREATE INDEX IF NOT EXISTS idx_doctors_fts ON doctors
+CREATE INDEX IF NOT EXISTS idx_doctors_fts ON provider.doctors
   USING GIN (to_tsvector('english', name || ' ' || speciality || ' ' || locality || ' ' || about));
 
 -- Append-only. Medical-board disputes need the transition history, so status
 -- is never mutated without a corresponding row here.
-CREATE TABLE IF NOT EXISTS provider_status_history (
+CREATE TABLE IF NOT EXISTS provider.status_history (
   id          TEXT PRIMARY KEY,
-  doctor_id   TEXT NOT NULL REFERENCES doctors(id) ON DELETE CASCADE,
+  doctor_id   TEXT NOT NULL REFERENCES provider.doctors(id) ON DELETE CASCADE,
   from_status TEXT,
   to_status   TEXT NOT NULL,
   reason      TEXT,
@@ -140,9 +186,9 @@ CREATE TABLE IF NOT EXISTS provider_status_history (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS provider_documents (
+CREATE TABLE IF NOT EXISTS provider.documents (
   id         TEXT PRIMARY KEY,
-  doctor_id  TEXT NOT NULL REFERENCES doctors(id) ON DELETE CASCADE,
+  doctor_id  TEXT NOT NULL REFERENCES provider.doctors(id) ON DELETE CASCADE,
   doc_type   TEXT NOT NULL,
   blob_url   TEXT NOT NULL,
   status     TEXT NOT NULL DEFAULT 'UPLOADED',
@@ -155,36 +201,87 @@ CREATE TABLE IF NOT EXISTS provider_documents (
 --   AVAILABLE → LOCKED_PENDING_PAYMENT → BOOKED → COMPLETED | NO_SHOW
 --                        ↓ (TTL / failure)
 --                    AVAILABLE
-CREATE TABLE IF NOT EXISTS appointment_slots (
+CREATE TABLE IF NOT EXISTS provider.appointment_slots (
   slot_id      TEXT PRIMARY KEY,
-  doctor_id    TEXT NOT NULL REFERENCES doctors(id) ON DELETE CASCADE,
+  doctor_id    TEXT NOT NULL REFERENCES provider.doctors(id) ON DELETE CASCADE,
   slot_start   TIMESTAMPTZ NOT NULL,
   slot_end     TIMESTAMPTZ NOT NULL,
   kind         TEXT NOT NULL DEFAULT 'clinic',
   status       TEXT NOT NULL DEFAULT 'AVAILABLE',
-  locked_by    TEXT REFERENCES users(id) ON DELETE SET NULL,
+  locked_by    TEXT REFERENCES patient.users(id) ON DELETE SET NULL,
   locked_until TIMESTAMPTZ,
   -- Optimistic concurrency guard. This, not the Redis lock, is what actually
   -- makes double-booking impossible.
   version      INT NOT NULL DEFAULT 0,
   UNIQUE (doctor_id, slot_start)
 );
-CREATE INDEX IF NOT EXISTS idx_slots_doctor_start ON appointment_slots(doctor_id, slot_start);
-CREATE INDEX IF NOT EXISTS idx_slots_expiry ON appointment_slots(status, locked_until);
+CREATE INDEX IF NOT EXISTS idx_slots_doctor_start ON provider.appointment_slots(doctor_id, slot_start);
+CREATE INDEX IF NOT EXISTS idx_slots_expiry ON provider.appointment_slots(status, locked_until);
 
-CREATE TABLE IF NOT EXISTS bookings (
+CREATE TABLE IF NOT EXISTS patient.bookings (
   id           TEXT PRIMARY KEY,
-  user_id      TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id      TEXT NOT NULL REFERENCES patient.users(id) ON DELETE CASCADE,
   doctor_id    TEXT NOT NULL,
-  slot_id      TEXT REFERENCES appointment_slots(slot_id) ON DELETE SET NULL,
+  slot_id      TEXT REFERENCES provider.appointment_slots(slot_id) ON DELETE SET NULL,
   kind         TEXT NOT NULL,
   slot         TEXT NOT NULL,
   fee          INT NOT NULL DEFAULT 0,
   status       TEXT NOT NULL DEFAULT 'confirmed',
   payment_ref  TEXT,
+  -- Who the appointment is for. Null means the account holder themselves,
+  -- which keeps every booking made before family members existed valid.
+  patient_for  TEXT REFERENCES patient.family_members(id) ON DELETE SET NULL,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX IF NOT EXISTS idx_bookings_user ON bookings(user_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_user ON patient.bookings(user_id);
+
+-- ───────────────────────────────────────────────── clinic: surgery leads
+-- A surgery enquiry is a callback request, not a booking. It carries no slot
+-- and no payment; what it needs is triage.
+--
+--   NEW → APPROVED → ROUTED
+--     ↓
+--   REJECTED
+--
+-- Admin approval sits deliberately in the middle. A surgical enquiry names a
+-- procedure and a phone number, and routing it straight to a surgeon would
+-- hand unverified clinical claims to a clinician and a stranger's number to a
+-- diagnostic centre. A person checks it first.
+CREATE TABLE IF NOT EXISTS clinic.surgery_leads (
+  id           TEXT PRIMARY KEY,
+  user_id      TEXT REFERENCES patient.users(id) ON DELETE SET NULL,
+  name         TEXT NOT NULL,
+  phone        TEXT NOT NULL,
+  city         TEXT NOT NULL DEFAULT '',
+  procedure    TEXT NOT NULL DEFAULT '',
+  notes        TEXT NOT NULL DEFAULT '',
+  status       TEXT NOT NULL DEFAULT 'NEW',
+  reviewed_by  TEXT,
+  reviewed_at  TIMESTAMPTZ,
+  reject_reason TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_leads_status ON clinic.surgery_leads(status, created_at DESC);
+
+-- Where an approved lead was sent. Two destinations, one table, because the
+-- question asked of it is always "what happened to this lead".
+CREATE TABLE IF NOT EXISTS clinic.referrals (
+  id          TEXT PRIMARY KEY,
+  lead_id     TEXT NOT NULL REFERENCES clinic.surgery_leads(id) ON DELETE CASCADE,
+  kind        TEXT NOT NULL,
+  doctor_id   TEXT REFERENCES provider.doctors(id) ON DELETE SET NULL,
+  centre_name TEXT,
+  status      TEXT NOT NULL DEFAULT 'SENT',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  -- A referral goes to a clinician or to a diagnostic centre, never both and
+  -- never neither; the check stops a half-filled row from being written.
+  CONSTRAINT referral_has_a_destination CHECK (
+    (kind = 'doctor'     AND doctor_id   IS NOT NULL) OR
+    (kind = 'diagnostic' AND centre_name IS NOT NULL)
+  )
+);
+CREATE INDEX IF NOT EXISTS idx_referrals_lead ON clinic.referrals(lead_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_doctor ON clinic.referrals(doctor_id, created_at DESC);
 
 -- ──────────────────────────────────────────── documents (was NoSQL)
 -- Variable-shape records. JSONB keeps the document model — a prescription's
