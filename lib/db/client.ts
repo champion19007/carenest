@@ -55,6 +55,24 @@ function createNeon(url: string): Db {
 }
 
 function createPglite(): Db {
+  /**
+   * PGlite writes to the local filesystem, which is fine on a developer's
+   * machine and impossible on a serverless platform: the bundle directory is
+   * read-only, and each invocation gets its own container anyway, so two
+   * requests would not even see the same data.
+   *
+   * Failing here with a sentence that says what to do beats the EROFS error
+   * that would otherwise surface from deep inside a WASM filesystem shim.
+   */
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'DATABASE_URL is not set. The embedded database only works locally — a ' +
+        'deployed instance needs a Postgres connection string (a free Neon ' +
+        'project is enough). Add DATABASE_URL in your hosting provider’s ' +
+        'environment settings and redeploy.',
+    )
+  }
+
   const { PGlite } = require('@electric-sql/pglite') as typeof import('@electric-sql/pglite')
   const path = require('node:path') as typeof import('node:path')
   const { mkdirSync } = require('node:fs') as typeof import('node:fs')
