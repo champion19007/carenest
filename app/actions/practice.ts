@@ -5,10 +5,12 @@ import { currentClaims, requireRole } from '@/lib/auth'
 import { assertAllowed, PolicyError } from '@/lib/policy'
 import {
   answerRequest,
+  findBooking,
   findDoctorByUserId,
   markBookingAttended,
   writeAudit,
 } from '@/lib/db/sql'
+import { closeSlot, confirmSlot, releaseSlot } from '@/lib/db/slots'
 import { logActivity } from '@/lib/db/docs'
 
 export type PracticeState = { error?: string; notice?: string }
@@ -42,12 +44,21 @@ export async function respondToRequest(
     return { error: 'Choose accept or decline.' }
   }
 
+  const booking = await findBooking(bookingId)
   const moved = await answerRequest({ bookingId, doctorId: doctor.id, to: decision })
   if (!moved) {
     /* Either it was already answered, or it belongs to another practice.
        Both deserve the same message: saying which would confirm the existence
        of another clinic's booking. */
     return { error: 'That request has already been answered.' }
+  }
+
+  /* Move the slot with the booking. Declining without releasing would leave
+     the time held until its TTL expired, quietly removing it from the
+     clinic's own calendar for two hours. */
+  if (booking?.slot_id) {
+    if (decision === 'confirmed') await confirmSlot(booking.slot_id)
+    else await releaseSlot(booking.slot_id)
   }
 
   await writeAudit({
@@ -98,12 +109,15 @@ export async function markAttended(
   const bookingId = String(formData.get('bookingId') ?? '')
   if (!bookingId) return { error: 'Which appointment?' }
 
+  const booking = await findBooking(bookingId)
   const moved = await markBookingAttended({ bookingId, doctorId: doctor.id })
   if (!moved) {
     /* Already marked, never confirmed, or another practice's booking. Saying
        which would confirm the existence of someone else's appointment. */
     return { error: 'That appointment cannot be marked as attended.' }
   }
+
+  if (booking?.slot_id) await closeSlot(booking.slot_id, 'ATTENDED')
 
   await writeAudit({
     actorId: user.id,

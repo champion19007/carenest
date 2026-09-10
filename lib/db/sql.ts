@@ -747,6 +747,11 @@ export async function answerRequest(input: {
  * submission cannot mark an appointment attended twice or reach into another
  * practice's calendar.
  */
+export async function findBooking(id: string): Promise<Booking | undefined> {
+  const d = await db()
+  return d.one<Booking>('SELECT * FROM patient.bookings WHERE id = $1', [id])
+}
+
 export async function markBookingAttended(input: {
   bookingId: string
   doctorId: string

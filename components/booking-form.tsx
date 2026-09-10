@@ -4,14 +4,8 @@ import { useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { Building2, Video } from 'lucide-react'
 import { bookAppointment, type BookingState } from '@/app/actions/care'
+import { groupByDay, slotTime, type SlotOption } from '@/lib/slot-format'
 
-/** Fixed so the server and client agree — a real build reads the clinic calendar. */
-const DAYS = ['Today', 'Tomorrow', 'Wed', 'Thu', 'Fri']
-const SLOTS: Record<string, string[]> = {
-  Morning: ['9:00 AM', '9:30 AM', '10:15 AM', '11:00 AM'],
-  Afternoon: ['12:30 PM', '1:00 PM', '2:15 PM'],
-  Evening: ['5:00 PM', '5:45 PM', '6:30 PM', '7:15 PM'],
-}
 
 export function BookingForm({
   slug,
@@ -19,24 +13,34 @@ export function BookingForm({
   offersVideo,
   patientName,
   family,
+  slots,
 }: {
   slug: string
   doctorName: string
   offersVideo: boolean
   patientName: string
+  /** Real, currently-free slots from the clinic's calendar. */
+  slots: SlotOption[]
   /** The household. The account holder's own row is marked is_self. */
   family: { id: string; name: string; relation: string; is_self: boolean }[]
 }) {
   const [state, action] = useActionState(bookAppointment, {} as BookingState)
   const [kind, setKind] = useState<'clinic' | 'video'>('clinic')
-  const [day, setDay] = useState(DAYS[0])
-  const [time, setTime] = useState('')
+
+  const days = groupByDay(slots)
+  const [day, setDay] = useState(days[0]?.day ?? '')
+  /* The slot id, not a time string. The server must be told which row to
+     claim; a label like "Today, 6:30 PM" identifies nothing it can lock. */
+  const [slotId, setSlotId] = useState('')
+
+  const chosen = slots.find((slot) => slot.slotId === slotId)
+  const shown = days.find((entry) => entry.day === day) ?? days[0]
 
   return (
     <form action={action} className="rounded-xl border border-border bg-card p-6">
       <input type="hidden" name="slug" value={slug} />
       <input type="hidden" name="kind" value={kind} />
-      <input type="hidden" name="slot" value={time ? `${day}, ${time}` : ''} />
+      <input type="hidden" name="slotId" value={slotId} />
 
       {family.length > 1 ? (
         <label className="block">
@@ -110,22 +114,25 @@ export function BookingForm({
       <fieldset className="mt-7">
         <legend className="font-semibold">Which day?</legend>
         <div className="mt-3 flex flex-wrap gap-2">
-          {DAYS.map((item) => (
+          {days.map((entry) => (
             <button
-              key={item}
+              key={entry.day}
               type="button"
               onClick={() => {
-                setDay(item)
-                setTime('')
+                setDay(entry.day)
+                setSlotId('')
               }}
-              aria-pressed={day === item}
+              aria-pressed={day === entry.day}
               className={`min-h-11 rounded-lg border px-5 font-semibold transition-colors ${
-                day === item
+                day === entry.day
                   ? 'border-primary bg-cta text-cta-foreground'
                   : 'border-border hover:border-primary'
               }`}
             >
-              {item}
+              {entry.day}
+              <span className="ml-2 text-xs font-normal opacity-75">
+                {entry.slots.length} free
+              </span>
             </button>
           ))}
         </div>
@@ -133,32 +140,29 @@ export function BookingForm({
 
       <fieldset className="mt-7">
         <legend className="font-semibold">What time?</legend>
-        <div className="mt-3 space-y-4">
-          {Object.entries(SLOTS).map(([part, times]) => (
-            <div key={part}>
-              <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
-                {part}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {times.map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => setTime(item)}
-                    aria-pressed={time === item}
-                    className={`min-h-10 rounded-lg border px-4 text-sm font-semibold transition-colors ${
-                      time === item
-                        ? 'border-primary bg-cta text-cta-foreground'
-                        : 'border-border hover:border-primary hover:bg-soft'
-                    }`}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+        {shown && shown.slots.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {shown.slots.map((slot) => (
+              <button
+                key={slot.slotId}
+                type="button"
+                onClick={() => setSlotId(slot.slotId)}
+                aria-pressed={slotId === slot.slotId}
+                className={`min-h-10 rounded-lg border px-4 text-sm font-semibold transition-colors ${
+                  slotId === slot.slotId
+                    ? 'border-primary bg-cta text-cta-foreground'
+                    : 'border-border hover:border-primary hover:bg-soft'
+                }`}
+              >
+                {slotTime(slot.startsAt)}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-3 text-sm text-muted-foreground">
+            No free times left on this day. Try another.
+          </p>
+        )}
       </fieldset>
 
       {state.error && (
@@ -169,16 +173,19 @@ export function BookingForm({
 
       <div className="mt-7 border-t border-border pt-6">
         <p className="text-sm text-muted-foreground">
-          {time ? (
+          {chosen ? (
             <>
-              Booking <span className="font-semibold text-foreground">{day}, {time}</span> —{' '}
-              {kind === 'video' ? 'video consult' : 'clinic visit'}
+              Booking{' '}
+              <span className="font-semibold text-foreground">
+                {day}, {slotTime(chosen.startsAt)}
+              </span>{' '}
+              — {kind === 'video' ? 'video consult' : 'clinic visit'}
             </>
           ) : (
             'Choose a time slot to continue.'
           )}
         </p>
-        <Submit disabled={!time} />
+        <Submit disabled={!slotId} />
       </div>
     </form>
   )
