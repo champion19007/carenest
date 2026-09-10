@@ -11,6 +11,7 @@ import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
 import { HealthChecklist } from '@/components/health-checklist'
 import { FamilyManager } from '@/components/family-manager'
+import { LiveQueue } from '@/components/live-queue'
 import { Avatar } from '@/components/avatar'
 import { requireUser, newId } from '@/lib/auth'
 import { ensureSelfMember, listFamily } from '@/lib/db/family'
@@ -112,6 +113,10 @@ export default async function PatientHome() {
                     </p>
                   </div>
                 </div>
+
+                {/* Renders nothing unless there is a queue to report, so a
+                    booking for next week does not show an empty panel. */}
+                <LiveQueue bookingId={next.id} />
 
                 <div className="mt-6 flex flex-wrap gap-3">
                   <Link
