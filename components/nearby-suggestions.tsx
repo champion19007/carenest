@@ -67,6 +67,9 @@ export function NearbySuggestions({
                     {suggestion.name}
                     <span className="ml-2 text-sm text-muted-foreground">
                       {suggestion.pin_code}
+                      {suggestion.distance_km != null && (
+                        <> · {formatKm(suggestion.distance_km)}</>
+                      )}
                     </span>
                   </span>
                   <span className="rounded-full bg-soft px-2.5 py-0.5 text-sm font-bold text-primary">
@@ -78,7 +81,8 @@ export function NearbySuggestions({
             ))}
           </ul>
           <p className="mt-4 text-sm text-muted-foreground">
-            The number on each chip is how many verified doctors practise there.
+            The number on each chip is how many verified doctors practise there. Distances are
+            straight-line between area centres, not travel time.
           </p>
         </>
       ) : (
@@ -98,4 +102,17 @@ export function NearbySuggestions({
       </div>
     </div>
   )
+}
+
+/**
+ * Distances come from Postgres NUMERIC, which the driver hands back as a
+ * string to avoid guessing at float precision — hence the Number() before any
+ * arithmetic. Rounded hard on purpose: a centroid-to-centroid figure is not
+ * accurate enough to deserve a decimal place, and "2 km" is honest about that
+ * in a way "2.3 km" is not.
+ */
+function formatKm(value: number | string): string {
+  const km = Number(value)
+  if (!Number.isFinite(km)) return ''
+  return km < 1 ? 'under 1 km' : `about ${Math.round(km)} km`
 }

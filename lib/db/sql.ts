@@ -95,7 +95,17 @@ export type Locality = {
   city: string
 }
 
-export type AreaSuggestion = Locality & { doctor_count: number; ring: number }
+export type AreaSuggestion = Locality & {
+  doctor_count: number
+  ring: number
+  /**
+   * Straight-line km between locality centroids, computed offline by the seed
+   * and stored. Null on rows written before distances were recorded, and on
+   * anything not sourced from the adjacency table — so every reader has to
+   * cope with its absence rather than assume it.
+   */
+  distance_km?: number | string | null
+}
 
 /* ─────────────────────────────────────────────────────────────── users */
 
@@ -847,7 +857,7 @@ export async function neighbouringAreas(
 ): Promise<AreaSuggestion[]> {
   const d = await db()
   const rows = await d.query<AreaSuggestion>(
-    `SELECT l.locality_id, l.pin_code, l.name, l.city, a.ring,
+    `SELECT l.locality_id, l.pin_code, l.name, l.city, a.ring, a.distance_km,
        (SELECT COUNT(*) FROM provider.doctors dd
         WHERE dd.locality_id = l.locality_id AND dd.status = 'ACTIVE' AND dd.kind = $2)::int
         AS doctor_count
