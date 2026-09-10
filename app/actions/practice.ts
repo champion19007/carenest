@@ -1,5 +1,6 @@
 'use server'
 
+import { after } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { currentClaims, requireRole } from '@/lib/auth'
 import { assertAllowed, PolicyError } from '@/lib/policy'
@@ -13,6 +14,7 @@ import {
 } from '@/lib/db/sql'
 import { closeSlot, confirmSlot, releaseSlot } from '@/lib/db/slots'
 import { emit } from '@/lib/db/outbox'
+import { drainAll } from '@/lib/drain'
 import { logActivity } from '@/lib/db/docs'
 
 export type PracticeState = { error?: string; notice?: string }
@@ -86,6 +88,14 @@ export async function respondToRequest(
       })
     }
   }
+
+  /* Deliver as soon as the clinician's response is on its way back. The
+     scheduled sweep only runs daily on this plan, so after() is what makes a
+     confirmation arrive in seconds rather than tomorrow — and the sweep is
+     the net that catches whatever this misses. */
+  after(async () => {
+    await drainAll(10)
+  })
 
   await logActivity({
     kind: `booking.${decision}`,

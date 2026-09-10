@@ -1,8 +1,10 @@
 'use server'
 
+import { after } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { triageEnquiry } from '@/lib/triage'
 import { emit } from '@/lib/db/outbox'
+import { drainAll } from '@/lib/drain'
 import {
   currentEstimate,
   findEstimate,
@@ -248,6 +250,10 @@ export async function issueEstimateAction(
     action: previous ? 'estimate:reprice' : 'estimate:issue',
     resource: estimate.id,
     detail: { leadId, total: estimate.total, supersedes: previous?.id ?? null },
+  })
+
+  after(async () => {
+    await drainAll(10)
   })
 
   revalidatePath('/admin')

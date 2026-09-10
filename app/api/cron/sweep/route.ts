@@ -5,7 +5,21 @@ import { drainAll } from '@/lib/drain'
 export const dynamic = 'force-dynamic'
 
 /**
- * Returns expired holds to the pool.
+ * Returns expired holds to the pool and drains the outbox.
+ *
+ * SCHEDULE: daily, and that is a platform limit rather than a preference.
+ * Vercel's Hobby plan permits a cron job to fire only once per day, and it
+ * rejects the whole deployment — before any build runs — if vercel.json asks
+ * for more. An hourly schedule here failed the deploy outright.
+ *
+ * Neither job suffers much. `openSlots` already treats a hold past its TTL as
+ * free, so the calendar self-heals with or without the sweep. And delivery
+ * happens in `after()` on every path that emits, so this is the net that
+ * catches a message whose invocation died, not the thing that sends it.
+ *
+ * If this ever moves to a paid plan, hourly is the better schedule — but
+ * raising it here without raising the plan will break deployment, so leave it
+ * alone until then.
  *
  * Not load-bearing for correctness: `openSlots` already treats a hold whose
  * TTL has passed as free, so a clinic's calendar never shrinks even if this
