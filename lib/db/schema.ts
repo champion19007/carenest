@@ -195,9 +195,15 @@ CREATE INDEX IF NOT EXISTS idx_doctors_fts ON provider.doctors
 
 -- Append-only. Medical-board disputes need the transition history, so status
 -- is never mutated without a corresponding row here.
+--
+-- RESTRICT rather than CASCADE. A cascade would be a back door: deleting the
+-- doctor destroys the very history a dispute turns on, without any UPDATE or
+-- DELETE on this table ever being attempted. Removing a clinician from the
+-- platform is a status transition (to SUSPENDED or REMOVED), not a row
+-- deletion — which is exactly what this table records.
 CREATE TABLE IF NOT EXISTS provider.status_history (
   id          TEXT PRIMARY KEY,
-  doctor_id   TEXT NOT NULL REFERENCES provider.doctors(id) ON DELETE CASCADE,
+  doctor_id   TEXT NOT NULL REFERENCES provider.doctors(id) ON DELETE RESTRICT,
   from_status TEXT,
   to_status   TEXT NOT NULL,
   reason      TEXT,
@@ -205,9 +211,13 @@ CREATE TABLE IF NOT EXISTS provider.status_history (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Registration certificates and qualification proofs: the evidence a
+-- verification decision rested on. Same reasoning as status_history — if a
+-- clinician's listing is challenged, "we checked their council number" has to
+-- be provable after they have left the platform.
 CREATE TABLE IF NOT EXISTS provider.documents (
   id         TEXT PRIMARY KEY,
-  doctor_id  TEXT NOT NULL REFERENCES provider.doctors(id) ON DELETE CASCADE,
+  doctor_id  TEXT NOT NULL REFERENCES provider.doctors(id) ON DELETE RESTRICT,
   doc_type   TEXT NOT NULL,
   blob_url   TEXT NOT NULL,
   status     TEXT NOT NULL DEFAULT 'UPLOADED',
@@ -247,6 +257,11 @@ CREATE TABLE IF NOT EXISTS patient.bookings (
   fee          INT NOT NULL DEFAULT 0,
   status       TEXT NOT NULL DEFAULT 'confirmed',
   payment_ref  TEXT,
+  -- Set when the clinician marks the patient as seen. This is the fact a
+  -- review is gated on: without it, any signed-in account could rate any
+  -- doctor, which is exactly the manipulation the trust page promises we
+  -- prevent.
+  attended_at  TIMESTAMPTZ,
   -- Who the appointment is for. Null means the account holder themselves,
   -- which keeps every booking made before family members existed valid.
   patient_for  TEXT REFERENCES patient.family_members(id) ON DELETE SET NULL,
@@ -292,6 +307,65 @@ CREATE INDEX IF NOT EXISTS idx_leads_status ON clinic.surgery_leads(status, crea
 
 -- Where an approved lead was sent. Two destinations, one table, because the
 -- question asked of it is always "what happened to this lead".
+-- Itemised surgery estimates.
+--
+-- The anxiety this addresses is specific: a patient agrees to a number, then
+-- the bill arrives inflated by a room category nobody mentioned, consumables,
+-- and administration. So the estimate names every line before admission.
+--
+-- Immutable once issued. A revision is a NEW row that supersedes the old one,
+-- never an edit, so "the price changed" is always provable and "the price was
+-- always this" can never be claimed retroactively. Software cannot make an
+-- estimate legally binding; what it can do is make a quiet change impossible
+-- to hide, which is the part that actually protects the patient.
+CREATE TABLE IF NOT EXISTS clinic.estimates (
+  id            TEXT PRIMARY KEY,
+  -- RESTRICT, not CASCADE. A cascade would be a back door through the
+  -- immutability guarantee: delete the enquiry and the priced document
+  -- disappears with it, without any UPDATE or DELETE on this table ever being
+  -- attempted. An enquiry carrying an issued estimate has to be kept.
+  lead_id       TEXT NOT NULL REFERENCES clinic.surgery_leads(id) ON DELETE RESTRICT,
+  procedure     TEXT NOT NULL,
+  hospital      TEXT NOT NULL DEFAULT '',
+  room_tier     TEXT NOT NULL DEFAULT 'General ward',
+  -- [{ label, amount, note }] — the breakdown the patient sees.
+  line_items    JSONB NOT NULL DEFAULT '[]'::jsonb,
+  total         INT NOT NULL DEFAULT 0,
+  -- Fingerprint of the priced content. Lets a patient prove the sheet they
+  -- were shown is the sheet on file, without trusting our own UI.
+  content_hash  TEXT NOT NULL,
+  -- The row this one replaces, if any.
+  supersedes    TEXT REFERENCES clinic.estimates(id) ON DELETE SET NULL,
+  issued_by     TEXT,
+  valid_until   TIMESTAMPTZ,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_estimates_lead ON clinic.estimates(lead_id, created_at DESC);
+
+CREATE OR REPLACE FUNCTION clinic.estimates_are_immutable() RETURNS trigger AS $$
+BEGIN
+  RAISE EXCEPTION 'an issued estimate cannot be %: supersede it with a new one', TG_OP;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS estimates_no_mutate ON clinic.estimates;
+CREATE TRIGGER estimates_no_mutate
+  BEFORE UPDATE OR DELETE ON clinic.estimates
+  FOR EACH ROW EXECUTE FUNCTION clinic.estimates_are_immutable();
+
+-- A patient saying "the desk is asking for more than this". Kept separate from
+-- the estimate so raising it cannot alter the document being disputed.
+CREATE TABLE IF NOT EXISTS clinic.estimate_disputes (
+  id           TEXT PRIMARY KEY,
+  estimate_id  TEXT NOT NULL REFERENCES clinic.estimates(id) ON DELETE CASCADE,
+  raised_by    TEXT REFERENCES patient.users(id) ON DELETE SET NULL,
+  quoted_total INT,
+  detail       TEXT NOT NULL DEFAULT '',
+  status       TEXT NOT NULL DEFAULT 'OPEN',
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_disputes_estimate ON clinic.estimate_disputes(estimate_id);
+
 CREATE TABLE IF NOT EXISTS clinic.referrals (
   id          TEXT PRIMARY KEY,
   lead_id     TEXT NOT NULL REFERENCES clinic.surgery_leads(id) ON DELETE CASCADE,
@@ -328,8 +402,49 @@ CREATE INDEX IF NOT EXISTS idx_documents_body ON documents USING GIN (body);
 -- Append-only by grant, not just convention. The migration revokes UPDATE and
 -- DELETE from the application role, which is the closest equivalent to S3
 -- Object Lock available inside Postgres.
+-- ─────────────────────────────────────────────── transactional outbox
+--
+-- Notifications used to be sent inline: if the SMS gateway was down, the
+-- booking still committed, the patient was never told, and nothing retried.
+-- The event is now written in the same transaction as the thing it describes,
+-- so either both happen or neither does. Delivery is a separate concern that
+-- can fail and be retried without touching the booking.
+--
+-- No foreign keys. An event is a statement about something that happened, and
+-- it has to remain sendable — and diagnosable — even if the row it refers to
+-- is later removed. The subject is recorded as plain text for the same reason
+-- audit_log holds ids that way.
+CREATE TABLE IF NOT EXISTS domain_events (
+  id           BIGSERIAL PRIMARY KEY,
+  kind         TEXT NOT NULL,
+  subject_id   TEXT,
+  payload      JSONB NOT NULL DEFAULT '{}'::jsonb,
+  -- PENDING → SENT, or PENDING → FAILED once attempts run out.
+  status       TEXT NOT NULL DEFAULT 'PENDING',
+  attempts     INT NOT NULL DEFAULT 0,
+  last_error   TEXT,
+  -- Claimed by one worker at a time. Set when a drain picks the row up, so a
+  -- second drain running concurrently cannot send the same message twice.
+  locked_until TIMESTAMPTZ,
+  available_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- The drain query: pending work that is due, oldest first.
+CREATE INDEX IF NOT EXISTS idx_events_pending
+  ON domain_events(status, available_at)
+  WHERE status = 'PENDING';
+
 CREATE TABLE IF NOT EXISTS audit_log (
   id            BIGSERIAL PRIMARY KEY,
+  -- Plain TEXT, deliberately NOT a foreign key to patient.users.
+  --
+  -- A reference would make this table cascade-deletable, and erasing an
+  -- account would then destroy the record of who read that person's data —
+  -- precisely the evidence a regulator asks for after an erasure dispute.
+  -- The cost is that ids here can outlive the rows they name, which is the
+  -- correct trade for an audit log and wrong for almost anything else.
+  --
+  -- Do not "fix" this by adding a REFERENCES clause.
   actor_id      TEXT,
   actor_role    TEXT,
   action        TEXT NOT NULL,

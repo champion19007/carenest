@@ -2,8 +2,15 @@
 
 import { useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
-import { Check, Phone, Send, X } from 'lucide-react'
-import { approveLead, rejectLead, routeLead, type LeadState } from '@/app/actions/leads'
+import { Check, FileText, Phone, Send, Sparkles, X } from 'lucide-react'
+import {
+  approveLead,
+  issueEstimateAction,
+  rejectLead,
+  routeLead,
+  type EstimateState,
+  type LeadState,
+} from '@/app/actions/leads'
 
 const empty: LeadState = {}
 
@@ -17,7 +24,19 @@ export type Lead = {
   status: string
   reject_reason: string | null
   created_at: string
+  /** Whether a price has already been issued, so the form says "re-price". */
+  has_estimate?: boolean
+  /** A machine's reading of the enquiry. Advisory, never a decision. */
+  triage?: {
+    looksGenuine: boolean
+    urgency: 'routine' | 'soon' | 'urgent'
+    summary: string
+    procedure: string
+    concerns: string[]
+  } | null
 }
+
+const URGENCY_RANK: Record<string, number> = { urgent: 0, soon: 1, routine: 2 }
 
 export type RoutableDoctor = { id: string; name: string; speciality: string }
 
@@ -29,7 +48,17 @@ export type RoutableDoctor = { id: string; name: string; speciality: string }
  * surgeon's inbox and a diagnostic centre both receive someone's phone number.
  */
 export function LeadQueue({ leads, doctors }: { leads: Lead[]; doctors: RoutableDoctor[] }) {
-  const waiting = leads.filter((lead) => lead.status === 'NEW')
+  /* Sorted by urgency where triage had something to say, newest first
+     otherwise. Sorting is the whole benefit: nothing is hidden or dropped,
+     the likely-serious enquiries simply reach the top of the list. */
+  const waiting = leads
+    .filter((lead) => lead.status === 'NEW')
+    .slice()
+    .sort((a, b) => {
+      const rank = (lead: Lead) =>
+        lead.triage ? URGENCY_RANK[lead.triage.urgency] ?? 2 : 2
+      return rank(a) - rank(b)
+    })
   const approved = leads.filter((lead) => lead.status === 'APPROVED')
   const closed = leads.filter((lead) => lead.status === 'ROUTED' || lead.status === 'REJECTED')
 
@@ -46,7 +75,10 @@ export function LeadQueue({ leads, doctors }: { leads: Lead[]; doctors: Routable
       <Group title="Approved — ready to send on" count={approved.length} empty="Nothing approved is waiting.">
         {approved.map((lead) => (
           <LeadCard key={lead.id} lead={lead}>
-            <RouteForm id={lead.id} doctors={doctors} />
+            <div className="space-y-4">
+              <RouteForm id={lead.id} doctors={doctors} />
+              <EstimateForm leadId={lead.id} hasEstimate={lead.has_estimate} />
+            </div>
           </LeadCard>
         ))}
       </Group>
@@ -109,9 +141,50 @@ function Group({
   )
 }
 
+/**
+ * A machine's reading of the enquiry, shown above the admin's own buttons.
+ *
+ * Labelled as a suggestion on purpose. It sorts the queue and saves reading
+ * time; it never decides. An admin who disagrees clicks straight past it, and
+ * a lead with no triage looks exactly as it did before.
+ */
+function TriageStrip({ triage }: { triage: NonNullable<Lead['triage']> }) {
+  const tone = !triage.looksGenuine
+    ? 'border-warning/40 bg-warning/5 text-warning'
+    : triage.urgency === 'urgent'
+      ? 'border-warning/50 bg-warning/10 text-warning'
+      : 'border-border bg-soft text-muted-foreground'
+
+  return (
+    <div className={`mb-3 rounded-lg border px-3.5 py-2.5 text-sm ${tone}`}>
+      <p className="flex flex-wrap items-center gap-2 font-semibold">
+        <Sparkles className="size-3.5 shrink-0" aria-hidden="true" />
+        <span className="uppercase tracking-wide text-xs">Suggested reading</span>
+        <span className="rounded-md bg-background/60 px-2 py-0.5 text-xs font-bold uppercase">
+          {triage.urgency}
+        </span>
+        {!triage.looksGenuine && (
+          <span className="rounded-md bg-background/60 px-2 py-0.5 text-xs font-bold">
+            possibly spam
+          </span>
+        )}
+      </p>
+      <p className="mt-1.5 text-foreground">{triage.summary}</p>
+      {triage.concerns.length > 0 && (
+        <ul className="mt-1.5 list-inside list-disc text-xs">
+          {triage.concerns.map((concern) => (
+            <li key={concern}>{concern}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 function LeadCard({ lead, children }: { lead: Lead; children: React.ReactNode }) {
   return (
     <li className="rounded-xl border border-border bg-card p-5">
+      {lead.triage && <TriageStrip triage={lead.triage} />}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="font-bold">{lead.name}</p>
@@ -263,5 +336,91 @@ function Pending({
       {icon}
       {status.pending ? 'Working…' : label}
     </button>
+  )
+}
+
+/**
+ * Price an approved enquiry.
+ *
+ * Four fixed lines rather than a free-form builder, because they are the four
+ * that cause disputes: the surgeon's fee is expected, and the room category,
+ * consumables and hospital charges are the ones that appear for the first time
+ * on the final bill. Naming them here is the entire feature.
+ */
+function EstimateForm({ leadId, hasEstimate }: { leadId: string; hasEstimate?: boolean }) {
+  const [state, submit] = useActionState(issueEstimateAction, {} as EstimateState)
+
+  const lines = [
+    { label: 'Surgeon fee', placeholder: '35000' },
+    { label: 'Anaesthesia', placeholder: '12000' },
+    { label: 'Room rent', placeholder: '4000' },
+    { label: 'Consumables and dressings', placeholder: '6500' },
+    { label: 'Hospital and admission charges', placeholder: '5000' },
+  ]
+
+  return (
+    <form action={submit} className="rounded-lg border border-border p-4">
+      <input type="hidden" name="leadId" value={leadId} />
+
+      <p className="font-semibold">
+        {hasEstimate ? 'Re-price this enquiry' : 'Issue an itemised estimate'}
+      </p>
+      {hasEstimate && (
+        <p className="mt-1 text-sm text-muted-foreground">
+          The current estimate stays on record and the patient sees that it changed.
+        </p>
+      )}
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <label className="text-sm">
+          Hospital
+          <input name="hospital" required className="field mt-1.5" placeholder="Sunrise Multispeciality" />
+        </label>
+        <label className="text-sm">
+          Room category
+          <select name="roomTier" defaultValue="General ward" className="field mt-1.5">
+            <option>General ward</option>
+            <option>Twin sharing</option>
+            <option>Private room</option>
+            <option>Deluxe room</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        {lines.map((line) => (
+          <div key={line.label} className="flex items-center gap-3">
+            <input type="hidden" name="itemLabel" value={line.label} />
+            <span className="min-w-0 flex-1 text-sm">{line.label}</span>
+            <input
+              type="number"
+              name="itemAmount"
+              min="0"
+              step="1"
+              inputMode="numeric"
+              defaultValue="0"
+              placeholder={line.placeholder}
+              className="field w-32 text-right"
+              aria-label={line.label}
+            />
+          </div>
+        ))}
+      </div>
+
+      {state.error && (
+        <p role="alert" className="mt-3 text-sm font-medium text-warning">
+          {state.error}
+        </p>
+      )}
+      {state.notice && (
+        <p className="mt-3 text-sm font-semibold text-success">{state.notice}</p>
+      )}
+
+      <Pending
+        className="bg-cta text-cta-foreground"
+        label={hasEstimate ? 'Issue new estimate' : 'Issue estimate'}
+        icon={<FileText className="size-4" />}
+      />
+    </form>
   )
 }

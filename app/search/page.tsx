@@ -3,6 +3,8 @@ import { MapPin } from 'lucide-react'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
 import { AreaSearch } from '@/components/area-search'
+import { SymptomRouting } from '@/components/symptom-routing'
+import { routeSymptoms } from '@/lib/taxonomy'
 import { DoctorResults } from '@/components/doctor-results'
 import { NearbySuggestions } from '@/components/nearby-suggestions'
 import {
@@ -70,6 +72,11 @@ export default async function SearchPage({
   /* Step 1 — resolve whatever was typed to a known area, by indexed lookup. */
   const area = rawArea ? await resolveArea(rawArea) : undefined
 
+  /* What was typed, if it reads like a complaint rather than a place. Pure
+     table lookup — no model, no network, no key. */
+  const symptomText = typeof params.q === 'string' ? params.q.trim() : ''
+  const routing = symptomText ? routeSymptoms(symptomText) : null
+
   const fees = typeof params.fees === 'string' ? params.fees : ''
   const experience = typeof params.experience === 'string' ? params.experience : ''
   const [minFee, maxFee] = FEE_BANDS[fees] ?? []
@@ -78,7 +85,11 @@ export default async function SearchPage({
   const query: DoctorQuery = {
     kind: 'human',
     pinCode: area?.pin_code,
-    specialities: toArray(params.speciality),
+    /* An explicit filter always wins — the suggestion only fills the gap when
+       the patient has not said who they want to see. */
+    specialities: toArray(params.speciality).length
+      ? toArray(params.speciality)
+      : (routing?.specialities ?? []),
     languages: toArray(params.language),
     minFee,
     maxFee,
@@ -136,6 +147,12 @@ export default async function SearchPage({
           </div>
         </div>
       </div>
+
+      {routing && (
+        <div className="mx-auto max-w-[1320px] px-5 pt-8 lg:px-8">
+          <SymptomRouting routing={routing} query={symptomText} />
+        </div>
+      )}
 
       {showFallback ? (
         <div className="mx-auto max-w-[1320px] px-5 py-10 lg:px-8">

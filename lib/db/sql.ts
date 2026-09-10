@@ -95,7 +95,17 @@ export type Locality = {
   city: string
 }
 
-export type AreaSuggestion = Locality & { doctor_count: number; ring: number }
+export type AreaSuggestion = Locality & {
+  doctor_count: number
+  ring: number
+  /**
+   * Straight-line km between locality centroids, computed offline by the seed
+   * and stored. Null on rows written before distances were recorded, and on
+   * anything not sourced from the adjacency table — so every reader has to
+   * cope with its absence rather than assume it.
+   */
+  distance_km?: number | string | null
+}
 
 /* ─────────────────────────────────────────────────────────────── users */
 
@@ -739,6 +749,52 @@ export async function answerRequest(input: {
   return rows.length > 0
 }
 
+/**
+ * The clinician confirms the patient was actually seen.
+ *
+ * Guarded the same way as answerRequest: the transition only applies from
+ * 'confirmed', and only for this doctor's own booking, so a replayed form
+ * submission cannot mark an appointment attended twice or reach into another
+ * practice's calendar.
+ */
+export async function findBooking(id: string): Promise<Booking | undefined> {
+  const d = await db()
+  return d.one<Booking>('SELECT * FROM patient.bookings WHERE id = $1', [id])
+}
+
+export async function markBookingAttended(input: {
+  bookingId: string
+  doctorId: string
+}): Promise<boolean> {
+  const d = await db()
+  const rows = await d.query<{ id: string }>(
+    `UPDATE patient.bookings SET status = 'attended', attended_at = now()
+     WHERE id = $1 AND doctor_id = $2 AND status = 'confirmed'
+     RETURNING id`,
+    [input.bookingId, input.doctorId],
+  )
+  return rows.length > 0
+}
+
+/**
+ * Did this person actually attend an appointment with this doctor?
+ *
+ * The single fact a review is allowed to exist on. Note it asks about the
+ * doctor's id while reviews are filed under the doctor's slug — the caller
+ * resolves one to the other, because the slug is a public URL that can change
+ * and the id cannot.
+ */
+export async function hasAttendedBooking(userId: string, doctorId: string): Promise<boolean> {
+  const d = await db()
+  const row = await d.one<{ one: number }>(
+    `SELECT 1 AS one FROM patient.bookings
+     WHERE user_id = $1 AND doctor_id = $2 AND status = 'attended'
+     LIMIT 1`,
+    [userId, doctorId],
+  )
+  return Boolean(row)
+}
+
 export async function countBookings(): Promise<number> {
   const d = await db()
   const row = await d.one<{ n: string }>('SELECT COUNT(*) AS n FROM patient.bookings')
@@ -801,7 +857,7 @@ export async function neighbouringAreas(
 ): Promise<AreaSuggestion[]> {
   const d = await db()
   const rows = await d.query<AreaSuggestion>(
-    `SELECT l.locality_id, l.pin_code, l.name, l.city, a.ring,
+    `SELECT l.locality_id, l.pin_code, l.name, l.city, a.ring, a.distance_km,
        (SELECT COUNT(*) FROM provider.doctors dd
         WHERE dd.locality_id = l.locality_id AND dd.status = 'ACTIVE' AND dd.kind = $2)::int
         AS doctor_count

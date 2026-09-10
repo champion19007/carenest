@@ -1,10 +1,12 @@
 'use server'
 
+import { after } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import {
   createBooking,
   findDoctorBySlug,
+  hasAttendedBooking,
   hitRateLimit,
   listBookingsForUser,
   updateDoctorRating,
@@ -18,6 +20,10 @@ import {
   ratingFor,
   type PrescribedDrug,
 } from '@/lib/db/docs'
+import { findSlot, holdSlot } from '@/lib/db/slots'
+import { emit } from '@/lib/db/outbox'
+import { drainAll } from '@/lib/drain'
+import { slotLabel } from '@/lib/slot-format'
 import { currentUser, newId, requireRole, requireUser } from '@/lib/auth'
 
 export type BookingState = { error?: string }
@@ -32,12 +38,12 @@ export async function bookAppointment(
   formData: FormData,
 ): Promise<BookingState> {
   const slug = String(formData.get('slug') ?? '')
-  const slot = String(formData.get('slot') ?? '')
+  const slotId = String(formData.get('slotId') ?? '')
   const kind = String(formData.get('kind') ?? 'clinic')
 
   const doctor = await findDoctorBySlug(slug)
   if (!doctor) return { error: 'That doctor is no longer listed.' }
-  if (!slot) return { error: 'Choose a time slot first.' }
+  if (!slotId) return { error: 'Choose a time slot first.' }
 
   const user = await requireUser(`/book/${slug}`)
 
@@ -46,15 +52,23 @@ export async function bookAppointment(
     return { error: 'You have made a lot of bookings recently. Please try again later.' }
   }
 
-  /* Don't let the same person hold the same slot twice. */
-  const mine = await listBookingsForUser(user.id)
-  const existing = mine.find(
-    (booking) =>
-      booking.doctor_id === doctor.id &&
-      booking.slot === slot &&
-      (booking.status === 'confirmed' || booking.status === 'requested'),
-  )
-  if (existing) return { error: 'You already have this slot booked.' }
+  const chosen = await findSlot(slotId)
+  if (!chosen || chosen.doctor_id !== doctor.id) {
+    return { error: 'That time is no longer on this clinic’s calendar.' }
+  }
+
+  /* The claim. Nothing above this decided whether the slot was free — that
+     would be a read followed by a write, and two requests could both pass the
+     read. holdSlot succeeds for exactly one of them and returns false to the
+     other, so the loser is told rather than quietly double-booked. */
+  const held = await holdSlot({ slotId, userId: user.id })
+  if (!held) {
+    return {
+      error: 'Someone else just took that time. Pick another — the list has been refreshed.',
+    }
+  }
+
+  const slot = slotLabel(chosen.slot_start)
 
   /* Who the appointment is for. An empty value means the account holder, so
      bookings made before family members existed still make sense. */
@@ -65,6 +79,7 @@ export async function bookAppointment(
     id,
     userId: user.id,
     doctorId: doctor.id,
+    slotId,
     kind,
     slot,
     fee: doctor.fee,
@@ -72,6 +87,21 @@ export async function bookAppointment(
        over its own calendar. The clinician answers it from their queue. */
     status: 'requested',
     patientFor,
+  })
+
+  /* Recorded, not sent. The patient is still waiting on this response, and a
+     gateway call here would put a third party on the critical path of their
+     booking. */
+  await emit({
+    kind: 'booking.requested',
+    subjectId: id,
+    payload: { phone: user.phone, doctorName: doctor.name, slot },
+  })
+
+  /* Deliver once the patient has their response. Not a queue — if this
+     invocation is killed the row stays PENDING and the cron picks it up. */
+  after(async () => {
+    await drainAll(5)
   })
 
   await logActivity({
@@ -113,6 +143,18 @@ export async function submitReview(
 
   if (await hasReviewed(slug, user.id)) {
     return { error: 'You have already reviewed this doctor.' }
+  }
+
+  /* The whole integrity claim rests on this line. A rating may only be left
+     by someone the clinician has confirmed they actually saw — not by anyone
+     who can reach the page while signed in. Reviews are filed under the
+     public slug; the booking records the stable id, so resolve across. */
+  if (!(await hasAttendedBooking(user.id, doctor.id))) {
+    return {
+      error:
+        'Reviews can only be left after a visit the clinic has confirmed you attended. ' +
+        'If you have just been seen, it may take a moment to appear.',
+    }
   }
 
   await addReview({

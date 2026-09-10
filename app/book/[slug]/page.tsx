@@ -6,6 +6,7 @@ import { SiteHeader } from '@/components/site-header'
 import { BookingForm } from '@/components/booking-form'
 import { ensureSelfMember, listFamily } from '@/lib/db/family'
 import { findDoctorBySlug } from '@/lib/db/sql'
+import { ensureSlots, openSlots } from '@/lib/db/slots'
 import { requireUser, newId } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
@@ -20,6 +21,15 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
   const user = await requireUser(`/book/${slug}`)
   await ensureSelfMember(user.id, user.name, newId('fam'))
   const family = await listFamily(user.id)
+
+  /* Generate the clinic's next few days of slots if they are not there yet,
+     then read back only the ones still free. Idempotent, so opening the page
+     twice does not duplicate a calendar. */
+  await ensureSlots(doctor.id)
+  const slots = (await openSlots(doctor.id)).map((slot) => ({
+    slotId: slot.slot_id,
+    startsAt: slot.slot_start,
+  }))
 
   return (
     <main className="min-h-screen bg-surface">
@@ -43,6 +53,7 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
             offersVideo={doctor.video}
             patientName={user.name || `+91 ${user.phone}`}
             family={family}
+            slots={slots}
           />
 
           <aside className="h-fit rounded-xl border border-border bg-card p-6">
