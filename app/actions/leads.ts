@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { triageEnquiry } from '@/lib/triage'
 import {
   currentEstimate,
   findEstimate,
@@ -11,7 +12,7 @@ import {
 import { currentAdmin, currentUser, newId } from '@/lib/auth'
 import { hitRateLimit, writeAudit } from '@/lib/db/sql'
 import { addReferral, createLead, getLead, transitionLead } from '@/lib/db/leads'
-import { logActivity } from '@/lib/db/docs'
+import { addTriage, logActivity } from '@/lib/db/docs'
 
 export type LeadState = { error?: string; notice?: string; done?: boolean }
 
@@ -54,6 +55,15 @@ export async function submitSurgeryLead(
     userId: user?.id,
     meta: { leadId: id },
   })
+
+  /* Triage runs after the lead is safely stored, and its result never gates
+     this response. If the model is slow, unconfigured or wrong, the patient
+     still gets their confirmation and the admin still gets the enquiry — the
+     queue simply looks the way it did before this feature existed. */
+  const triage = await triageEnquiry({ procedure, notes, city })
+  if (triage) {
+    await addTriage({ leadId: id, ...triage })
+  }
 
   return { done: true, notice: 'A care coordinator will call you within 15 minutes.' }
 }

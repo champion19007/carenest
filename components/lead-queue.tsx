@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
-import { Check, FileText, Phone, Send, X } from 'lucide-react'
+import { Check, FileText, Phone, Send, Sparkles, X } from 'lucide-react'
 import {
   approveLead,
   issueEstimateAction,
@@ -26,7 +26,17 @@ export type Lead = {
   created_at: string
   /** Whether a price has already been issued, so the form says "re-price". */
   has_estimate?: boolean
+  /** A machine's reading of the enquiry. Advisory, never a decision. */
+  triage?: {
+    looksGenuine: boolean
+    urgency: 'routine' | 'soon' | 'urgent'
+    summary: string
+    procedure: string
+    concerns: string[]
+  } | null
 }
+
+const URGENCY_RANK: Record<string, number> = { urgent: 0, soon: 1, routine: 2 }
 
 export type RoutableDoctor = { id: string; name: string; speciality: string }
 
@@ -38,7 +48,17 @@ export type RoutableDoctor = { id: string; name: string; speciality: string }
  * surgeon's inbox and a diagnostic centre both receive someone's phone number.
  */
 export function LeadQueue({ leads, doctors }: { leads: Lead[]; doctors: RoutableDoctor[] }) {
-  const waiting = leads.filter((lead) => lead.status === 'NEW')
+  /* Sorted by urgency where triage had something to say, newest first
+     otherwise. Sorting is the whole benefit: nothing is hidden or dropped,
+     the likely-serious enquiries simply reach the top of the list. */
+  const waiting = leads
+    .filter((lead) => lead.status === 'NEW')
+    .slice()
+    .sort((a, b) => {
+      const rank = (lead: Lead) =>
+        lead.triage ? URGENCY_RANK[lead.triage.urgency] ?? 2 : 2
+      return rank(a) - rank(b)
+    })
   const approved = leads.filter((lead) => lead.status === 'APPROVED')
   const closed = leads.filter((lead) => lead.status === 'ROUTED' || lead.status === 'REJECTED')
 
@@ -121,9 +141,50 @@ function Group({
   )
 }
 
+/**
+ * A machine's reading of the enquiry, shown above the admin's own buttons.
+ *
+ * Labelled as a suggestion on purpose. It sorts the queue and saves reading
+ * time; it never decides. An admin who disagrees clicks straight past it, and
+ * a lead with no triage looks exactly as it did before.
+ */
+function TriageStrip({ triage }: { triage: NonNullable<Lead['triage']> }) {
+  const tone = !triage.looksGenuine
+    ? 'border-warning/40 bg-warning/5 text-warning'
+    : triage.urgency === 'urgent'
+      ? 'border-warning/50 bg-warning/10 text-warning'
+      : 'border-border bg-soft text-muted-foreground'
+
+  return (
+    <div className={`mb-3 rounded-lg border px-3.5 py-2.5 text-sm ${tone}`}>
+      <p className="flex flex-wrap items-center gap-2 font-semibold">
+        <Sparkles className="size-3.5 shrink-0" aria-hidden="true" />
+        <span className="uppercase tracking-wide text-xs">Suggested reading</span>
+        <span className="rounded-md bg-background/60 px-2 py-0.5 text-xs font-bold uppercase">
+          {triage.urgency}
+        </span>
+        {!triage.looksGenuine && (
+          <span className="rounded-md bg-background/60 px-2 py-0.5 text-xs font-bold">
+            possibly spam
+          </span>
+        )}
+      </p>
+      <p className="mt-1.5 text-foreground">{triage.summary}</p>
+      {triage.concerns.length > 0 && (
+        <ul className="mt-1.5 list-inside list-disc text-xs">
+          {triage.concerns.map((concern) => (
+            <li key={concern}>{concern}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 function LeadCard({ lead, children }: { lead: Lead; children: React.ReactNode }) {
   return (
     <li className="rounded-xl border border-border bg-card p-5">
+      {lead.triage && <TriageStrip triage={lead.triage} />}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="font-bold">{lead.name}</p>

@@ -188,3 +188,53 @@ export const activity = () => 'activity'
 export async function countDocs(collection: () => string): Promise<number> {
   return count(collection())
 }
+
+/* ────────────────────────────────────────────────────────── triage */
+
+export type TriageDoc = {
+  _id: string
+  leadId: string
+  looksGenuine: boolean
+  urgency: 'routine' | 'soon' | 'urgent'
+  summary: string
+  procedure: string
+  concerns: string[]
+  createdAt: string
+}
+
+/**
+ * Advice about an enquiry, kept beside it rather than on it.
+ *
+ * Deliberately not a column on clinic.surgery_leads: this is a machine's
+ * opinion, the lead row is the record of fact, and mixing them invites reading
+ * one as the other. A lead with no triage document behaves exactly as it did
+ * before the feature existed.
+ */
+export async function addTriage(doc: Omit<TriageDoc, '_id' | 'createdAt'>) {
+  await insert('triage', doc.leadId, doc)
+}
+
+export async function triageFor(leadId: string): Promise<TriageDoc | undefined> {
+  const rows = await listBySubject<TriageDoc>('triage', leadId, 1)
+  return rows[0]
+}
+
+/** Triage for many leads at once, so a queue does not issue a query per row. */
+export async function triageForMany(leadIds: string[]): Promise<Map<string, TriageDoc>> {
+  const found = new Map<string, TriageDoc>()
+  if (leadIds.length === 0) return found
+
+  const d = await db()
+  const rows = await d.query<{ subject_id: string; body: TriageDoc }>(
+    `SELECT subject_id, body FROM documents
+     WHERE collection = 'triage' AND subject_id = ANY($1)
+     ORDER BY created_at DESC`,
+    [leadIds],
+  )
+
+  for (const row of rows) {
+    const body = typeof row.body === 'string' ? JSON.parse(row.body) : row.body
+    if (!found.has(row.subject_id)) found.set(row.subject_id, body)
+  }
+  return found
+}

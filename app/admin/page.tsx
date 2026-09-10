@@ -14,7 +14,14 @@ import {
   countActiveSessions,
   countAdmins,
 } from '@/lib/db/sql'
-import { chartNotes, countDocs, prescriptions, recentActivity, reviews } from '@/lib/db/docs'
+import {
+  chartNotes,
+  countDocs,
+  prescriptions,
+  recentActivity,
+  reviews,
+  triageForMany,
+} from '@/lib/db/docs'
 import { listLeadsWithEstimateFlag } from '@/lib/db/leads'
 import { LeadQueue } from '@/components/lead-queue'
 
@@ -26,6 +33,13 @@ export default async function AdminPage() {
   if (!admin) return <AdminGate firstRun={await countAdmins() === 0} />
 
   const [leads, allDoctors] = await Promise.all([listLeadsWithEstimateFlag(), listDoctors()])
+
+  /* One query for every lead's triage rather than one per row. */
+  const triage = await triageForMany(leads.map((lead) => lead.id))
+  const leadsWithTriage = leads.map((lead) => ({
+    ...lead,
+    triage: triage.get(lead.id) ?? null,
+  }))
   /* Only listed, active clinicians can receive a referral. */
   const routable = allDoctors.filter((doctor) => doctor.status === 'ACTIVE')
 
@@ -77,7 +91,7 @@ export default async function AdminPage() {
           </p>
           <div className="mt-6">
             <LeadQueue
-              leads={leads}
+              leads={leadsWithTriage}
               doctors={routable.map((d) => ({
                 id: d.id,
                 name: d.name,
