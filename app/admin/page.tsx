@@ -15,7 +15,7 @@ import {
   countAdmins,
 } from '@/lib/db/sql'
 import { chartNotes, countDocs, prescriptions, recentActivity, reviews } from '@/lib/db/docs'
-import { listLeads } from '@/lib/db/leads'
+import { listLeadsWithEstimateFlag } from '@/lib/db/leads'
 import { LeadQueue } from '@/components/lead-queue'
 
 export const metadata = { title: 'Admin console · CareNest' }
@@ -25,7 +25,7 @@ export default async function AdminPage() {
   const admin = await currentAdmin()
   if (!admin) return <AdminGate firstRun={await countAdmins() === 0} />
 
-  const [leads, allDoctors] = await Promise.all([listLeads(), listDoctors()])
+  const [leads, allDoctors] = await Promise.all([listLeadsWithEstimateFlag(), listDoctors()])
   /* Only listed, active clinicians can receive a referral. */
   const routable = allDoctors.filter((doctor) => doctor.status === 'ACTIVE')
 

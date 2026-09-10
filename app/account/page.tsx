@@ -12,6 +12,9 @@ import {
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
 import { findDoctorBySlug, listBookingsForUser } from '@/lib/db/sql'
+import { leadsForUser } from '@/lib/db/leads'
+import { currentEstimate } from '@/lib/db/estimates'
+import { EstimateSheet } from '@/components/estimate-sheet'
 import { listChartNotes, listPrescriptions } from '@/lib/db/docs'
 import { requireUser } from '@/lib/auth'
 
@@ -27,6 +30,19 @@ export default async function AccountPage({
   const user = await requireUser('/account')
 
   const bookings = await listBookingsForUser(user.id)
+
+  /* Surgery enquiries and whichever estimate is currently in force on each.
+     Resolved up front rather than inside the render, because a component
+     cannot await and a map of promises would render before any settled. */
+  const leads = await leadsForUser(user.id)
+  const estimates = (
+    await Promise.all(
+      leads.map(async (lead) => {
+        const estimate = await currentEstimate(lead.id)
+        return estimate ? { lead, estimate } : null
+      }),
+    )
+  ).filter((entry) => entry !== null)
   const [prescriptions, notes] = await Promise.all([
     listPrescriptions(user.id),
     listChartNotes(user.id),
@@ -87,6 +103,35 @@ export default async function AccountPage({
               .
             </span>
           </p>
+        )}
+
+        {/* Surgery estimates -------------------------------------------- */}
+        {estimates.length > 0 && (
+          <section className="mb-12">
+            <h2 className="text-2xl">Your surgery estimates</h2>
+            <p className="mt-2 text-muted-foreground">
+              Every line agreed before admission. If the hospital asks for a different amount, flag
+              it here — the estimate on record cannot be changed to match.
+            </p>
+            <div className="mt-6 space-y-6">
+              {estimates.map(({ estimate }) => (
+                <EstimateSheet
+                  key={estimate.id}
+                  estimate={{
+                    id: estimate.id,
+                    procedure: estimate.procedure,
+                    hospital: estimate.hospital,
+                    roomTier: estimate.room_tier,
+                    lineItems: estimate.line_items,
+                    total: estimate.total,
+                    contentHash: estimate.content_hash,
+                    supersedes: estimate.supersedes,
+                    validUntil: estimate.valid_until,
+                  }}
+                />
+              ))}
+            </div>
+          </section>
         )}
 
         {/* Bookings ---------------------------------------------------- */}

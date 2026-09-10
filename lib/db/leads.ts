@@ -72,6 +72,24 @@ export async function createLead(input: {
   )
 }
 
+/**
+ * Enquiries with a flag for whether a price has already been issued.
+ *
+ * A join rather than a column on the lead: "has an estimate" is a fact about
+ * the estimates table, and duplicating it here would create a second place
+ * that could disagree with the first.
+ */
+export async function listLeadsWithEstimateFlag(): Promise<(SurgeryLead & { has_estimate: boolean })[]> {
+  const d = await db()
+  return d.query<SurgeryLead & { has_estimate: boolean }>(
+    `SELECT l.*, EXISTS (
+       SELECT 1 FROM clinic.estimates e WHERE e.lead_id = l.id
+     ) AS has_estimate
+     FROM clinic.surgery_leads l
+     ORDER BY l.created_at DESC`,
+  )
+}
+
 export async function listLeads(status?: LeadStatus): Promise<SurgeryLead[]> {
   const d = await db()
   if (status) {
@@ -147,5 +165,14 @@ export async function referralsForDoctor(doctorId: string) {
      WHERE r.doctor_id = $1
      ORDER BY r.created_at DESC`,
     [doctorId],
+  )
+}
+
+/** A signed-in patient's own surgery enquiries. */
+export async function leadsForUser(userId: string): Promise<SurgeryLead[]> {
+  const d = await db()
+  return d.query<SurgeryLead>(
+    'SELECT * FROM clinic.surgery_leads WHERE user_id = $1 ORDER BY created_at DESC',
+    [userId],
   )
 }

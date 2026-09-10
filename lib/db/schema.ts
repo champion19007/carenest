@@ -297,6 +297,65 @@ CREATE INDEX IF NOT EXISTS idx_leads_status ON clinic.surgery_leads(status, crea
 
 -- Where an approved lead was sent. Two destinations, one table, because the
 -- question asked of it is always "what happened to this lead".
+-- Itemised surgery estimates.
+--
+-- The anxiety this addresses is specific: a patient agrees to a number, then
+-- the bill arrives inflated by a room category nobody mentioned, consumables,
+-- and administration. So the estimate names every line before admission.
+--
+-- Immutable once issued. A revision is a NEW row that supersedes the old one,
+-- never an edit, so "the price changed" is always provable and "the price was
+-- always this" can never be claimed retroactively. Software cannot make an
+-- estimate legally binding; what it can do is make a quiet change impossible
+-- to hide, which is the part that actually protects the patient.
+CREATE TABLE IF NOT EXISTS clinic.estimates (
+  id            TEXT PRIMARY KEY,
+  -- RESTRICT, not CASCADE. A cascade would be a back door through the
+  -- immutability guarantee: delete the enquiry and the priced document
+  -- disappears with it, without any UPDATE or DELETE on this table ever being
+  -- attempted. An enquiry carrying an issued estimate has to be kept.
+  lead_id       TEXT NOT NULL REFERENCES clinic.surgery_leads(id) ON DELETE RESTRICT,
+  procedure     TEXT NOT NULL,
+  hospital      TEXT NOT NULL DEFAULT '',
+  room_tier     TEXT NOT NULL DEFAULT 'General ward',
+  -- [{ label, amount, note }] — the breakdown the patient sees.
+  line_items    JSONB NOT NULL DEFAULT '[]'::jsonb,
+  total         INT NOT NULL DEFAULT 0,
+  -- Fingerprint of the priced content. Lets a patient prove the sheet they
+  -- were shown is the sheet on file, without trusting our own UI.
+  content_hash  TEXT NOT NULL,
+  -- The row this one replaces, if any.
+  supersedes    TEXT REFERENCES clinic.estimates(id) ON DELETE SET NULL,
+  issued_by     TEXT,
+  valid_until   TIMESTAMPTZ,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_estimates_lead ON clinic.estimates(lead_id, created_at DESC);
+
+CREATE OR REPLACE FUNCTION clinic.estimates_are_immutable() RETURNS trigger AS $$
+BEGIN
+  RAISE EXCEPTION 'an issued estimate cannot be %: supersede it with a new one', TG_OP;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS estimates_no_mutate ON clinic.estimates;
+CREATE TRIGGER estimates_no_mutate
+  BEFORE UPDATE OR DELETE ON clinic.estimates
+  FOR EACH ROW EXECUTE FUNCTION clinic.estimates_are_immutable();
+
+-- A patient saying "the desk is asking for more than this". Kept separate from
+-- the estimate so raising it cannot alter the document being disputed.
+CREATE TABLE IF NOT EXISTS clinic.estimate_disputes (
+  id           TEXT PRIMARY KEY,
+  estimate_id  TEXT NOT NULL REFERENCES clinic.estimates(id) ON DELETE CASCADE,
+  raised_by    TEXT REFERENCES patient.users(id) ON DELETE SET NULL,
+  quoted_total INT,
+  detail       TEXT NOT NULL DEFAULT '',
+  status       TEXT NOT NULL DEFAULT 'OPEN',
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_disputes_estimate ON clinic.estimate_disputes(estimate_id);
+
 CREATE TABLE IF NOT EXISTS clinic.referrals (
   id          TEXT PRIMARY KEY,
   lead_id     TEXT NOT NULL REFERENCES clinic.surgery_leads(id) ON DELETE CASCADE,

@@ -2,8 +2,15 @@
 
 import { useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
-import { Check, Phone, Send, X } from 'lucide-react'
-import { approveLead, rejectLead, routeLead, type LeadState } from '@/app/actions/leads'
+import { Check, FileText, Phone, Send, X } from 'lucide-react'
+import {
+  approveLead,
+  issueEstimateAction,
+  rejectLead,
+  routeLead,
+  type EstimateState,
+  type LeadState,
+} from '@/app/actions/leads'
 
 const empty: LeadState = {}
 
@@ -17,6 +24,8 @@ export type Lead = {
   status: string
   reject_reason: string | null
   created_at: string
+  /** Whether a price has already been issued, so the form says "re-price". */
+  has_estimate?: boolean
 }
 
 export type RoutableDoctor = { id: string; name: string; speciality: string }
@@ -46,7 +55,10 @@ export function LeadQueue({ leads, doctors }: { leads: Lead[]; doctors: Routable
       <Group title="Approved — ready to send on" count={approved.length} empty="Nothing approved is waiting.">
         {approved.map((lead) => (
           <LeadCard key={lead.id} lead={lead}>
-            <RouteForm id={lead.id} doctors={doctors} />
+            <div className="space-y-4">
+              <RouteForm id={lead.id} doctors={doctors} />
+              <EstimateForm leadId={lead.id} hasEstimate={lead.has_estimate} />
+            </div>
           </LeadCard>
         ))}
       </Group>
@@ -263,5 +275,91 @@ function Pending({
       {icon}
       {status.pending ? 'Working…' : label}
     </button>
+  )
+}
+
+/**
+ * Price an approved enquiry.
+ *
+ * Four fixed lines rather than a free-form builder, because they are the four
+ * that cause disputes: the surgeon's fee is expected, and the room category,
+ * consumables and hospital charges are the ones that appear for the first time
+ * on the final bill. Naming them here is the entire feature.
+ */
+function EstimateForm({ leadId, hasEstimate }: { leadId: string; hasEstimate?: boolean }) {
+  const [state, submit] = useActionState(issueEstimateAction, {} as EstimateState)
+
+  const lines = [
+    { label: 'Surgeon fee', placeholder: '35000' },
+    { label: 'Anaesthesia', placeholder: '12000' },
+    { label: 'Room rent', placeholder: '4000' },
+    { label: 'Consumables and dressings', placeholder: '6500' },
+    { label: 'Hospital and admission charges', placeholder: '5000' },
+  ]
+
+  return (
+    <form action={submit} className="rounded-lg border border-border p-4">
+      <input type="hidden" name="leadId" value={leadId} />
+
+      <p className="font-semibold">
+        {hasEstimate ? 'Re-price this enquiry' : 'Issue an itemised estimate'}
+      </p>
+      {hasEstimate && (
+        <p className="mt-1 text-sm text-muted-foreground">
+          The current estimate stays on record and the patient sees that it changed.
+        </p>
+      )}
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <label className="text-sm">
+          Hospital
+          <input name="hospital" required className="field mt-1.5" placeholder="Sunrise Multispeciality" />
+        </label>
+        <label className="text-sm">
+          Room category
+          <select name="roomTier" defaultValue="General ward" className="field mt-1.5">
+            <option>General ward</option>
+            <option>Twin sharing</option>
+            <option>Private room</option>
+            <option>Deluxe room</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        {lines.map((line) => (
+          <div key={line.label} className="flex items-center gap-3">
+            <input type="hidden" name="itemLabel" value={line.label} />
+            <span className="min-w-0 flex-1 text-sm">{line.label}</span>
+            <input
+              type="number"
+              name="itemAmount"
+              min="0"
+              step="1"
+              inputMode="numeric"
+              defaultValue="0"
+              placeholder={line.placeholder}
+              className="field w-32 text-right"
+              aria-label={line.label}
+            />
+          </div>
+        ))}
+      </div>
+
+      {state.error && (
+        <p role="alert" className="mt-3 text-sm font-medium text-warning">
+          {state.error}
+        </p>
+      )}
+      {state.notice && (
+        <p className="mt-3 text-sm font-semibold text-success">{state.notice}</p>
+      )}
+
+      <Pending
+        className="bg-cta text-cta-foreground"
+        label={hasEstimate ? 'Issue new estimate' : 'Issue estimate'}
+        icon={<FileText className="size-4" />}
+      />
+    </form>
   )
 }
