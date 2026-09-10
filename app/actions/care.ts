@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import {
   createBooking,
   findDoctorBySlug,
+  hasAttendedBooking,
   hitRateLimit,
   listBookingsForUser,
   updateDoctorRating,
@@ -113,6 +114,18 @@ export async function submitReview(
 
   if (await hasReviewed(slug, user.id)) {
     return { error: 'You have already reviewed this doctor.' }
+  }
+
+  /* The whole integrity claim rests on this line. A rating may only be left
+     by someone the clinician has confirmed they actually saw — not by anyone
+     who can reach the page while signed in. Reviews are filed under the
+     public slug; the booking records the stable id, so resolve across. */
+  if (!(await hasAttendedBooking(user.id, doctor.id))) {
+    return {
+      error:
+        'Reviews can only be left after a visit the clinic has confirmed you attended. ' +
+        'If you have just been seen, it may take a moment to appear.',
+    }
   }
 
   await addReview({

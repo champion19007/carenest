@@ -3,7 +3,12 @@
 import { revalidatePath } from 'next/cache'
 import { currentClaims, requireRole } from '@/lib/auth'
 import { assertAllowed, PolicyError } from '@/lib/policy'
-import { answerRequest, findDoctorByUserId, writeAudit } from '@/lib/db/sql'
+import {
+  answerRequest,
+  findDoctorByUserId,
+  markBookingAttended,
+  writeAudit,
+} from '@/lib/db/sql'
 import { logActivity } from '@/lib/db/docs'
 
 export type PracticeState = { error?: string; notice?: string }
@@ -62,4 +67,59 @@ export async function respondToRequest(
 
   revalidatePath('/practice/requests')
   return { notice: decision === 'confirmed' ? 'Appointment confirmed.' : 'Request declined.' }
+}
+
+/**
+ * Record that the patient was actually seen.
+ *
+ * This is the only way an appointment becomes reviewable, which makes it a
+ * higher-value target than it looks: the clinician is being asked to assert a
+ * fact about the past that later unlocks a rating of themselves. Hence the
+ * same policy gate, ownership check and audit entry as accepting a request —
+ * and a transition guarded in SQL rather than read-then-write, so a replayed
+ * submission cannot mark the same appointment twice.
+ */
+export async function markAttended(
+  _prev: PracticeState,
+  formData: FormData,
+): Promise<PracticeState> {
+  const user = await requireRole('doctor', '/practice/requests')
+
+  try {
+    assertAllowed(await currentClaims(), 'practice:access')
+  } catch (error) {
+    if (error instanceof PolicyError) return { error: error.reason }
+    throw error
+  }
+
+  const doctor = await findDoctorByUserId(user.id)
+  if (!doctor) return { error: 'Your clinician profile is not set up yet.' }
+
+  const bookingId = String(formData.get('bookingId') ?? '')
+  if (!bookingId) return { error: 'Which appointment?' }
+
+  const moved = await markBookingAttended({ bookingId, doctorId: doctor.id })
+  if (!moved) {
+    /* Already marked, never confirmed, or another practice's booking. Saying
+       which would confirm the existence of someone else's appointment. */
+    return { error: 'That appointment cannot be marked as attended.' }
+  }
+
+  await writeAudit({
+    actorId: user.id,
+    actorRole: 'doctor',
+    action: 'booking:attended',
+    resource: bookingId,
+    tenantRegion: user.tenant_region,
+  })
+
+  await logActivity({
+    kind: 'booking.attended',
+    message: `${doctor.name} confirmed a patient was seen`,
+    userId: user.id,
+    meta: { bookingId },
+  })
+
+  revalidatePath('/practice/requests')
+  return { notice: 'Marked as attended. The patient can now leave a review.' }
 }

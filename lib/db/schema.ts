@@ -247,6 +247,11 @@ CREATE TABLE IF NOT EXISTS patient.bookings (
   fee          INT NOT NULL DEFAULT 0,
   status       TEXT NOT NULL DEFAULT 'confirmed',
   payment_ref  TEXT,
+  -- Set when the clinician marks the patient as seen. This is the fact a
+  -- review is gated on: without it, any signed-in account could rate any
+  -- doctor, which is exactly the manipulation the trust page promises we
+  -- prevent.
+  attended_at  TIMESTAMPTZ,
   -- Who the appointment is for. Null means the account holder themselves,
   -- which keeps every booking made before family members existed valid.
   patient_for  TEXT REFERENCES patient.family_members(id) ON DELETE SET NULL,

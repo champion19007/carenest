@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { CalendarClock, IndianRupee, Inbox, Phone, Stethoscope, Users, Video } from 'lucide-react'
+import { AttendedAction } from '@/components/attended-action'
 import { PracticeShell } from '@/components/practice-shell'
 import { RequestActions } from '@/components/request-actions'
 import { Avatar } from '@/components/avatar'
@@ -187,13 +188,23 @@ export default async function RequestsPage() {
                   <span className="text-sm text-muted-foreground">{request.slot}</span>
                   <span
                     className={`rounded-md px-2.5 py-1 text-xs font-bold ${
-                      request.status === 'confirmed'
-                        ? 'bg-success/10 text-success'
-                        : 'bg-warning/10 text-warning'
+                      request.status === 'attended'
+                        ? 'bg-primary/10 text-primary'
+                        : request.status === 'confirmed'
+                          ? 'bg-success/10 text-success'
+                          : 'bg-warning/10 text-warning'
                     }`}
                   >
-                    {request.status === 'confirmed' ? 'Confirmed' : 'Declined'}
+                    {request.status === 'attended'
+                      ? 'Seen'
+                      : request.status === 'confirmed'
+                        ? 'Confirmed'
+                        : 'Declined'}
                   </span>
+
+                  {/* Only a confirmed appointment can become an attended one,
+                      which is what lets the patient review this clinic. */}
+                  {request.status === 'confirmed' && <AttendedAction bookingId={request.id} />}
                 </li>
               ))}
             </ul>

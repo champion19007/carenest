@@ -739,6 +739,47 @@ export async function answerRequest(input: {
   return rows.length > 0
 }
 
+/**
+ * The clinician confirms the patient was actually seen.
+ *
+ * Guarded the same way as answerRequest: the transition only applies from
+ * 'confirmed', and only for this doctor's own booking, so a replayed form
+ * submission cannot mark an appointment attended twice or reach into another
+ * practice's calendar.
+ */
+export async function markBookingAttended(input: {
+  bookingId: string
+  doctorId: string
+}): Promise<boolean> {
+  const d = await db()
+  const rows = await d.query<{ id: string }>(
+    `UPDATE patient.bookings SET status = 'attended', attended_at = now()
+     WHERE id = $1 AND doctor_id = $2 AND status = 'confirmed'
+     RETURNING id`,
+    [input.bookingId, input.doctorId],
+  )
+  return rows.length > 0
+}
+
+/**
+ * Did this person actually attend an appointment with this doctor?
+ *
+ * The single fact a review is allowed to exist on. Note it asks about the
+ * doctor's id while reviews are filed under the doctor's slug — the caller
+ * resolves one to the other, because the slug is a public URL that can change
+ * and the id cannot.
+ */
+export async function hasAttendedBooking(userId: string, doctorId: string): Promise<boolean> {
+  const d = await db()
+  const row = await d.one<{ one: number }>(
+    `SELECT 1 AS one FROM patient.bookings
+     WHERE user_id = $1 AND doctor_id = $2 AND status = 'attended'
+     LIMIT 1`,
+    [userId, doctorId],
+  )
+  return Boolean(row)
+}
+
 export async function countBookings(): Promise<number> {
   const d = await db()
   const row = await d.one<{ n: string }>('SELECT COUNT(*) AS n FROM patient.bookings')
