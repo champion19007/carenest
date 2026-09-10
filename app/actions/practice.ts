@@ -6,11 +6,13 @@ import { assertAllowed, PolicyError } from '@/lib/policy'
 import {
   answerRequest,
   findBooking,
+  findUserById,
   findDoctorByUserId,
   markBookingAttended,
   writeAudit,
 } from '@/lib/db/sql'
 import { closeSlot, confirmSlot, releaseSlot } from '@/lib/db/slots'
+import { emit } from '@/lib/db/outbox'
 import { logActivity } from '@/lib/db/docs'
 
 export type PracticeState = { error?: string; notice?: string }
@@ -68,6 +70,22 @@ export async function respondToRequest(
     resource: bookingId,
     tenantRegion: user.tenant_region,
   })
+
+  if (booking) {
+    const patient = await findUserById(booking.user_id)
+    if (patient) {
+      await emit({
+        kind: decision === 'confirmed' ? 'booking.confirmed' : 'booking.declined',
+        subjectId: bookingId,
+        payload: {
+          phone: patient.phone,
+          doctorName: doctor.name,
+          slot: booking.slot,
+          clinic: doctor.clinic,
+        },
+      })
+    }
+  }
 
   await logActivity({
     kind: `booking.${decision}`,

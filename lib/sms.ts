@@ -46,6 +46,97 @@ export async function sendOtpSms(phone: string, code: string): Promise<SmsResult
   }
 }
 
+/**
+ * A plain transactional message — a booking confirmation, an estimate.
+ *
+ * Separate from sendOtpSms because MSG91 routes one-time codes through a
+ * dedicated OTP endpoint with its own DLT template. A confirmation sent down
+ * that path would be rejected, so the two cannot share an adapter even though
+ * they look alike from here.
+ *
+ * Throws on failure rather than returning a result object. Its only caller is
+ * the outbox drain, which needs a rejection to know the row should be retried
+ * — a quietly returned `{ deliveredToDevice: false }` would be marked sent.
+ */
+export async function sendSms(phone: string, message: string): Promise<void> {
+  const digits = phone.replace(/\D/g, '').slice(-10)
+  if (digits.length !== 10) throw new Error(`unusable phone number: ${phone}`)
+
+  const result = await sendTextMessage(digits, message)
+  if (!result.deliveredToDevice && smsIsLive()) {
+    throw new Error(result.error ?? 'delivery failed')
+  }
+}
+
+async function sendTextMessage(phone: string, message: string): Promise<SmsResult> {
+  switch (smsProviderName()) {
+    case 'msg91':
+      return sendTextViaMsg91(phone, message)
+    case 'twilio':
+      return sendTextViaTwilio(phone, message)
+    default:
+      console.info(`[sms:console] to +91${phone}: ${message}`)
+      return { deliveredToDevice: false }
+  }
+}
+
+/** MSG91's general SMS endpoint, not the OTP one. */
+async function sendTextViaMsg91(phone: string, message: string): Promise<SmsResult> {
+  const authKey = process.env.MSG91_AUTH_KEY!
+  const senderId = process.env.MSG91_SENDER_ID
+
+  try {
+    const response = await fetch('https://control.msg91.com/api/v5/flow/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', authkey: authKey },
+      body: JSON.stringify({
+        sender: senderId,
+        short_url: '0',
+        mobiles: `91${phone}`,
+        message,
+      }),
+    })
+    const body = (await response.json().catch(() => ({}))) as { type?: string; message?: string }
+    if (!response.ok || body.type === 'error') {
+      return { deliveredToDevice: false, error: body.message ?? `MSG91 responded ${response.status}` }
+    }
+    return { deliveredToDevice: true, id: body.message }
+  } catch (error) {
+    return { deliveredToDevice: false, error: (error as Error).message }
+  }
+}
+
+async function sendTextViaTwilio(phone: string, message: string): Promise<SmsResult> {
+  const sid = process.env.TWILIO_ACCOUNT_SID!
+  const token = process.env.TWILIO_AUTH_TOKEN
+  const from = process.env.TWILIO_FROM_NUMBER
+
+  if (!token || !from) {
+    return { deliveredToDevice: false, error: 'TWILIO_AUTH_TOKEN or TWILIO_FROM_NUMBER is not set' }
+  }
+
+  try {
+    const response = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${Buffer.from(`${sid}:${token}`).toString('base64')}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ To: `+91${phone}`, From: from, Body: message }),
+      },
+    )
+    const body = (await response.json().catch(() => ({}))) as { sid?: string; message?: string }
+    if (!response.ok) {
+      return { deliveredToDevice: false, error: body.message ?? `Twilio responded ${response.status}` }
+    }
+    return { deliveredToDevice: true, id: body.sid }
+  } catch (error) {
+    return { deliveredToDevice: false, error: (error as Error).message }
+  }
+}
+
 /* --------------------------------------------------------------- adapters */
 
 async function sendViaConsole(phone: string, code: string): Promise<SmsResult> {

@@ -195,9 +195,15 @@ CREATE INDEX IF NOT EXISTS idx_doctors_fts ON provider.doctors
 
 -- Append-only. Medical-board disputes need the transition history, so status
 -- is never mutated without a corresponding row here.
+--
+-- RESTRICT rather than CASCADE. A cascade would be a back door: deleting the
+-- doctor destroys the very history a dispute turns on, without any UPDATE or
+-- DELETE on this table ever being attempted. Removing a clinician from the
+-- platform is a status transition (to SUSPENDED or REMOVED), not a row
+-- deletion — which is exactly what this table records.
 CREATE TABLE IF NOT EXISTS provider.status_history (
   id          TEXT PRIMARY KEY,
-  doctor_id   TEXT NOT NULL REFERENCES provider.doctors(id) ON DELETE CASCADE,
+  doctor_id   TEXT NOT NULL REFERENCES provider.doctors(id) ON DELETE RESTRICT,
   from_status TEXT,
   to_status   TEXT NOT NULL,
   reason      TEXT,
@@ -205,9 +211,13 @@ CREATE TABLE IF NOT EXISTS provider.status_history (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Registration certificates and qualification proofs: the evidence a
+-- verification decision rested on. Same reasoning as status_history — if a
+-- clinician's listing is challenged, "we checked their council number" has to
+-- be provable after they have left the platform.
 CREATE TABLE IF NOT EXISTS provider.documents (
   id         TEXT PRIMARY KEY,
-  doctor_id  TEXT NOT NULL REFERENCES provider.doctors(id) ON DELETE CASCADE,
+  doctor_id  TEXT NOT NULL REFERENCES provider.doctors(id) ON DELETE RESTRICT,
   doc_type   TEXT NOT NULL,
   blob_url   TEXT NOT NULL,
   status     TEXT NOT NULL DEFAULT 'UPLOADED',
@@ -392,8 +402,49 @@ CREATE INDEX IF NOT EXISTS idx_documents_body ON documents USING GIN (body);
 -- Append-only by grant, not just convention. The migration revokes UPDATE and
 -- DELETE from the application role, which is the closest equivalent to S3
 -- Object Lock available inside Postgres.
+-- ─────────────────────────────────────────────── transactional outbox
+--
+-- Notifications used to be sent inline: if the SMS gateway was down, the
+-- booking still committed, the patient was never told, and nothing retried.
+-- The event is now written in the same transaction as the thing it describes,
+-- so either both happen or neither does. Delivery is a separate concern that
+-- can fail and be retried without touching the booking.
+--
+-- No foreign keys. An event is a statement about something that happened, and
+-- it has to remain sendable — and diagnosable — even if the row it refers to
+-- is later removed. The subject is recorded as plain text for the same reason
+-- audit_log holds ids that way.
+CREATE TABLE IF NOT EXISTS domain_events (
+  id           BIGSERIAL PRIMARY KEY,
+  kind         TEXT NOT NULL,
+  subject_id   TEXT,
+  payload      JSONB NOT NULL DEFAULT '{}'::jsonb,
+  -- PENDING → SENT, or PENDING → FAILED once attempts run out.
+  status       TEXT NOT NULL DEFAULT 'PENDING',
+  attempts     INT NOT NULL DEFAULT 0,
+  last_error   TEXT,
+  -- Claimed by one worker at a time. Set when a drain picks the row up, so a
+  -- second drain running concurrently cannot send the same message twice.
+  locked_until TIMESTAMPTZ,
+  available_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- The drain query: pending work that is due, oldest first.
+CREATE INDEX IF NOT EXISTS idx_events_pending
+  ON domain_events(status, available_at)
+  WHERE status = 'PENDING';
+
 CREATE TABLE IF NOT EXISTS audit_log (
   id            BIGSERIAL PRIMARY KEY,
+  -- Plain TEXT, deliberately NOT a foreign key to patient.users.
+  --
+  -- A reference would make this table cascade-deletable, and erasing an
+  -- account would then destroy the record of who read that person's data —
+  -- precisely the evidence a regulator asks for after an erasure dispute.
+  -- The cost is that ids here can outlive the rows they name, which is the
+  -- correct trade for an audit log and wrong for almost anything else.
+  --
+  -- Do not "fix" this by adding a REFERENCES clause.
   actor_id      TEXT,
   actor_role    TEXT,
   action        TEXT NOT NULL,

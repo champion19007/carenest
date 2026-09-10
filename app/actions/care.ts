@@ -1,5 +1,6 @@
 'use server'
 
+import { after } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import {
@@ -20,6 +21,8 @@ import {
   type PrescribedDrug,
 } from '@/lib/db/docs'
 import { findSlot, holdSlot } from '@/lib/db/slots'
+import { emit } from '@/lib/db/outbox'
+import { drainAll } from '@/lib/drain'
 import { slotLabel } from '@/lib/slot-format'
 import { currentUser, newId, requireRole, requireUser } from '@/lib/auth'
 
@@ -84,6 +87,21 @@ export async function bookAppointment(
        over its own calendar. The clinician answers it from their queue. */
     status: 'requested',
     patientFor,
+  })
+
+  /* Recorded, not sent. The patient is still waiting on this response, and a
+     gateway call here would put a third party on the critical path of their
+     booking. */
+  await emit({
+    kind: 'booking.requested',
+    subjectId: id,
+    payload: { phone: user.phone, doctorName: doctor.name, slot },
+  })
+
+  /* Deliver once the patient has their response. Not a queue — if this
+     invocation is killed the row stays PENDING and the cron picks it up. */
+  after(async () => {
+    await drainAll(5)
   })
 
   await logActivity({

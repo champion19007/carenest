@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { triageEnquiry } from '@/lib/triage'
+import { emit } from '@/lib/db/outbox'
 import {
   currentEstimate,
   findEstimate,
@@ -228,6 +229,18 @@ export async function issueEstimateAction(
     issuedBy: admin.id,
     supersedes: previous?.id ?? null,
   })
+
+  if (lead.phone) {
+    await emit({
+      kind: 'estimate.issued',
+      subjectId: estimate.id,
+      payload: {
+        phone: lead.phone,
+        procedure: estimate.procedure,
+        total: estimate.total.toLocaleString('en-IN'),
+      },
+    })
+  }
 
   await writeAudit({
     actorId: admin.id,

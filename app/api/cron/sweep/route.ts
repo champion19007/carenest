@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { sweepExpiredHolds } from '@/lib/db/slots'
+import { drainAll } from '@/lib/drain'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,5 +34,11 @@ export async function GET(request: NextRequest) {
   }
 
   const released = await sweepExpiredHolds()
-  return NextResponse.json({ released })
+
+  /* The durable half of delivery. after() gets most messages out within a
+     second, but it dies with its invocation — this is what guarantees an
+     event is eventually delivered even if that function was killed. */
+  const drained = await drainAll(50)
+
+  return NextResponse.json({ released, drained })
 }
