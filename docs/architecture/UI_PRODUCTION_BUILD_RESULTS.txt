@@ -1,0 +1,78 @@
+npm notice run my-project@0.1.0 build
+npm notice run next build
+▲ Next.js 16.3.3 (Turbopack)
+⚠ Warning: Next.js ignored package-lock.json in C:\Users\champ because it is outside the current Git repository (C:\Users\champ\Desktop\carenest).
+ To use this directory, set `turbopack.root` in your Next.js config.
+
+✓ Running next.config.mjs took 52ms
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead.
+
+  To migrate automatically, run:
+  npx @next/codemod@canary middleware-to-proxy .
+
+  Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+✓ Compiled successfully in 44s
+  Skipping validation of types
+  Finished TypeScript config validation in 156ms ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/48) ...
+  Generating static pages using 7 workers (12/48)
+  Generating static pages using 7 workers (24/48)
+  Generating static pages using 7 workers (36/48)
+✓ Generating static pages using 7 workers (48/48) in 18.6s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /account
+├ ƒ /account/profile
+├ ƒ /admin
+├ ƒ /api/auth/google
+├ ƒ /api/auth/google/callback
+├ ƒ /api/cron/sweep
+├ ƒ /api/me
+├ ƒ /api/queue/[bookingId]
+├ ƒ /book/[slug]
+├ ƒ /dashboard/patient
+├ ○ /dashboard/provider
+├ ƒ /doctor/[slug]
+├ ○ /for-providers
+├ ○ /help
+├   /help/[collection]
+│ ├ ● /help/my-account
+│ ├ ● /help/booking
+│ ├ ● /help/payments-insurance
+│ └ ● [+3 more paths]
+├   /help/[collection]/[article]
+│ ├ ● /help/my-account/create-account
+│ ├ ● /help/my-account/account-locked
+│ ├ ● /help/my-account/change-mobile-number
+│ └ ● [+13 more paths]
+├ ○ /join
+├ ○ /labs
+├ ○ /pets
+├ ƒ /practice
+├ ƒ /practice/billing
+├ ƒ /practice/calendar
+├ ƒ /practice/integrations
+├ ƒ /practice/patients
+├ ƒ /practice/reports
+├ ƒ /practice/requests
+├ ƒ /practice/settings
+├ ○ /robots.txt
+├ ƒ /search
+├ ƒ /sign-in
+├ ƒ /sign-up
+├ ƒ /sitemap.xml
+├ ○ /surgeries
+└ ƒ /welcome
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand

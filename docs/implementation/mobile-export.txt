@@ -1,0 +1,15 @@
+npm notice run carenest-mobile@0.1.0 npx
+npm notice run expo export --platform android --output-dir ../../.data/mobile-export
+Starting Metro Bundler
+
+| (node:25408) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+Android Bundled 6576ms index.ts (621 modules)
+
+› android bundles (1):
+_expo/static/js/android/index-22c983ae1703acf62dab3c1f60f3c755.hbc (1.6MB)
+
+› Files (1):
+metadata.json (150B)
+
+Exported: ../../.data/mobile-export

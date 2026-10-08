@@ -210,7 +210,7 @@ test('one doctor cannot have two slots at the same instant', async () => {
   const insert = (slotId) =>
     db.query(
       `INSERT INTO provider.appointment_slots (slot_id, doctor_id, slot_start, slot_end)
-       VALUES ($1, 'd1', $2, $2)`,
+       VALUES ($1, 'd1', $2, $2::timestamptz + interval '15 minutes')`,
       [slotId, at],
     )
 

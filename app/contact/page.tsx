@@ -1,0 +1,3 @@
+import {PatientWorkspace} from '@/components/patient-workspace'
+import {SupportForm} from '@/components/support-forms'
+export default function Contact(){return <PatientWorkspace title="Contact the operator" description="Create an account-linked support, grievance, refund or data-request case. This is not an emergency contact route."><div className="max-w-2xl"><SupportForm/><p className="mt-5 text-sm leading-7 text-muted-foreground">The local build has no supplied incorporated-company identity, staffed helpline or guaranteed response time. Before a public launch, the actual operator must publish its legal identity and monitored grievance contact.</p></div></PatientWorkspace>}

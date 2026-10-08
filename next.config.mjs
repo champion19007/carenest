@@ -1,14 +1,11 @@
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+const root = path.dirname(fileURLToPath(import.meta.url))
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  typescript: { ignoreBuildErrors: true },
-  images: { unoptimized: true },
-
-  /**
-   * PGlite ships a WASM binary and Neon's driver resolves its own entrypoints.
-   * Bundling either breaks their file resolution ("File URL path must be
-   * absolute"), so they are loaded from node_modules at runtime instead.
-   */
-  serverExternalPackages: ['@electric-sql/pglite', '@neondatabase/serverless'],
+  turbopack: { root }, outputFileTracingRoot: root, devIndicators: false,
+  outputFileTracingExcludes: {'/*':['./.data/**/*','./.env*','./docs/**/*','./tests/**/*','./apps/mobile/**/*','./infra/**/*']},
+  images: { remotePatterns: [{ protocol: 'https', hostname: 'images.unsplash.com' }] },
+  serverExternalPackages: ['@electric-sql/pglite', 'pg'],
 }
-
 export default nextConfig

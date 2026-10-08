@@ -16,10 +16,10 @@ export function AdminGate({ firstRun }: { firstRun: boolean }) {
         <span className="mt-8 flex size-12 items-center justify-center rounded-full bg-soft text-primary">
           <Lock className="size-5" />
         </span>
-        <h1 className="mt-5 text-3xl">{firstRun ? 'Create the admin account' : 'Admin console'}</h1>
+        <h1 className="mt-5 text-3xl">Admin console</h1>
         <p className="mt-2 leading-7 text-muted-foreground">
           {firstRun
-            ? 'This is the first run, so there is no admin yet. Set your credentials below.'
+            ? 'No administrator is provisioned. Use the local admin setup command before signing in.'
             : 'This area is separate from the patient site and the clinic app.'}
         </p>
 
@@ -46,6 +46,7 @@ export function AdminGate({ firstRun }: { firstRun: boolean }) {
             />
           </label>
 
+          <label className="block"><span className="font-semibold">Authenticator code</span><input name="totp" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required className="field mt-2" /></label>
           {state.error && (
             <p role="alert" className="rounded-lg bg-warning/10 px-4 py-3 text-sm font-medium text-warning">
               {state.error}
@@ -57,8 +58,8 @@ export function AdminGate({ firstRun }: { firstRun: boolean }) {
 
         <p className="mt-6 border-t border-border pt-5 text-sm leading-6 text-muted-foreground">
           {firstRun
-            ? 'No admin exists yet. The username and password you enter now will create the sole admin account — choose a strong password, it is stored hashed with scrypt.'
-            : 'Passwords are hashed with scrypt and never stored in plain text. Repeated failures are rate limited.'}
+            ? 'Run npm run admin:create in the project terminal. Public sign-in cannot create administrator accounts.'
+            : 'Password and authenticator verification are required. Repeated failures are rate limited.'}
         </p>
       </div>
     </main>

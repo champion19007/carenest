@@ -46,7 +46,7 @@ export async function listFamily(userId: string): Promise<FamilyMember[]> {
      never moves under a finger that is reaching for it. */
   return d.query<FamilyMember>(
     `SELECT * FROM patient.family_members
-     WHERE user_id = $1
+     WHERE user_id = $1 AND archived_at IS NULL
      ORDER BY is_self DESC, created_at ASC`,
     [userId],
   )
@@ -57,7 +57,7 @@ export async function getFamilyMember(id: string, userId: string) {
   /* user_id is part of the lookup, not checked afterwards: a member id from
      someone else's household simply returns nothing. */
   return d.one<FamilyMember>(
-    'SELECT * FROM patient.family_members WHERE id = $1 AND user_id = $2',
+    'SELECT * FROM patient.family_members WHERE id = $1 AND user_id = $2 AND archived_at IS NULL',
     [id, userId],
   )
 }
@@ -105,7 +105,7 @@ export async function updateFamilyMember(
   },
 ) {
   const d = await db()
-  await d.query(
+  await d.transaction(async tx=>{await tx.query(
     `UPDATE patient.family_members
      SET name = $3, relation = $4, dob = $5, gender = $6, blood_group = $7, phone = $8
      WHERE id = $1 AND user_id = $2`,
@@ -119,7 +119,7 @@ export async function updateFamilyMember(
       patch.bloodGroup || null,
       patch.phone || null,
     ],
-  )
+  );const self=await tx.one<{is_self:boolean}>('SELECT is_self FROM patient.family_members WHERE id=$1 AND user_id=$2',[id,userId]);if(self?.is_self)await tx.query('UPDATE patient.users SET name=$2,dob=$3,gender=$4 WHERE id=$1',[userId,patch.name,patch.dob||null,patch.gender||null])})
 }
 
 /**
@@ -130,7 +130,7 @@ export async function updateFamilyMember(
 export async function removeFamilyMember(id: string, userId: string) {
   const d = await db()
   await d.query(
-    'DELETE FROM patient.family_members WHERE id = $1 AND user_id = $2 AND is_self = false',
+    'UPDATE patient.family_members SET archived_at=now() WHERE id = $1 AND user_id = $2 AND is_self = false',
     [id, userId],
   )
 }

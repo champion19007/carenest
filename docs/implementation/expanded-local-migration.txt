@@ -1,0 +1,3 @@
+npm notice run my-project@0.1.0 migrate:local
+npm notice run tsx scripts/migrate.ts --local
+Ordered migrations applied successfully.

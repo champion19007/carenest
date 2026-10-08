@@ -6,30 +6,35 @@ import { SiteHeader } from '@/components/site-header'
 import { BookingForm } from '@/components/booking-form'
 import { ensureSelfMember, listFamily } from '@/lib/db/family'
 import { findDoctorBySlug } from '@/lib/db/sql'
-import { ensureSlots, openSlots } from '@/lib/db/slots'
+import { openSlots } from '@/lib/db/slots'
+import { ownedPets } from '@/lib/domain/pets'
+import {ownAddresses} from '@/lib/domain/home-visits'
 import { requireUser, newId } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Confirm your appointment · CareNest', robots: { index: false } }
+export const metadata = { title: 'Request your appointment · CareNest', robots: { index: false } }
 
-export default async function BookPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function BookPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { slug } = await params
   const doctor = await findDoctorBySlug(slug)
   if (!doctor) notFound()
 
   /* Booking is the point where an account becomes necessary. */
-  const user = await requireUser(`/book/${slug}`)
+  const requested = (await searchParams).slot
+  const requestedSlot = typeof requested === 'string' && requested.length <= 200 ? requested : ''
+  const returnPath = `/book/${encodeURIComponent(slug)}${requestedSlot ? `?slot=${encodeURIComponent(requestedSlot)}` : ''}`
+  const user = await requireUser(returnPath)
   await ensureSelfMember(user.id, user.name, newId('fam'))
   const family = await listFamily(user.id)
 
   /* Generate the clinic's next few days of slots if they are not there yet,
      then read back only the ones still free. Idempotent, so opening the page
      twice does not duplicate a calendar. */
-  await ensureSlots(doctor.id)
   const slots = (await openSlots(doctor.id)).map((slot) => ({
     slotId: slot.slot_id,
     startsAt: slot.slot_start,
   }))
+  const initialSlotId = slots.some(slot => slot.slotId === requestedSlot) ? requestedSlot : ''
 
   return (
     <main className="min-h-screen bg-surface">
@@ -40,10 +45,9 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
           ← Back to {doctor.name}
         </Link>
 
-        <h1 className="mt-5 text-3xl sm:text-4xl">Confirm your appointment</h1>
+        <h1 className="mt-5 text-3xl sm:text-4xl">Request your appointment</h1>
         <p className="mt-3 max-w-2xl leading-8 text-muted-foreground">
-          Pick a time that suits you. The slot is held against your account, and the clinic sees
-          your name on their calendar — so nobody else can take it.
+          Choose a time and send your appointment request. Track the clinic’s response in your account.
         </p>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_18rem]">
@@ -51,13 +55,20 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
             slug={doctor.slug}
             doctorName={doctor.name}
             offersVideo={doctor.video}
+            offersHomeVisit={doctor.home_visit}
+            addresses={doctor.home_visit?await ownAddresses(user.id):[]}
             patientName={user.name || `+91 ${user.phone}`}
             family={family}
             slots={slots}
+            initialSlotId={initialSlotId}
+            requestKey={newId('request')}
+            subjectKind={doctor.kind === 'vet' ? 'pet' : 'human'}
+            pets={doctor.kind === 'vet' ? await ownedPets(user.id) : []}
           />
 
           <aside className="h-fit rounded-xl border border-border bg-card p-6">
             <h2 className="text-xl">{doctor.name}</h2>
+            {doctor.is_demo&&<p className="mt-2 text-xs font-semibold text-primary">Sample profile · local demonstration</p>}
             <p className="mt-1 text-muted-foreground">{doctor.speciality}</p>
             <p className="mt-1 text-sm text-muted-foreground">{doctor.qualification}</p>
 

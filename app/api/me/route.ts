@@ -9,7 +9,7 @@ import { currentUser } from '@/lib/auth'
  * never anything that isn't already visible to the signed-in user.
  */
 export async function GET() {
-  const user = await currentUser()
+  const user = await currentUser(false)
 
   if (!user) {
     return NextResponse.json({ user: null }, { headers: { 'cache-control': 'no-store' } })

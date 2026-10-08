@@ -1,19 +1,5 @@
-import type { MetadataRoute } from 'next'
-
-const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://carenest.in'
-
-/**
- * Browsing pages are indexable; anything holding a person's own data is not.
- */
-export default function robots(): MetadataRoute.Robots {
-  return {
-    rules: [
-      {
-        userAgent: '*',
-        allow: '/',
-        disallow: ['/account', '/dashboard', '/practice', '/book', '/admin', '/api'],
-      },
-    ],
-    sitemap: `${BASE}/sitemap.xml`,
-  }
-}
+import type {MetadataRoute} from 'next'
+import {localMode} from '@/lib/secrets'
+import {generateSitemaps} from './sitemap'
+export const dynamic='force-dynamic'
+export default async function robots():Promise<MetadataRoute.Robots>{if(localMode())return {rules:[{userAgent:'*',disallow:'/'}]};const base=process.env.APP_ORIGIN??process.env.NEXT_PUBLIC_SITE_URL??'http://localhost:3000',sitemaps=await generateSitemaps();return {rules:[{userAgent:'*',allow:'/',disallow:['/account','/dashboard','/practice','/staff','/book','/admin','/api','/join','/welcome','/sign-in']}],sitemap:sitemaps.map(s=>base+'/sitemap/'+s.id+'.xml')}}

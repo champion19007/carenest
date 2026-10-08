@@ -1,6 +1,9 @@
 'use server'
 
-import { after } from 'next/server'
+import {requireUser} from '@/lib/auth'
+import {createEnquiry,routeEnquiry} from '@/lib/domain/enquiries'
+import {consumeLimits} from '@/lib/domain/rate-limit'
+import {DomainError} from '@/lib/domain/errors'
 import { revalidatePath } from 'next/cache'
 import { triageEnquiry } from '@/lib/triage'
 import { emit } from '@/lib/db/outbox'
@@ -29,48 +32,14 @@ const PHONE = /^[6-9]\d{9}$/
  * the one write path a stranger can reach, so it is rate limited by phone
  * number and lands as NEW for a person to read.
  */
-export async function submitSurgeryLead(
-  _prev: LeadState,
-  formData: FormData,
-): Promise<LeadState> {
-  const name = String(formData.get('name') ?? '').trim().replace(/\s+/g, ' ')
-  const phone = String(formData.get('phone') ?? '').replace(/\D/g, '').slice(-10)
-  const city = String(formData.get('city') ?? '').trim()
-  const procedure = String(formData.get('procedure') ?? '').trim()
-  const notes = String(formData.get('notes') ?? '').trim()
-
-  if (name.length < 2) return { error: 'Please enter your name.' }
-  if (!PHONE.test(phone)) return { error: 'Enter a valid 10-digit Indian mobile number.' }
-  if (notes.length > 1000) return { error: 'Please keep the description under 1000 characters.' }
-
-  const limit = await hitRateLimit('lead:phone', phone, 3, 60)
-  if (!limit.allowed) {
-    return { error: 'We already have your request. A coordinator will call you shortly.' }
-  }
-
-  const user = await currentUser()
-  const id = newId('lead')
-  await createLead({ id, userId: user?.id ?? null, name, phone, city, procedure, notes })
-
-  await logActivity({
-    kind: 'lead.created',
-    message: `Surgery enquiry from ${name}${procedure ? ` · ${procedure}` : ''}`,
-    userId: user?.id,
-    meta: { leadId: id },
-  })
-
-  /* Triage runs after the lead is safely stored, and its result never gates
-     this response. If the model is slow, unconfigured or wrong, the patient
-     still gets their confirmation and the admin still gets the enquiry — the
-     queue simply looks the way it did before this feature existed. */
-  const triage = await triageEnquiry({ procedure, notes, city })
-  if (triage) {
-    await addTriage({ leadId: id, ...triage })
-  }
-
-  return { done: true, notice: 'A care coordinator will call you within 15 minutes.' }
+export async function submitSurgeryLead(_prev:LeadState,form:FormData):Promise<LeadState>{
+ const user=await requireUser('/surgeries')
+ const limit=await consumeLimits([{bucket:'enquiry-account',key:user.id,limit:3,seconds:3600},{bucket:'enquiry-global',key:'all',limit:60,seconds:3600}])
+ if(!limit.allowed)return {error:'Enquiry limit reached. Review your existing enquiries or try later.'}
+ try{await createEnquiry(user.id,{city:form.get('city'),procedure:form.get('procedure'),notes:form.get('notes')??'',consent:form.get('consent')==='on',aiConsent:form.get('aiConsent')==='on'})}
+ catch(error){if(error instanceof DomainError)return {error:error.message};throw error}
+ revalidatePath('/account/enquiries');return {done:true,notice:'Enquiry recorded for coordinator review. Updates will appear in your account.'}
 }
-
 /* ─────────────────────────────────────────────────── admin decisions */
 
 async function requireAdmin() {
@@ -138,29 +107,7 @@ export async function routeLead(_prev: LeadState, formData: FormData): Promise<L
     return { error: 'Choose a surgeon, a diagnostic centre, or both.' }
   }
 
-  const lead = await getLead(id)
-  if (!lead) return { error: 'That enquiry no longer exists.' }
-  if (lead.status !== 'APPROVED') {
-    return { error: 'Only an approved enquiry can be routed.' }
-  }
-
-  if (doctorId) {
-    await addReferral({ id: newId('ref'), leadId: id, kind: 'doctor', doctorId })
-  }
-  if (centreName) {
-    await addReferral({ id: newId('ref'), leadId: id, kind: 'diagnostic', centreName })
-  }
-
-  await transitionLead({ id, from: 'APPROVED', to: 'ROUTED', adminId: admin.id })
-
-  await writeAudit({
-    actorId: admin.id,
-    actorRole: 'admin',
-    action: 'lead:route',
-    resource: id,
-    detail: { doctorId: doctorId || null, centreName: centreName || null },
-  })
-
+  try{await routeEnquiry(admin.id,id,doctorId,centreName)}catch(error){if(error instanceof DomainError)return {error:error.message};throw error}
   revalidatePath('/admin')
   revalidatePath('/practice/requests')
   return { notice: 'Sent on.' }
@@ -204,12 +151,13 @@ export async function issueEstimateAction(
   const labels = formData.getAll('itemLabel').map(String)
   const amounts = formData.getAll('itemAmount').map(String)
 
+  if(labels.length>30||amounts.length>30)return {error:'Use at most 30 estimate lines.'}
   const lineItems: LineItem[] = []
   for (let i = 0; i < labels.length; i++) {
     const label = labels[i]?.trim()
     const amount = Number(amounts[i])
     if (!label) continue
-    if (!Number.isFinite(amount) || amount < 0) {
+    if (!Number.isInteger(amount) || amount < 0 || amount > 10000000) {
       return { error: `"${label}" needs a whole rupee amount.` }
     }
     lineItems.push({ label, amount: Math.round(amount) })
@@ -230,30 +178,6 @@ export async function issueEstimateAction(
     lineItems,
     issuedBy: admin.id,
     supersedes: previous?.id ?? null,
-  })
-
-  if (lead.phone) {
-    await emit({
-      kind: 'estimate.issued',
-      subjectId: estimate.id,
-      payload: {
-        phone: lead.phone,
-        procedure: estimate.procedure,
-        total: estimate.total.toLocaleString('en-IN'),
-      },
-    })
-  }
-
-  await writeAudit({
-    actorId: admin.id,
-    actorRole: 'admin',
-    action: previous ? 'estimate:reprice' : 'estimate:issue',
-    resource: estimate.id,
-    detail: { leadId, total: estimate.total, supersedes: previous?.id ?? null },
-  })
-
-  after(async () => {
-    await drainAll(10)
   })
 
   revalidatePath('/admin')

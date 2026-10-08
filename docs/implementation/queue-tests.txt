@@ -1,0 +1,15 @@
+npm notice run my-project@0.1.0 npx
+npm notice run tsx --test tests/queue.test.mjs
+▶ actual queue derives only today’s checked-in current reservations
+  ✔ counts actual checked-in patients ahead and labels estimate freshness (35.4907ms)
+  ✔ tomorrow, yesterday, requested and unchecked visits do not get a position (30.2859ms)
+  ✔ seen visits and stale reservation joins disappear (64.2175ms)
+✔ actual queue derives only today’s checked-in current reservations (4921.2607ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6478.2585

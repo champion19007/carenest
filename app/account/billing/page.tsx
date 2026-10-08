@@ -1,0 +1,8 @@
+import {requireUser,newId} from '@/lib/auth'
+import {ownInvoices,ownPayments,onlinePaymentsConfigured} from '@/lib/domain/billing'
+import {PatientWorkspace} from '@/components/patient-workspace'
+import {CheckoutButton} from '@/components/checkout-button'
+import {formatPaise} from '@/lib/money'
+import {RefundRequestForm} from '@/components/refund-forms'
+export const dynamic='force-dynamic'
+export default async function YourInvoices(){const user=await requireUser('/account/billing'),items=await ownInvoices(user.id),payments=await ownPayments(user.id),online=onlinePaymentsConfigured();return <PatientWorkspace title="Your invoices" description="See recorded fees, payment status and refund requests for your care."><div className="space-y-5">{items.map(i=><article key={i.id} className="rounded-2xl border border-border bg-card p-5"><h2 className="text-xl">{formatPaise(i.total_paise)}</h2><p className="mt-3 text-sm">{i.state} · {i.currency}</p><p className="mt-2 text-xs text-muted-foreground">{i.id}</p>{online&&i.state==='UNPAID'?<CheckoutButton invoiceId={i.id} requestKey={newId('payment-request')}/>:i.state==='UNPAID'&&<p className="mt-4 text-sm text-muted-foreground">Online collection is not enabled. Check the clinic’s actual payment arrangements.</p>}{payments.filter(p=>p.invoice_id===i.id).map(p=><section key={p.id} className="mt-5 border-t border-border pt-4"><p className="text-sm">Payment: {p.state} · {formatPaise(p.amount_paise)}</p>{['CAPTURED','OVERPAYMENT'].includes(p.state)&&Number(p.remaining_paise)>0&&<RefundRequestForm paymentId={p.id} amount={p.remaining_paise}/>}</section>)}</article>)}{!items.length&&<p className="text-sm">No invoices yet.</p>}</div></PatientWorkspace>}

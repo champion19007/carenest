@@ -1,0 +1,9 @@
+{
+  "UnauthenticatedEmbeddedStatus": 401,
+  "FramePolicy": [
+    "SAMEORIGIN"
+  ],
+  "CachePolicy": [
+    "no-store, private"
+  ]
+}

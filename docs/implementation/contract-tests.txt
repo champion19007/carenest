@@ -1,0 +1,17 @@
+npm notice run my-project@0.1.0 npx
+npm notice run tsx --test --test-concurrency=1 tests/local-contracts.test.mjs
+✔ redirect parsing rejects encoded slashes, backslashes and foreign destinations (2.4722ms)
+✔ actual schedule generation anchors to the current IST date and respects closures (6214.3304ms)
+▶ actual provider onboarding and immutable estimates commit required evidence and audit together
+  ✔ submission requires clean private evidence and explicit human verification (60.4632ms)
+  ✔ outbox failure rolls back the complete estimate (45.9203ms)
+  ✔ concurrent stale reprices cannot fork the immutable quote chain (34.0824ms)
+✔ actual provider onboarding and immutable estimates commit required evidence and audit together (19053.86ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 27300.3094

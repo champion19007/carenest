@@ -1,13 +1,13 @@
 import Link from 'next/link'
 import { CalendarClock, IndianRupee, Inbox, Phone, Stethoscope, Users, Video } from 'lucide-react'
 import { AttendedAction } from '@/components/attended-action'
-import { PracticeShell } from '@/components/practice-shell'
 import { RequestActions } from '@/components/request-actions'
 import { Avatar } from '@/components/avatar'
 import { EmptyArt } from '@/components/empty-art'
 import { requireRole } from '@/lib/auth'
-import { findDoctorByUserId, requestsForDoctor } from '@/lib/db/sql'
+import { findDoctorByUserId, requestsForDoctor,writeAudit } from '@/lib/db/sql'
 import { referralsForDoctor } from '@/lib/db/leads'
+import {slotDay,slotTime} from '@/lib/slot-format'
 
 export const metadata = { title: 'Requests · CareNest for clinics' }
 
@@ -28,7 +28,7 @@ export default async function RequestsPage() {
 
   if (!doctor) {
     return (
-      <PracticeShell>
+      <>
         <div className="rounded-xl border border-border bg-card p-10 text-center">
           <EmptyArt />
           <p className="mt-6 text-lg font-semibold">Your clinician profile is not set up yet</p>
@@ -38,7 +38,7 @@ export default async function RequestsPage() {
             registration has been checked.
           </p>
         </div>
-      </PracticeShell>
+      </>
     )
   }
 
@@ -46,12 +46,13 @@ export default async function RequestsPage() {
     requestsForDoctor(doctor.id),
     referralsForDoctor(doctor.id),
   ])
+  await writeAudit({actorId:user.id,actorRole:user.role,action:'practice:read-requests',resource:doctor.id,tenantRegion:user.tenant_region})
 
   const pending = requests.filter((r) => r.status === 'requested')
   const answered = requests.filter((r) => r.status !== 'requested')
 
   return (
-    <PracticeShell>
+    <>
       <div className="space-y-8">
         <section>
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -113,7 +114,7 @@ export default async function RequestsPage() {
                         ) : (
                           <CalendarClock className="size-4 text-primary" />
                         )}
-                        {request.slot}
+                        {request.starts_at?`${slotDay(request.starts_at)}, ${slotTime(request.starts_at)} · IST`:'Time needs clinic review'}
                         <span className="text-muted-foreground">
                           · {request.kind === 'video' ? 'Video consult' : 'Clinic visit'}
                         </span>
@@ -185,7 +186,7 @@ export default async function RequestsPage() {
                   <span className="min-w-0 flex-1 truncate font-medium">
                     {request.seen_for ?? request.patient_name}
                   </span>
-                  <span className="text-sm text-muted-foreground">{request.slot}</span>
+                  <span className="text-sm text-muted-foreground">{request.starts_at?`${slotDay(request.starts_at)}, ${slotTime(request.starts_at)} · IST`:'Time needs clinic review'}</span>
                   <span
                     className={`rounded-md px-2.5 py-1 text-xs font-bold ${
                       request.status === 'attended'
@@ -218,6 +219,6 @@ export default async function RequestsPage() {
           </Link>
         </p>
       </div>
-    </PracticeShell>
+    </>
   )
 }

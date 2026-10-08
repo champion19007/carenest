@@ -1,5 +1,6 @@
 import 'server-only'
 import { getDb, ensureSchema } from './client'
+import { tokenHash,localMode } from '@/lib/secrets'
 
 /**
  * Relational data access.
@@ -23,7 +24,9 @@ export function nowIso() {
 
 export type User = {
   id: string
-  phone: string
+  phone: string | null
+  status: string
+  email_verified_at: string | null
   name: string
   email: string | null
   dob: string | null
@@ -53,6 +56,10 @@ export type DoctorRow = {
   registration_no: string | null
   council: string | null
   status: string
+  verified_at: string | null
+  is_demo: boolean
+  clinic_id: string | null
+  supported_species: string[]
   rating: number
   reviews_count: number
   video: boolean
@@ -67,6 +74,8 @@ export type DoctorRow = {
 }
 
 export type Booking = {
+  starts_at:string|null
+  ends_at:string|null
   id: string
   user_id: string
   doctor_id: string
@@ -86,6 +95,8 @@ export type Admin = {
   salt: string
   created_at: string
   last_login_at: string | null
+  totp_secret: string | null
+  last_totp_step: string | null
 }
 
 export type Locality = {
@@ -131,8 +142,8 @@ export async function createUser(input: {
 }): Promise<User> {
   const d = await db()
   const row = await d.one<User>(
-    `INSERT INTO patient.users (id, phone, email, google_sub, name, role, tenant_region)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+    `INSERT INTO patient.users (id, phone, email, google_sub, name, role, tenant_region,email_verified_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7,CASE WHEN $4::text IS NOT NULL THEN now() ELSE NULL END) RETURNING *`,
     [
       input.id,
       input.phone ?? null,
@@ -153,7 +164,8 @@ export async function updateUserProfile(
   const d = await db()
   await d.query(
     `UPDATE patient.users
-     SET name = $2, email = $3, dob = $4, gender = $5, city = $6
+     SET name = $2, email_verified_at=CASE WHEN lower(email)=lower($3::text) THEN email_verified_at ELSE NULL END,
+         email = $3, dob = $4, gender = $5, city = $6
      WHERE id = $1`,
     [id, patch.name, patch.email || null, patch.dob || null, patch.gender || null, patch.city || null],
   )
@@ -226,21 +238,21 @@ export async function createSession(token: string, userId: string, days = 30) {
   await d.query(
     `INSERT INTO patient.sessions (token, user_id, expires_at)
      VALUES ($1, $2, now() + ($3 || ' days')::interval)`,
-    [token, userId, String(days)],
+    [tokenHash(token), userId, String(days)],
   )
 }
 
 export async function findSession(token: string) {
   const d = await db()
-  return d.one<{ user_id: string; expires_at: string }>(
-    'SELECT user_id, expires_at FROM patient.sessions WHERE token = $1',
-    [token],
+  return d.one<{ user_id: string; expires_at: string; created_at:string; last_seen_at:string }>(
+    'SELECT user_id, expires_at,created_at,last_seen_at FROM patient.sessions WHERE token = $1',
+    [tokenHash(token)],
   )
 }
 
 export async function deleteSession(token: string) {
   const d = await db()
-  await d.query('DELETE FROM patient.sessions WHERE token = $1', [token])
+  await d.query('DELETE FROM patient.sessions WHERE token = $1', [tokenHash(token)])
 }
 
 export async function countActiveSessions(): Promise<number> {
@@ -359,6 +371,8 @@ export type DoctorQuery = {
   femaleOnly?: boolean
   sort?: 'relevance' | 'rating' | 'fee-low' | 'experience'
   limit?: number
+  offset?: number
+  species?: string
 }
 
 export async function searchDoctors(query: DoctorQuery = {}): Promise<DoctorRow[]> {
@@ -370,6 +384,10 @@ export async function searchDoctors(query: DoctorQuery = {}): Promise<DoctorRow[
     return `$${params.length}`
   }
 
+  where.push(`(verified_at IS NOT NULL OR (${p(localMode())}::boolean AND is_demo))`)
+
+  where.push(`((${p(localMode())}::boolean AND is_demo) OR EXISTS(SELECT 1 FROM patient.users u WHERE u.id=provider.doctors.user_id AND u.status='ACTIVE' AND u.role='doctor' AND u.kyc_level='verified'))`)
+  where.push(`NOT EXISTS(SELECT 1 FROM clinic.clinics c WHERE c.id=provider.doctors.clinic_id AND c.status<>'ACTIVE')`)
   where.push(`kind = ${p(query.kind ?? 'human')}`)
 
   if (query.specialities?.length) where.push(`speciality = ANY(${p(query.specialities)})`)
@@ -384,10 +402,11 @@ export async function searchDoctors(query: DoctorQuery = {}): Promise<DoctorRow[
   if (query.cashless) where.push('cashless = true')
   if (query.homeVisit) where.push('home_visit = true')
   if (query.femaleOnly) where.push(`gender = 'Female'`)
+  if (query.species) where.push(`${p(query.species)} = ANY(supported_species)`)
 
   /* Languages are a comma-separated list; match any requested one. */
   if (query.languages?.length) {
-    where.push(`string_to_array(languages, ',') && ${p(query.languages)}`)
+    where.push(`regexp_split_to_array(trim(languages), '\s*,\s*') && ${p(query.languages)}`)
   }
 
   /* Full-text, replacing the Elasticsearch index. */
@@ -408,7 +427,7 @@ export async function searchDoctors(query: DoctorQuery = {}): Promise<DoctorRow[
           : 'rating DESC, experience DESC'
 
   const rows = await d.query<DoctorRow>(
-    `SELECT * FROM provider.doctors WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT ${p(query.limit ?? 100)}`,
+    `SELECT * FROM provider.doctors WHERE ${where.join(' AND ')} ORDER BY ${order}, id LIMIT ${p(Math.min(1000,Math.max(1,query.limit ?? 30)))} OFFSET ${p(Math.min(10000,Math.max(0,query.offset ?? 0)))}`,
     params,
   )
   return rows.map(normaliseDoctor)
@@ -416,7 +435,7 @@ export async function searchDoctors(query: DoctorQuery = {}): Promise<DoctorRow[
 
 export async function findDoctorBySlug(slug: string): Promise<DoctorRow | undefined> {
   const d = await db()
-  const row = await d.one<DoctorRow>('SELECT * FROM provider.doctors WHERE slug = $1', [slug])
+  const row = await d.one<DoctorRow>("SELECT * FROM provider.doctors WHERE slug = $1 AND status='ACTIVE' AND (verified_at IS NOT NULL OR ($2::boolean AND is_demo)) AND (($2::boolean AND is_demo) OR EXISTS(SELECT 1 FROM patient.users u WHERE u.id=provider.doctors.user_id AND u.status='ACTIVE' AND u.role='doctor' AND u.kyc_level='verified')) AND NOT EXISTS(SELECT 1 FROM clinic.clinics c WHERE c.id=provider.doctors.clinic_id AND c.status<>'ACTIVE')", [slug,localMode()])
   return row ? normaliseDoctor(row) : undefined
 }
 
@@ -483,22 +502,18 @@ export async function transitionDoctorStatus(input: {
   reason?: string
   actor?: string
 }) {
-  const d = await db()
-  const current = await d.one<{ status: string }>('SELECT status FROM provider.doctors WHERE id = $1', [
-    input.doctorId,
-  ])
-
-  await d.query(
-    `INSERT INTO provider.status_history (id, doctor_id, from_status, to_status, reason, actor)
-     VALUES ($1, $2, $3, $4, $5, $6)`,
-    [input.id, input.doctorId, current?.status ?? null, input.toStatus, input.reason ?? null, input.actor ?? null],
-  )
-  await d.query('UPDATE provider.doctors SET status = $1, updated_at = now() WHERE id = $2', [
-    input.toStatus,
-    input.doctorId,
-  ])
+  const d=await db()
+  if(!['ACTIVE','PENDING','SUSPENDED','REJECTED','REMOVED'].includes(input.toStatus))throw new Error('Unsupported provider status')
+  await d.transaction(async tx=>{
+    const current=await tx.one<{status:string;verified_at:string|null;is_demo:boolean}>('SELECT status,verified_at,is_demo FROM provider.doctors WHERE id=$1 FOR UPDATE',[input.doctorId])
+    if(!current)throw new Error('Provider unavailable')
+    if(current.status===input.toStatus)return
+    if(input.toStatus==='ACTIVE'&&!current.verified_at&&!(current.is_demo&&localMode()))throw new Error('Professional verification required before publication')
+    await tx.query('INSERT INTO provider.status_history(id,doctor_id,from_status,to_status,reason,actor) VALUES($1,$2,$3,$4,$5,$6)',[input.id,input.doctorId,current.status,input.toStatus,input.reason??null,input.actor??null])
+    await tx.query('UPDATE provider.doctors SET status=$2,updated_at=now() WHERE id=$1',[input.doctorId,input.toStatus])
+    await tx.query('INSERT INTO audit_log(actor_id,action,resource,detail) VALUES($1,$2,$3,$4::jsonb)',[input.actor??null,'provider:status',input.doctorId,JSON.stringify({from:current.status,to:input.toStatus})])
+  })
 }
-
 export async function doctorStatusHistory(doctorId: string) {
   const d = await db()
   return d.query<{
@@ -593,21 +608,21 @@ export async function createAdminSession(token: string, adminId: string, hours =
   await d.query(
     `INSERT INTO admin_sessions (token, admin_id, expires_at)
      VALUES ($1, $2, now() + ($3 || ' hours')::interval)`,
-    [token, adminId, String(hours)],
+    [tokenHash(token), adminId, String(hours)],
   )
 }
 
 export async function findAdminSession(token: string) {
   const d = await db()
-  return d.one<{ admin_id: string; expires_at: string }>(
-    'SELECT admin_id, expires_at FROM admin_sessions WHERE token = $1',
-    [token],
+  return d.one<{ admin_id: string; expires_at: string;last_seen_at:string }>(
+    'SELECT admin_id, expires_at,last_seen_at FROM admin_sessions WHERE token = $1',
+    [tokenHash(token)],
   )
 }
 
 export async function deleteAdminSession(token: string) {
   const d = await db()
-  await d.query('DELETE FROM admin_sessions WHERE token = $1', [token])
+  await d.query('DELETE FROM admin_sessions WHERE token = $1', [tokenHash(token)])
 }
 
 /* ────────────────────────────────────────────────────────── bookings */
@@ -712,13 +727,15 @@ export async function requestsForDoctor(doctorId: string) {
     seen_for: string | null
     seen_for_dob: string | null
     seen_for_relation: string | null
+    starts_at:string|null
   }>(
-    `SELECT b.id, b.kind, b.slot, b.fee, b.status, b.created_at,
+    `SELECT b.id, b.kind, b.slot, b.fee, b.status, b.created_at,b.starts_at,
             u.name AS patient_name, u.phone AS patient_phone,
-            f.name AS seen_for, f.dob AS seen_for_dob, f.relation AS seen_for_relation
+            coalesce(p.name,f.name) AS seen_for,coalesce(p.dob,f.dob) AS seen_for_dob,CASE WHEN p.id IS NOT NULL THEN 'Pet' ELSE f.relation END AS seen_for_relation
      FROM patient.bookings b
      JOIN patient.users u ON u.id = b.user_id
-     LEFT JOIN patient.family_members f ON f.id = b.patient_for
+     LEFT JOIN patient.family_members f ON f.id = b.patient_for AND f.user_id=b.user_id
+     LEFT JOIN patient.pets p ON p.id=b.pet_id AND p.owner_id=b.user_id
      WHERE b.doctor_id = $1
      ORDER BY
        CASE b.status WHEN 'requested' THEN 0 WHEN 'confirmed' THEN 1 ELSE 2 END,
@@ -734,20 +751,7 @@ export async function requestsForDoctor(doctorId: string) {
  * the first stops one clinician answering another's request, the second stops
  * a double click from moving an already-answered booking.
  */
-export async function answerRequest(input: {
-  bookingId: string
-  doctorId: string
-  to: 'confirmed' | 'declined'
-}): Promise<boolean> {
-  const d = await db()
-  const rows = await d.query<{ id: string }>(
-    `UPDATE patient.bookings SET status = $3
-     WHERE id = $1 AND doctor_id = $2 AND status = 'requested'
-     RETURNING id`,
-    [input.bookingId, input.doctorId, input.to],
-  )
-  return rows.length > 0
-}
+// Retired: appointment responses must use respondAppointment with the current actor.
 
 /**
  * The clinician confirms the patient was actually seen.
@@ -762,19 +766,7 @@ export async function findBooking(id: string): Promise<Booking | undefined> {
   return d.one<Booking>('SELECT * FROM patient.bookings WHERE id = $1', [id])
 }
 
-export async function markBookingAttended(input: {
-  bookingId: string
-  doctorId: string
-}): Promise<boolean> {
-  const d = await db()
-  const rows = await d.query<{ id: string }>(
-    `UPDATE patient.bookings SET status = 'attended', attended_at = now()
-     WHERE id = $1 AND doctor_id = $2 AND status = 'confirmed'
-     RETURNING id`,
-    [input.bookingId, input.doctorId],
-  )
-  return rows.length > 0
-}
+// Retired: attendance must use finishAppointment with the current actor.
 
 /**
  * Did this person actually attend an appointment with this doctor?
@@ -801,10 +793,7 @@ export async function countBookings(): Promise<number> {
   return Number(row?.n ?? 0)
 }
 
-export async function setBookingStatus(id: string, status: string) {
-  const d = await db()
-  await d.query('UPDATE patient.bookings SET status = $1 WHERE id = $2', [status, id])
-}
+// Unscoped status mutation removed; domain transitions own reservation/history/outbox writes.
 
 /* ──────────────────────────────────────────────── areas (map-free) */
 
@@ -854,6 +843,7 @@ export async function neighbouringAreas(
   localityId: number,
   kind: 'human' | 'vet' = 'human',
   maxRing = 2,
+  matchingQuery?: DoctorQuery,
 ): Promise<AreaSuggestion[]> {
   const d = await db()
   const rows = await d.query<AreaSuggestion>(
@@ -867,6 +857,13 @@ export async function neighbouringAreas(
      ORDER BY a.ring ASC, doctor_count DESC, l.name`,
     [localityId, kind, maxRing],
   )
+  if(matchingQuery){
+    const matched=await Promise.all(rows.map(async row=>{
+      const doctors=await searchDoctors({...matchingQuery,kind,pinCode:row.pin_code,localityIds:undefined,limit:1000,offset:0})
+      return {...row,doctor_count:doctors.length}
+    }))
+    return matched.filter(row=>row.doctor_count>0)
+  }
   return rows.filter((r) => r.doctor_count > 0)
 }
 

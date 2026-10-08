@@ -17,6 +17,9 @@ import { ReviewList } from '@/components/review-list'
 import { findDoctorBySlug, searchDoctors } from '@/lib/db/sql'
 import { listReviews } from '@/lib/db/docs'
 import { currentUser } from '@/lib/auth'
+import { Avatar } from '@/components/avatar'
+import { AvailabilityPicker } from '@/components/availability-picker'
+import { openSlots } from '@/lib/db/slots'
 
 /** Public and indexable — this is how patients arrive from a search engine. */
 export const dynamic = 'force-dynamic'
@@ -52,7 +55,7 @@ export default async function DoctorProfile({ params }: { params: Promise<{ slug
   const doctor = await findDoctorBySlug(slug)
   if (!doctor) notFound()
 
-  const [reviews, user] = await Promise.all([await listReviews(doctor.slug), currentUser()])
+  const [reviews, user, slots] = await Promise.all([listReviews(doctor.slug), currentUser(), openSlots(doctor.id)])
   const similarAll = await searchDoctors({
     kind: doctor.kind as 'human' | 'vet',
     specialities: [doctor.speciality],
@@ -113,23 +116,17 @@ export default async function DoctorProfile({ params }: { params: Promise<{ slug
 
         <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_22rem]">
           <div className="min-w-0 space-y-6">
-            <section className="rounded-xl border border-border bg-card p-6">
+            <section className="discovery-hero rounded-[1.5rem] border border-border p-6 sm:p-8">
               <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-                <span className="flex size-24 shrink-0 items-center justify-center rounded-2xl bg-soft text-3xl font-bold text-primary">
-                  {doctor.name
-                    .replace(/^Dr\.?\s*/i, '')
-                    .split(' ')
-                    .slice(0, 2)
-                    .map((part) => part[0])
-                    .join('')}
-                </span>
+                <Avatar name={doctor.name} speciality={doctor.speciality} size={104} className="shadow-md" />
                 <div className="min-w-0">
                   <h1 className="flex flex-wrap items-center gap-2 text-3xl">
                     {doctor.name}
-                    <BadgeCheck className="size-6 text-primary" aria-label="Registration verified" />
+                    {doctor.registration_no && <BadgeCheck className="size-6 text-primary" aria-label="Registration listed" />}
                   </h1>
                   <p className="mt-1 text-lg text-muted-foreground">{doctor.speciality}</p>
                   <p className="mt-1 text-muted-foreground">{doctor.qualification}</p>
+                  {doctor.is_demo&&<p className="mt-2 text-xs font-semibold text-primary">Sample profile · local demonstration</p>}
                   <p className="mt-1 font-semibold">{doctor.experience} years experience</p>
 
                   <div className="mt-4 flex flex-wrap gap-2 text-sm">
@@ -153,9 +150,12 @@ export default async function DoctorProfile({ params }: { params: Promise<{ slug
                   </div>
                 </div>
               </div>
+              <nav aria-label="Doctor profile sections" className="mt-6 flex flex-wrap gap-2 rounded-2xl border border-border bg-card/80 p-1.5">{[['#availability', 'Availability'], ['#about', 'About'], ['#reviews', 'Reviews']].map(([href,label]) => <a key={href} href={href} className="inline-flex min-h-11 items-center rounded-xl px-5 text-xs font-semibold hover:bg-soft hover:text-primary">{label}</a>)}</nav>
             </section>
 
-            <section className="rounded-xl border border-border bg-card p-6">
+            <AvailabilityPicker slug={doctor.slug} slots={slots.map(slot => ({ slotId: slot.slot_id, startsAt: slot.slot_start }))} />
+
+            <section id="about" className="profile-anchor rounded-[1.5rem] border border-border bg-card p-6">
               <h2 className="text-2xl">About {doctor.name.replace(/^Dr\.?\s*/i, '')}</h2>
               <p className="mt-3 leading-8 text-muted-foreground">{doctor.about}</p>
 
@@ -199,12 +199,12 @@ export default async function DoctorProfile({ params }: { params: Promise<{ slug
               </dl>
             </section>
 
-            <ReviewList
+            <div id="reviews" className="profile-anchor"><ReviewList
               doctorSlug={doctor.slug}
               doctorName={doctor.name}
               reviews={reviews}
               canReview={Boolean(user)}
-            />
+            /></div>
 
             {similar.length > 0 && (
               <section className="rounded-xl border border-border bg-card p-6">
@@ -235,9 +235,9 @@ export default async function DoctorProfile({ params }: { params: Promise<{ slug
 
           <aside className="lg:sticky lg:top-6 lg:self-start">
             <div className="rounded-xl border border-border bg-card p-6">
-              <p className="inline-flex items-center gap-2 font-semibold text-success">
+              <p className="inline-flex items-center gap-2 text-sm font-semibold text-primary">
                 <CalendarClock className="size-4" />
-                Next available · {doctor.next_slot}
+                Choose an appointment time
               </p>
               <p className="mt-4 inline-flex items-baseline gap-2">
                 <span className="inline-flex items-center text-3xl font-bold">

@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify, type JWTPayload } from 'jose'
+import { applicationSecret } from './secrets'
 
 /**
  * Signed claims, readable on the edge.
@@ -49,16 +50,7 @@ export function scopeForRole(role: Claims['role']): DataScope {
 }
 
 function secret() {
-  const value = process.env.JWT_SECRET
-  if (!value || value.length < 32) {
-    /* A weak signing key is the same as no signature at all, so fail loudly
-       rather than issuing forgeable tokens. */
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('JWT_SECRET must be set to at least 32 characters in production')
-    }
-    return new TextEncoder().encode('dev-only-insecure-secret-please-set-JWT_SECRET')
-  }
-  return new TextEncoder().encode(value)
+  return new TextEncoder().encode(applicationSecret())
 }
 
 export async function signClaims(claims: Claims, ttlSeconds = 60 * 60 * 24 * 30) {

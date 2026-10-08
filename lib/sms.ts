@@ -23,16 +23,17 @@ export type SmsResult = {
   error?: string
 }
 
-export function smsProviderName(): 'msg91' | 'twilio' | 'console' {
+export function smsProviderName(): 'msg91' | 'twilio' | 'console' | 'disabled' {
   const provider = process.env.SMS_PROVIDER?.toLowerCase()
-  if (provider === 'msg91' && process.env.MSG91_AUTH_KEY) return 'msg91'
-  if (provider === 'twilio' && process.env.TWILIO_ACCOUNT_SID) return 'twilio'
-  return 'console'
+  if (provider === 'msg91' && process.env.MSG91_AUTH_KEY && process.env.MSG91_TEMPLATE_ID) return 'msg91'
+  if (provider === 'twilio' && process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM_NUMBER) return 'twilio'
+  if (provider === 'console' && process.env.CARENEST_LOCAL_MODE === '1' && process.env.ALLOW_LOCAL_OTP === '1') return 'console'
+  return 'disabled'
 }
 
 /** True once a real gateway is wired up. */
 export function smsIsLive() {
-  return smsProviderName() !== 'console'
+  return ['msg91','twilio'].includes(smsProviderName())
 }
 
 export async function sendOtpSms(phone: string, code: string): Promise<SmsResult> {
@@ -41,6 +42,8 @@ export async function sendOtpSms(phone: string, code: string): Promise<SmsResult
       return sendViaMsg91(phone, code)
     case 'twilio':
       return sendViaTwilio(phone, code)
+    case 'disabled':
+      return { deliveredToDevice:false,error:'SMS is not configured' }
     default:
       return sendViaConsole(phone, code)
   }
@@ -63,7 +66,7 @@ export async function sendSms(phone: string, message: string): Promise<void> {
   if (digits.length !== 10) throw new Error(`unusable phone number: ${phone}`)
 
   const result = await sendTextMessage(digits, message)
-  if (!result.deliveredToDevice && smsIsLive()) {
+  if (!result.deliveredToDevice) {
     throw new Error(result.error ?? 'delivery failed')
   }
 }
@@ -75,25 +78,33 @@ async function sendTextMessage(phone: string, message: string): Promise<SmsResul
     case 'twilio':
       return sendTextViaTwilio(phone, message)
     default:
-      console.info(`[sms:console] to +91${phone}: ${message}`)
-      return { deliveredToDevice: false }
+      return { deliveredToDevice: false,error:'No live SMS provider configured' }
   }
+}
+export async function sendTransactionalSms(phone:string,message:string):Promise<string>{
+  const digits=phone.replace(/\D/g,'').slice(-10)
+  if(!/^[6-9]\d{9}$/.test(digits))throw new Error('Invalid notification contact')
+  const result=await sendTextMessage(digits,message)
+  if(!result.deliveredToDevice||!result.id)throw new Error('Notification gateway outcome was not accepted')
+  return result.id
 }
 
 /** MSG91's general SMS endpoint, not the OTP one. */
 async function sendTextViaMsg91(phone: string, message: string): Promise<SmsResult> {
   const authKey = process.env.MSG91_AUTH_KEY!
   const senderId = process.env.MSG91_SENDER_ID
+  const flowId=process.env.MSG91_TRANSACTIONAL_FLOW_ID
+  if(!flowId)return {deliveredToDevice:false,error:'MSG91_TRANSACTIONAL_FLOW_ID is required'}
 
   try {
     const response = await fetch('https://control.msg91.com/api/v5/flow/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', authkey: authKey },
       body: JSON.stringify({
+        flow_id:flowId,
         sender: senderId,
         short_url: '0',
-        mobiles: `91${phone}`,
-        message,
+        recipients:[{mobiles:`91${phone}`,message}],
       }),
     })
     const body = (await response.json().catch(() => ({}))) as { type?: string; message?: string }
@@ -140,7 +151,6 @@ async function sendTextViaTwilio(phone: string, message: string): Promise<SmsRes
 /* --------------------------------------------------------------- adapters */
 
 async function sendViaConsole(phone: string, code: string): Promise<SmsResult> {
-  console.info(`[sms:console] OTP for +91${phone} is ${code} (no gateway configured)`)
   return { deliveredToDevice: false }
 }
 
@@ -201,7 +211,7 @@ async function sendViaTwilio(phone: string, code: string): Promise<SmsResult> {
         body: new URLSearchParams({
           To: `+91${phone}`,
           From: from,
-          Body: `${code} is your CareNest verification code. It expires in 10 minutes. Do not share it with anyone.`,
+          Body: `${code} is your CareNest verification code. It expires in 5 minutes. Do not share it with anyone.`,
         }),
       },
     )

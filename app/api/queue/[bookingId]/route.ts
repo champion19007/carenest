@@ -26,7 +26,7 @@ export async function GET(
 ) {
   const { bookingId } = await params
 
-  const user = await currentUser()
+  const user = await currentUser(false)
   if (!user) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
 
   const booking = await findBooking(bookingId)

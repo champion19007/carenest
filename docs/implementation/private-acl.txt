@@ -1,0 +1,7 @@
+
+Directory Protected Entries Mode
+--------- --------- ------- ----
+.              True       3 Applied
+secrets        True       3 Applied
+pg             True       3 Applied
+backups        True       3 Applied

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   BarChart3,
   CalendarDays,
@@ -36,29 +36,9 @@ const nav = [
  * Chrome for the clinic-side app: a persistent brand rail on the left and a
  * utility bar on top. Deliberately distinct from the patient site's header.
  */
-export function PracticeShell({ children }: { children: React.ReactNode }) {
+export function PracticeShell({ children,clinicLabel,clinicianName }: { children: React.ReactNode;clinicLabel:string;clinicianName:string }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
-  /* The shell is a client component and cannot call `currentUser()`, so the
-     signed-in clinician's name comes from the same probe the site header uses.
-     Until it lands the button shows nothing rather than someone else's name. */
-  const [name, setName] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    fetch('/api/me')
-      .then((response) => response.json())
-      .then((data) => {
-        if (!cancelled) setName(data?.user?.name ?? null)
-      })
-      .catch(() => {
-        /* The name is decoration; failing to load it must not blank the app. */
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
   return (
     <div className="flex min-h-screen bg-surface">
       {/* Sidebar */}
@@ -80,7 +60,7 @@ export function PracticeShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <p className="px-5 pb-2 pt-3 text-xs font-bold uppercase tracking-wider text-banner-muted">
-          Sunrise Clinic · Kharghar
+          {clinicLabel}
         </p>
 
         <nav className="px-3 pb-6">
@@ -107,7 +87,7 @@ export function PracticeShell({ children }: { children: React.ReactNode }) {
 
         <div className="border-t border-banner-foreground/15 px-5 py-5">
           <Link href="/" className="text-sm text-banner-muted hover:text-banner-foreground">
-            ← Back to carenest.in
+            ← Back to CareNest
           </Link>
           <form action={signOut} className="mt-3">
             <button
@@ -142,39 +122,41 @@ export function PracticeShell({ children }: { children: React.ReactNode }) {
               <Menu className="size-5" />
             </button>
 
-            <label className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg border border-border px-3 py-2.5 sm:max-w-md">
+            <form action="/practice/patients" className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg border border-border px-3 py-2.5 sm:max-w-md">
               <Search className="size-4 shrink-0 text-muted-foreground" />
               <input
-                placeholder="Search patients by name or number"
+                name="q" placeholder="Search assigned encounters by name"
                 aria-label="Search patients"
                 className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               />
-            </label>
+              <button className="text-xs font-semibold text-primary" type="submit">Find</button>
+            </form>
 
-            <button
-              type="button"
+            <Link
+              href="/practice/calendar"
+              aria-label="Clinic calendar"
               className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg bg-cta px-4 font-semibold text-cta-foreground transition-opacity hover:opacity-90"
             >
               <Plus className="size-4" />
-              <span className="hidden sm:inline">Add patient</span>
-            </button>
+              <span className="hidden sm:inline">Calendar</span>
+            </Link>
 
             <div className="ml-auto flex shrink-0 items-center gap-2">
               <ThemeToggle compact />
-              <button
-                type="button"
+              <Link
+                href="/help"
                 aria-label="Help"
                 className="hidden size-11 items-center justify-center rounded-full border border-border sm:inline-flex"
               >
                 <HelpCircle className="size-5" />
-              </button>
+              </Link>
               <form action={signOut}>
                 <button
                   type="submit"
                   className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 text-sm font-semibold hover:border-warning hover:text-warning"
                 >
                   <span className="hidden max-w-[10rem] truncate sm:inline">
-                    {name ?? 'Signed in'}
+                    {clinicianName}
                   </span>
                   <LogOut className="size-4" />
                   <span className="sr-only">Log out</span>
@@ -202,7 +184,7 @@ export function PracticeHeading({
     <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border bg-background px-4 py-5 lg:px-6">
       <div>
         <h1 className="text-2xl font-extrabold">{title}</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">Sunrise Clinic · Kharghar, Navi Mumbai</p>
+        <p className="mt-0.5 text-sm text-muted-foreground">Your clinic workspace</p>
       </div>
       {action}
     </div>

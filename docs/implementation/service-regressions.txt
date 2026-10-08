@@ -1,0 +1,92 @@
+npm notice run my-project@0.1.0 npx
+npm notice run tsx --test --test-concurrency=1 tests/local-contracts.test.mjs tests/local-workflows.test.mjs tests/video-service.test.mjs tests/booking-service.test.mjs tests/security-services.test.mjs tests/queue.test.mjs tests/migrations-service.test.mjs
+▶ actual booking service enforces ownership, atomicity, stale reservations and idempotency
+  ✔ replay returns the same appointment and one committed event (18.3036ms)
+  ✔ expired A cannot confirm or decline B reservation (75.0956ms)
+  ✔ foreign family and unsupported mode rejected before reservation (11.7737ms)
+  ✔ outbox failure rolls back appointment and slot hold (92.1291ms)
+  ✔ failed replacement keeps original confirmed appointment (39.0099ms)
+  ✔ foreign cancellation fails and own cancellation releases exactly its slot (28.1142ms)
+  ✔ suspended practitioner rejected from state transitions and public booking (13.3063ms)
+✔ actual booking service enforces ownership, atomicity, stale reservations and idempotency (4433.1655ms)
+✔ redirect parsing rejects encoded slashes, backslashes and foreign destinations (2.4213ms)
+✔ actual schedule generation anchors to the current IST date and respects closures (3610.6694ms)
+▶ actual provider onboarding and immutable estimates commit required evidence and audit together
+  ✔ submission requires clean private evidence and explicit human verification (51.7705ms)
+  ✔ outbox failure rolls back the complete estimate (34.9496ms)
+  ✖ concurrent stale reprices cannot fork the immutable quote chain (27.7883ms)
+✖ actual provider onboarding and immutable estimates commit required evidence and audit together (2480.0852ms)
+▶ actual local pet, lab, file, finance, profile, review and worker workflows
+  ✔ owned pet health persists; foreign access and mutation fail (89.133ms)
+  ✔ lab intent is idempotent and foreign family ownership is enforced (49.6787ms)
+  ✔ result upload is staff scoped, PDFs quarantined and normalized images private (224.9778ms)
+  ✔ duplicate offline receipts produce one balanced integer ledger posting (63.9418ms)
+  ✔ duplicate captures and refund callbacks cannot double-post money (91.0865ms)
+  ✔ profile demographic synchronization and audit rollback are atomic (75.4646ms)
+  ✔ clinical attendance gates reviews and duplicate reviews do not corrupt aggregates (200.2278ms)
+  ✔ expired worker leases and unknown handlers fail closed (393.1453ms)
+✔ actual local pet, lab, file, finance, profile, review and worker workflows (6028.5814ms)
+✔ real local adapter applies ordered migrations once and rolls back failed transactions (13025.829ms)
+▶ actual queue derives only today’s checked-in current reservations
+  ✔ counts actual checked-in patients ahead and labels estimate freshness (21.9708ms)
+  ✔ tomorrow, yesterday, requested and unchecked visits do not get a position (20.2809ms)
+  ✔ seen visits and stale reservation joins disappear (46.2547ms)
+✔ actual queue derives only today’s checked-in current reservations (5659.491ms)
+▶ actual OTP and limiter services enforce atomic challenge and all-key budgets
+  ✔ stored OTP is a MAC, correct code can be consumed once (75.9874ms)
+  ✔ concurrent guesses cannot exceed five attempts or revive a challenge (55.1856ms)
+  ✔ denial on one key does not charge another key (54.5815ms)
+  ✔ concurrent budget consumption admits exactly its limit (76.0659ms)
+✔ actual OTP and limiter services enforce atomic challenge and all-key budgets (10064.7685ms)
+▶ actual clinical services reject foreign encounters, malformed prescriptions and failed audits
+  ✔ assigned clinician names are resolved on server; foreign clinician denied (422.5727ms)
+  ✔ invalid medicine duration and arbitrary prescription object rejected (1.1981ms)
+  ✔ patient can read own records, but audit failure prevents returning them (438.4939ms)
+✔ actual clinical services reject foreign encounters, malformed prescriptions and failed audits (10235.9214ms)
+▶ actual meeting adapters use participant scope, reconciliation and cancellation
+  ✔ unsafe local OAuth origins and foreign state are rejected (38.824ms)
+  ✔ unconnected or unconsented video requests are not accepted (25.3295ms)
+  ✔ Google pending conferences are reconciled without duplicate creates (341.486ms)
+  ✔ cancelled appointment closes provider resource and denies subsequent joins (165.8633ms)
+  ✔ unknown Zoom create outcome is held for reconciliation, never blindly recreated (35.1373ms)
+  ✔ patient receives join URL while only clinician receives host URL (48.6594ms)
+✔ actual meeting adapters use participant scope, reconciliation and cancellation (21491.2423ms)
+ℹ tests 44
+ℹ suites 0
+ℹ pass 42
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 90000.3514
+
+✖ failing tests:
+
+test at tests\local-contracts.test.mjs:50:11
+✖ concurrent stale reprices cannot fork the immutable quote chain (27.7883ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /immutable|append-only/. Input:
+
+  'error: an issued estimate cannot be UPDATE: supersede it with a new one'
+
+      at async TestContext.<anonymous> (file:///C:/Users/champ/Desktop/carenest/tests/local-contracts.test.mjs:55:4)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async TestContext.<anonymous> (file:///C:/Users/champ/Desktop/carenest/tests/local-contracts.test.mjs:50:3)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: error: an issued estimate cannot be UPDATE: supersede it with a new one
+        at pe.Ue (C:\Users\champ\Desktop\carenest\node_modules\@electric-sql\pg-protocol\src\parser.ts:442:11)
+        at pe.tt (C:\Users\champ\Desktop\carenest\node_modules\@electric-sql\pg-protocol\src\parser.ts:220:16)
+        at pe.parse (C:\Users\champ\Desktop\carenest\node_modules\@electric-sql\pg-protocol\src\parser.ts:104:21)
+        at N.qe (C:\Users\champ\Desktop\carenest\node_modules\@electric-sql\pglite\dist\index.js:5:1762)
+        at <anonymous> (C:\Users\champ\Desktop\carenest\node_modules\@electric-sql\pglite\dist\index.js:5:1155)
+        at wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+        at wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+        at wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+        at wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+        at wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d,
+    expected: /immutable|append-only/,
+    operator: 'rejects',
+    diff: 'simple'
+  }

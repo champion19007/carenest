@@ -1,0 +1,7 @@
+import {requireUser,newId} from '@/lib/auth'
+import {getDb,ensureSchema} from '@/lib/db/client'
+import {integrationCases} from '@/lib/domain/integration-cases'
+import {PatientWorkspace} from '@/components/patient-workspace'
+import {IntegrationCaseForm} from '@/components/integration-case-forms'
+export const dynamic='force-dynamic'
+export default async function Integrations(){const u=await requireUser('/account/integrations');await ensureSchema();const cases=await integrationCases(u.id),bookings=await getDb().query<{id:string;name:string}>("SELECT b.id,d.name||' · '||b.status name FROM patient.bookings b JOIN provider.doctors d ON d.id=b.doctor_id WHERE b.user_id=$1 ORDER BY b.created_at DESC LIMIT 100",[u.id]);return <PatientWorkspace title="Health ID and coverage enquiries" description="Private intake and record export. Live ABHA/ABDM, insurer, PM-JAY and financing connections require actual registered partners and approvals."><IntegrationCaseForm keyValue={newId('partner-case')} bookings={bookings}/><section className="mt-6 space-y-4">{cases.map(c=><article key={c.id} className="rounded-2xl border p-5"><h2>{c.provider} · {c.state}</h2><p className="mt-3">{c.payload.detail}</p><p>{c.payload.review}</p>{c.provider==='ABDM'&&c.state!=='CLOSED'&&<a className="mt-4 inline-flex min-h-11 items-center text-primary" href={`/api/integrations/exports/${c.id}`}>Download human FHIR source bundle</a>}</article>)}</section></PatientWorkspace>}

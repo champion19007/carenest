@@ -1,0 +1,8 @@
+import Link from 'next/link'
+import {currentAdmin} from '@/lib/auth'
+import {AdminGate} from '@/components/admin-gate'
+import {integrationReadiness} from '@/lib/domain/setup'
+import {integrationCases} from '@/lib/domain/integration-cases'
+import {IntegrationReviewForm} from '@/components/integration-case-forms'
+export const dynamic='force-dynamic'
+export default async function Setup(){const a=await currentAdmin();if(!a)return <AdminGate firstRun={false}/>;const checks=await integrationReadiness(a.id),cases=await integrationCases(a.id,true);return <main className="care-container py-10"><Link href="/admin">← Administrator</Link><h1 className="my-5 text-3xl">Integration setup and intake</h1><p className="mb-6">The owner email has been supplied. In-app video uses local LiveKit. Credentials present means configuration only, never a passed live test. Account identity, terms, KYC, licensing and government approvals require the actual account owner.</p><section className="grid gap-5 lg:grid-cols-2">{checks.map(c=><article key={c.name} className="rounded-2xl border p-5"><h2 className="text-xl">{c.name}</h2><p className="mt-3 font-semibold text-sm">{c.status}</p><p className="mt-3 text-sm leading-7">{c.next}</p><a className="mt-3 inline-flex min-h-11 items-center text-primary" href={c.url}>Open setup reference</a></article>)}</section><section className="mt-8 space-y-5"><h2 className="text-2xl">Consented partner enquiries</h2>{cases.map(c=><article key={c.id} className="rounded-2xl border p-5"><h3>{c.provider} · {c.state}</h3><p className="my-3">{c.payload.detail}</p><p>{c.payload.reference}</p><p>{c.payload.review}</p>{c.state!=='CLOSED'&&<IntegrationReviewForm id={c.id} revision={c.revision}/>}</article>)}</section></main>}

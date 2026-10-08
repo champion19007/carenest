@@ -1,0 +1,172 @@
+{
+  "generatedAt": "2026-10-06T17:22:29.623Z",
+  "rateCaptureDates": {
+    "aws": "2026-10-06T16:55:55.521Z",
+    "gcp": "2026-10-06T16:57:09.387Z"
+  },
+  "sources": {
+    "awsRegionalCatalogs": [
+      "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonECS/current/ap-south-1/index.json",
+      "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRDS/current/ap-south-1/index.json",
+      "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSELB/current/ap-south-1/index.json"
+    ],
+    "gcpSQL": "https://cloud.google.com/sql/pricing",
+    "gcpRun": "https://cloud.google.com/run/pricing",
+    "gcpLB": "https://cloud.google.com/load-balancing/pricing",
+    "lightsail": "https://aws.amazon.com/lightsail/pricing/",
+    "ipv4": "https://aws.amazon.com/vpc/pricing/"
+  },
+  "assumptions": {
+    "hoursPerMonth": 730,
+    "regionAWS": "ap-south-1",
+    "regionGCP": "asia-south1",
+    "meanWebDurationSeconds": 0.3,
+    "effectiveBilledConcurrency": 1,
+    "workerSecondsPerDelivery": 2,
+    "dispatcherSecondsPerInvocation": 1,
+    "dispatchInvocationsPerMonth": 43800,
+    "awsAverageLCU": 0.25,
+    "awsProductionPublicIPv4Count": 5,
+    "freeCreditsIncluded": false,
+    "pilotMiscAllowanceUSD": 10,
+    "productionMiscAllowanceUSD": 40,
+    "excluded": [
+      "tax",
+      "FX conversion",
+      "SMS/WhatsApp/email plans",
+      "Zoom/Workspace subscriptions",
+      "payment fees",
+      "people/support/legal",
+      "large media/recording",
+      "extra NAT gateways",
+      "backup/egress/log volume beyond allowances",
+      "database resize/CPU credits"
+    ],
+    "caution": "Model, not a quote or capacity benchmark. Misc allowances are not vendor-priced line items. Growth keeps database size fixed only to isolate web sensitivity."
+  },
+  "workloads": {
+    "pilot": {
+      "requests": 100000,
+      "deliveries": 2000,
+      "minInstances": 0
+    },
+    "production": {
+      "requests": 1000000,
+      "deliveries": 20000,
+      "minInstances": 1
+    },
+    "growthSensitivity": {
+      "requests": 5000000,
+      "deliveries": 100000,
+      "minInstances": 1
+    }
+  },
+  "unitRatesUSD": {
+    "awsCPU": 0.04256,
+    "awsGBHour": 0.004655,
+    "awsArmCPU": 0.02383,
+    "awsArmGBHour": 0.00261,
+    "awsALBHour": 0.0239,
+    "awsLCUHour": 0.008,
+    "awsRDSMicroHour": 0.021,
+    "awsRDSLargeHAHour": 0.334,
+    "awsStorageGBMonth": 0.131,
+    "awsHAStorageGBMonth": 0.262,
+    "gcpSQLCPUHour": 0.0496,
+    "gcpSQLRAMGiBHour": 0.0084,
+    "gcpSQLHACPUHour": 0.0991,
+    "gcpSQLHARAMGiBHour": 0.0168,
+    "gcpSQLSmallHour": 0.042,
+    "gcpStorageGiBMonth": 0.204,
+    "gcpHAStorageGiBMonth": 0.408,
+    "gcpBackupGiBMonth": 0.096,
+    "gcpRunActiveCPUSecond": 0.000024,
+    "gcpRunMemoryGiBSecond": 0.0000025,
+    "gcpRunIdleCPUSecond": 0.0000025,
+    "gcpRunRequest": 4.0000000000000003e-7,
+    "gcpLBHour": 0.025,
+    "awsIPv4Hour": 0.005,
+    "lightsailIPv4TwoGBMonth": 12
+  },
+  "scenarios": [
+    {
+      "name": "AWS budget pilot: single server and small database; no HA",
+      "itemsUSD": {
+        "lightsailTwoGB": 12,
+        "rdsMicro": 15.33,
+        "rds20GBStorage": 2.62,
+        "miscAllowance": 10
+      },
+      "totalUSD": 39.95,
+      "exactTotalUSD": 39.95
+    },
+    {
+      "name": "GCP managed pilot: shared-core small database and custom-domain LB; no HA",
+      "itemsUSD": {
+        "cloudRunWeb": 0.84,
+        "cloudRunWorkerAndDispatcher": 1.23,
+        "cloudSQLSharedSmall": 30.66,
+        "sql20GiBStorage": 4.08,
+        "usedBackup20GiB": 1.92,
+        "httpsLBForwarding": 18.25,
+        "miscAllowance": 10
+      },
+      "totalUSD": 66.97,
+      "exactTotalUSD": 66.97027
+    },
+    {
+      "name": "AWS managed production baseline: x86 Fargate and Multi-AZ RDS",
+      "itemsUSD": {
+        "fargateWebAndWorker": 47.33,
+        "loadBalancerWithAssumedLCU": 18.91,
+        "publicIPv4": 18.25,
+        "rdsTwoCPU8GiBMultiAZ": 243.82,
+        "rds100GBHAStorage": 26.2,
+        "miscAllowance": 40
+      },
+      "totalUSD": 394.51,
+      "exactTotalUSD": 394.508375
+    },
+    {
+      "name": "GCP managed production baseline: Cloud Run and HA Cloud SQL",
+      "itemsUSD": {
+        "cloudRunWeb": 19.99,
+        "cloudRunWorkerAndDispatcher": 2.14,
+        "cloudSQLTwoCPU8GiBHA": 242.8,
+        "cloudSQL100GiBHAStorage": 40.8,
+        "usedBackup50GiB": 4.8,
+        "httpsLBForwarding": 18.25,
+        "miscAllowance": 40
+      },
+      "totalUSD": 368.78,
+      "exactTotalUSD": 368.77947
+    },
+    {
+      "name": "AWS ARM sensitivity: same task allocations; image compatibility required",
+      "itemsUSD": {
+        "fargateWebAndWorker": 26.51,
+        "loadBalancerWithAssumedLCU": 18.91,
+        "publicIPv4": 18.25,
+        "rdsTwoCPU8GiBMultiAZ": 243.82,
+        "rds100GBHAStorage": 26.2,
+        "miscAllowance": 40
+      },
+      "totalUSD": 373.69,
+      "exactTotalUSD": 373.685125
+    },
+    {
+      "name": "GCP growth sensitivity: 5M requests, same DB allocation only for isolation",
+      "itemsUSD": {
+        "cloudRunWeb": 47.39,
+        "cloudRunWorkerAndDispatcher": 6.21,
+        "cloudSQLTwoCPU8GiBHA": 242.8,
+        "cloudSQL100GiBHAStorage": 40.8,
+        "usedBackup50GiB": 4.8,
+        "httpsLBForwarding": 18.25,
+        "miscAllowance": 40
+      },
+      "totalUSD": 400.25,
+      "exactTotalUSD": 400.25147000000004
+    }
+  ]
+}

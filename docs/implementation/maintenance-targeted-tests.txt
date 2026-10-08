@@ -1,0 +1,34 @@
+npm notice run my-project@0.1.0 npx
+npm notice run tsx --test --test-concurrency=1 tests/extended-workflows.test.mjs tests/security-services.test.mjs tests/migrations-service.test.mjs
+▶ extended local clinic, dispatch, privacy and pharmacy contracts
+  ✔ arrival creates encrypted identity, encounter and invoice atomically without linking by phone (86.1323ms)
+  ✔ only assigned clinician starts and signs; private receipt and matching phone are both required (148.4338ms)
+  ✔ owned encrypted addresses and home bookings enforce scope and dispatch revisions (138.5261ms)
+  ✔ pharmacy cannot publish without professional policy; actual partner verification and catalogue required (50.7797ms)
+  ✔ owned medicine requests are idempotent and approval needs current prescriber safety review (153.3699ms)
+  ✔ courier sees minimum dispatch information; only licensed cashier settles correct pharmacy invoice (87.6349ms)
+  ✔ withdrawal prevents new clinical and pharmacy sharing while owner retains care access (138.6176ms)
+  ✔ privacy requests are scoped and erasure cannot bypass approved retention and holds (458.5757ms)
+✔ extended local clinic, dispatch, privacy and pharmacy contracts (7586.7735ms)
+✔ real local adapter applies ordered migrations once and rolls back failed transactions (7813.3356ms)
+▶ actual OTP and limiter services enforce atomic challenge and all-key budgets
+  ✔ stored OTP is a MAC, correct code can be consumed once (24.3569ms)
+  ✔ concurrent guesses cannot exceed five attempts or revive a challenge (40.935ms)
+  ✔ denial on one key does not charge another key (34.2771ms)
+  ✔ concurrent budget consumption admits exactly its limit (42.1671ms)
+✔ actual OTP and limiter services enforce atomic challenge and all-key budgets (4304.0853ms)
+▶ actual clinical services reject foreign encounters, malformed prescriptions and failed audits
+  ✔ assigned clinician names are resolved on server; foreign clinician denied (61.6898ms)
+  ✔ invalid medicine duration and arbitrary prescription object rejected (0.6692ms)
+  ✔ patient can read own records, but audit failure prevents returning them (54.8888ms)
+  ✔ clinical recipient identity is distinct from the household account owner (119.0783ms)
+  ✔ repeated clinical save intent produces one immutable record and rejects changed content (73.9251ms)
+✔ actual clinical services reject foreign encounters, malformed prescriptions and failed audits (3351.51ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 26796.8784

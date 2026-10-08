@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
-import { Building2, Video } from 'lucide-react'
+import { Building2, Video,Home } from 'lucide-react'
 import { bookAppointment, type BookingState } from '@/app/actions/care'
 import { groupByDay, slotTime, type SlotOption } from '@/lib/slot-format'
 
@@ -11,38 +11,52 @@ export function BookingForm({
   slug,
   doctorName,
   offersVideo,
+  offersHomeVisit=false,
+  addresses=[],
   patientName,
   family,
   slots,
+  initialSlotId = '',
+  requestKey,
+  pets = [],
+  subjectKind = 'human',
 }: {
   slug: string
   doctorName: string
   offersVideo: boolean
+  offersHomeVisit?:boolean
+  addresses?:{id:string;label:string}[]
   patientName: string
+  initialSlotId?: string
+  requestKey: string
+  pets?: { id: string; name: string; species: string }[]
+  subjectKind?: 'human' | 'pet'
   /** Real, currently-free slots from the clinic's calendar. */
   slots: SlotOption[]
   /** The household. The account holder's own row is marked is_self. */
   family: { id: string; name: string; relation: string; is_self: boolean }[]
 }) {
   const [state, action] = useActionState(bookAppointment, {} as BookingState)
-  const [kind, setKind] = useState<'clinic' | 'video'>('clinic')
+  const [kind, setKind] = useState<'clinic' | 'video' | 'home_visit'>('clinic')
 
   const days = groupByDay(slots)
-  const [day, setDay] = useState(days[0]?.day ?? '')
+  const initialDay = days.find(entry => entry.slots.some(slot => slot.slotId === initialSlotId))?.day
+  const [day, setDay] = useState(initialDay ?? days[0]?.day ?? '')
   /* The slot id, not a time string. The server must be told which row to
      claim; a label like "Today, 6:30 PM" identifies nothing it can lock. */
-  const [slotId, setSlotId] = useState('')
+  const [slotId, setSlotId] = useState(initialSlotId)
 
   const chosen = slots.find((slot) => slot.slotId === slotId)
   const shown = days.find((entry) => entry.day === day) ?? days[0]
 
   return (
-    <form action={action} className="rounded-xl border border-border bg-card p-6">
+    <form action={action} className="rounded-[1.5rem] border border-border bg-card p-5 sm:p-7">
       <input type="hidden" name="slug" value={slug} />
+      <input type="hidden" name="requestKey" value={requestKey} />
       <input type="hidden" name="kind" value={kind} />
       <input type="hidden" name="slotId" value={slotId} />
 
-      {family.length > 1 ? (
+      {subjectKind === 'pet' ? <label className="block"><span className="block font-semibold">Which pet is this for?</span><select name="petId" required className="field mt-2"><option value="">Choose your pet</option>{pets.map(pet=><option key={pet.id} value={pet.id}>{pet.name} · {pet.species}</option>)}</select><a href="/account/pets" className="mt-2 inline-block text-sm text-primary">Add or manage pets</a></label> : family.length > 1 ? (
         <label className="block">
           <span className="font-semibold">Who is this appointment for?</span>
           <select
@@ -111,9 +125,11 @@ export function BookingForm({
         </div>
       </fieldset>
 
+      {offersHomeVisit&&<button type="button" onClick={()=>setKind('home_visit')} aria-pressed={kind==='home_visit'} className={`mt-4 flex min-h-14 w-full items-center gap-3 rounded-xl border p-4 ${kind==='home_visit'?'border-primary bg-soft':'border-border'}`}><Home className="size-5 text-primary"/><span>Home visit · request clinic confirmation and dispatch</span></button>}
+      {kind==='home_visit'&&<label className="mt-5 block text-sm">Private visit address<select name="addressId" required className="field mt-2"><option value="">Choose your address</option>{addresses.map(a=><option key={a.id} value={a.id}>{a.label}</option>)}</select><a href="/account/addresses" className="mt-2 inline-block text-primary">Add an address</a></label>}
       <fieldset className="mt-7">
         <legend className="font-semibold">Which day?</legend>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1">
           {days.map((entry) => (
             <button
               key={entry.day}
@@ -123,14 +139,14 @@ export function BookingForm({
                 setSlotId('')
               }}
               aria-pressed={day === entry.day}
-              className={`min-h-11 rounded-lg border px-5 font-semibold transition-colors ${
+              className={`min-h-16 shrink-0 rounded-2xl border px-4 text-sm font-semibold transition-colors ${
                 day === entry.day
                   ? 'border-primary bg-cta text-cta-foreground'
                   : 'border-border hover:border-primary'
               }`}
             >
               {entry.day}
-              <span className="ml-2 text-xs font-normal opacity-75">
+              <span className="mt-1 block text-[10px] font-normal opacity-75">
                 {entry.slots.length} free
               </span>
             </button>
@@ -172,6 +188,8 @@ export function BookingForm({
       )}
 
       <div className="mt-7 border-t border-border pt-6">
+        <label className="mb-4 flex min-h-11 items-start gap-3 text-sm"><input type="checkbox" name="consent" required className="mt-1 size-5 shrink-0" /><span>I agree to share the necessary patient or pet details with this clinic for this appointment. <a className="text-primary underline" href="/policies/privacy">Privacy details</a></span></label>
+        {kind==='video'&&<label className="mb-4 flex min-h-11 items-start gap-3 text-sm"><input type="checkbox" name="videoConsent" required className="mt-1 size-5 shrink-0"/><span>I agree to join through the clinic’s connected Zoom or Google Meet account. That provider handles the call and its participant information.</span></label>}
         <p className="text-sm text-muted-foreground">
           {chosen ? (
             <>
@@ -179,7 +197,7 @@ export function BookingForm({
               <span className="font-semibold text-foreground">
                 {day}, {slotTime(chosen.startsAt)}
               </span>{' '}
-              — {kind === 'video' ? 'video consult' : 'clinic visit'}
+              — {kind === 'video' ? 'video consult' : kind==='home_visit'?'home visit':'clinic visit'}
             </>
           ) : (
             'Choose a time slot to continue.'
@@ -199,7 +217,7 @@ function Submit({ disabled }: { disabled: boolean }) {
       disabled={disabled || status.pending}
       className="mt-4 min-h-13 w-full rounded-lg bg-cta font-semibold text-cta-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
     >
-      {status.pending ? 'Confirming…' : 'Confirm appointment'}
+      {status.pending ? 'Sending request…' : 'Request appointment'}
     </button>
   )
 }

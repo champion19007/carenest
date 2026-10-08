@@ -1,6 +1,7 @@
 import 'server-only'
 import { createHash } from 'node:crypto'
 import { getDb, ensureSchema } from './client'
+import {boundedText,reject} from '@/lib/domain/errors'
 
 /**
  * Itemised surgery estimates.
@@ -103,8 +104,10 @@ export async function issueEstimate(input: {
   supersedes?: string | null
 }): Promise<Estimate> {
   const d = await db()
-
+  boundedText(input.hospital,200,2);boundedText(input.procedure,200,2);boundedText(input.roomTier,100,2)
+  if(input.lineItems.length<1||input.lineItems.length>30||input.lineItems.some(item=>!item.label.trim()||item.label.length>200||!Number.isInteger(item.amount)||item.amount<0||item.amount>10000000))reject('VALIDATION','Check the estimate line items.',400)
   const total = totalOf(input.lineItems)
+  if(!Number.isSafeInteger(total)||total>100000000)reject('VALIDATION','The estimate total exceeds the configured limit.',400)
   const contentHash = hashEstimate({
     procedure: input.procedure,
     hospital: input.hospital,
@@ -112,7 +115,13 @@ export async function issueEstimate(input: {
     lineItems: input.lineItems,
   })
 
-  const rows = await d.query<Estimate>(
+  return d.transaction(async tx=>{
+  if(!await tx.one('SELECT id FROM admins WHERE id=$1 AND totp_secret IS NOT NULL',[input.issuedBy]))reject('FORBIDDEN','Administrator required.',403)
+  const lead=await tx.one<{status:string}>('SELECT status FROM clinic.surgery_leads WHERE id=$1 FOR UPDATE',[input.leadId])
+  if(!lead||!['APPROVED','ROUTED'].includes(lead.status))reject('STATE','Only an approved enquiry can be priced.')
+  const prior=await tx.one<{id:string}>(`SELECT e.id FROM clinic.estimates e WHERE e.lead_id=$1 AND NOT EXISTS(SELECT 1 FROM clinic.estimates next WHERE next.supersedes=e.id) ORDER BY e.created_at DESC LIMIT 1`,[input.leadId])
+  if((prior?.id??null)!==(input.supersedes??null))reject('CHANGED','The estimate changed. Refresh before repricing.')
+  const rows = await tx.query<Estimate>(
     `INSERT INTO clinic.estimates
        (id, lead_id, procedure, hospital, room_tier, line_items, total,
         content_hash, supersedes, issued_by, valid_until)
@@ -134,7 +143,10 @@ export async function issueEstimate(input: {
     ],
   )
 
+  await tx.query("INSERT INTO domain_events(kind,subject_id,payload,event_key) VALUES('estimate.issued',$1,'{}'::jsonb,$2) ON CONFLICT DO NOTHING",[input.id,'estimate:'+input.id])
+  await tx.query("INSERT INTO audit_log(actor_id,action,resource,detail) VALUES($1,$2,$3,$4::jsonb)",[input.issuedBy,input.supersedes?'estimate:reprice':'estimate:issue',input.id,JSON.stringify({leadId:input.leadId,total,supersedes:input.supersedes??null})])
   return normalise(rows[0])
+  })
 }
 
 /** Every estimate for an enquiry, newest first — including superseded ones. */

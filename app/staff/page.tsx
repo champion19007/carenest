@@ -1,0 +1,6 @@
+import Link from 'next/link'
+import {requireUser} from '@/lib/auth'
+import {getDb,ensureSchema} from '@/lib/db/client'
+import {ownClinics} from '@/lib/domain/clinic-access'
+export const dynamic='force-dynamic'
+export default async function StaffWorkspace(){const user=await requireUser('/staff');await ensureSchema();const clinics=await ownClinics(getDb(),user.id);return <main className="care-container py-10"><Link href="/account">← Account</Link><h1 className="mt-4 text-3xl">Staff workspace</h1><p className="mt-4 text-sm">Each operation checks your current clinic or partner assignment.</p><div className="mt-6 grid gap-4 sm:grid-cols-2">{clinics.map(c=><section key={c.id} className="rounded-2xl border border-border p-5"><h2 className="text-xl">{c.name}</h2><p>{c.role}</p><div className="mt-4 flex flex-wrap gap-4">{['clinician','receptionist','administrator'].includes(c.role)&&<><Link className="text-primary" href={`/staff/clinic?clinic=${c.id}`}>Arrivals</Link><Link className="text-primary" href={`/staff/dispatch?clinic=${c.id}`}>Home visits</Link></>}{['lab','administrator'].includes(c.role)&&<Link className="text-primary" href="/staff/labs">Lab orders</Link>}</div></section>)}</div><Link href="/staff/pharmacy" className="care-button mt-6">Pharmacy workspace</Link></main>}

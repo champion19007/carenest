@@ -12,6 +12,8 @@ import {
   updateFamilyMember,
 } from '@/lib/db/family'
 import { updateUserPerson, writeAudit } from '@/lib/db/sql'
+import {updatePersonProfile} from '@/lib/domain/profile'
+import {DomainError} from '@/lib/domain/errors'
 
 export type ProfileState = { error?: string; notice?: string }
 
@@ -33,8 +35,9 @@ function readPerson(formData: FormData) {
      is a mis-keyed year. Both are worth catching before a clinician sees it. */
   if (dob) {
     const when = new Date(dob)
-    if (Number.isNaN(when.getTime())) return { error: 'That date of birth is not valid.' as const }
-    if (when > new Date()) return { error: 'A date of birth cannot be in the future.' as const }
+    if (Number.isNaN(when.getTime())||!/^\d{4}-\d{2}-\d{2}$/.test(dob)||when.toISOString().slice(0,10)!==dob) return { error: 'That date of birth is not valid.' as const }
+    const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())
+    if (dob > today) return { error: 'A date of birth cannot be in the future.' as const }
     if (when < new Date('1900-01-01')) return { error: 'Please check the year of birth.' as const }
   }
   return { name, dob: dob || null, gender: gender || null }
@@ -50,26 +53,16 @@ export async function saveProfile(_prev: ProfileState, formData: FormData): Prom
     return { error: 'That email address does not look right.' }
   }
 
-  await updateUserProfile(user.id, {
+  try{await updatePersonProfile(user.id, {
     name: person.name,
     email: email || null,
     dob: person.dob,
     gender: person.gender,
     city: String(formData.get('city') ?? '').trim() || null,
-  })
+  })}catch(error){if(error instanceof DomainError)return {error:error.message};throw error}
 
   /* The household's "self" row is the same person, so it follows the rename
      rather than sitting there under the old name. */
-  await ensureSelfMember(user.id, person.name, newId('fam'))
-  await renameSelfMember(user.id, person.name)
-
-  await writeAudit({
-    actorId: user.id,
-    actorRole: user.role,
-    action: 'profile:update',
-    resource: user.id,
-    tenantRegion: user.tenant_region,
-  })
 
   revalidatePath('/account/profile')
   revalidatePath('/dashboard/patient')
@@ -123,9 +116,6 @@ export async function editFamily(_prev: ProfileState, formData: FormData): Promi
 
   /* Editing the "self" row is editing the account holder, so the account
      record follows — but only these three fields, never the whole row. */
-  if (existing.is_self) {
-    await updateUserPerson(user.id, { name: person.name, dob: person.dob, gender: person.gender })
-  }
 
   revalidatePath('/dashboard/patient')
   return { notice: 'Saved.' }

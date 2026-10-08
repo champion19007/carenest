@@ -1,0 +1,34 @@
+npm notice run my-project@0.1.0 npx
+npm notice run tsx --test tests/extended-workflows.test.mjs tests/local-workflows.test.mjs
+▶ extended local clinic, dispatch, privacy and pharmacy contracts
+  ✔ arrival creates encrypted identity, encounter and invoice atomically without linking by phone (287.2444ms)
+  ✔ only assigned clinician starts and signs; private receipt and matching phone are both required (359.7962ms)
+  ✔ owned encrypted addresses and home bookings enforce scope and dispatch revisions (281.587ms)
+  ✔ pharmacy cannot publish without professional policy; actual partner verification and catalogue required (88.1082ms)
+  ✔ owned medicine requests are idempotent and approval needs current prescriber safety review (316.4316ms)
+  ✔ courier sees minimum dispatch information; only licensed cashier settles correct pharmacy invoice (128.1486ms)
+  ✔ withdrawal prevents new clinical and pharmacy sharing while owner retains care access (143.2755ms)
+  ✔ privacy requests are scoped and erasure cannot bypass approved retention and holds (281.9352ms)
+✔ extended local clinic, dispatch, privacy and pharmacy contracts (17214.8389ms)
+▶ actual local pet, lab, file, finance, profile, review and worker workflows
+  ✔ owned pet health persists; foreign access and mutation fail (73.0336ms)
+  ✔ lab intent is idempotent and foreign family ownership is enforced (107.013ms)
+  ✔ result upload is staff scoped, PDFs quarantined and normalized images private (512.6035ms)
+  ✔ duplicate offline receipts produce one balanced integer ledger posting (190.4692ms)
+  ✔ duplicate captures and refund callbacks cannot double-post money (193.3299ms)
+  ✔ cancelled lab invoices cannot collect payment and a late capture stays refundable (133.2601ms)
+  ✔ profile demographic synchronization and audit rollback are atomic (74.3373ms)
+  ✔ clinical attendance gates reviews and duplicate reviews do not corrupt aggregates (331.849ms)
+  ✔ expired worker leases and unknown handlers fail closed (532.6528ms)
+  ✔ support review uses current admin access and an expected-state transition (66.8538ms)
+  ✔ old ambiguous email delivery is held beyond the provider deduplication window (183.9209ms)
+  ✔ private-object purge respects a new hold, removes the file and is idempotent (180.2288ms)
+✔ actual local pet, lab, file, finance, profile, review and worker workflows (18568.0684ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 21444.3172

@@ -80,8 +80,8 @@ export default async function SignInPage({
               of paper.
             </li>
             <li>
-              <strong className="text-foreground">To check your insurance.</strong> Cashless
-              eligibility has to be verified against a named policyholder before you arrive.
+              <strong className="text-foreground">To manage your household.</strong> Keep human
+              appointments and pet care under your account, with separate records for each subject.
             </li>
           </ul>
 

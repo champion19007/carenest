@@ -49,7 +49,7 @@ export function slotDay(iso: string, now = new Date()): string {
   return dayFormat.format(new Date(iso))
 }
 
-/** The label stored on the booking, so a past appointment still reads well. */
+/** A read-time display label; appointment storage keeps the underlying instant. */
 export function slotLabel(iso: string, now = new Date()): string {
   return `${slotDay(iso, now)}, ${slotTime(iso)}`
 }

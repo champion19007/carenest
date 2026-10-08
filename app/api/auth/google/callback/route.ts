@@ -10,7 +10,6 @@ import {
   createUser,
   findUserByEmail,
   findUserByGoogleSub,
-  linkGoogleAccount,
   touchLogin,
 } from '@/lib/db/sql'
 
@@ -53,15 +52,10 @@ export async function GET(request: NextRequest) {
   if (!identity.emailVerified) return fail(request, 'google-unverified')
 
   let user = await findUserByGoogleSub(identity.sub)
+  // Contact email is not an authentication identity. Linking requires proof of both accounts.
   if (!user) {
-    /* Same person, previously signed up by phone. Google's `sub` is the stable
-       identifier — email addresses can be reassigned — so the link is stored
-       by sub once established. */
     const byEmail = await findUserByEmail(identity.email)
-    if (byEmail) {
-      await linkGoogleAccount(byEmail.id, identity.sub)
-      user = byEmail
-    }
+    if (byEmail?.email_verified_at) return fail(request,'account-link-required')
   }
 
   const isNew = !user

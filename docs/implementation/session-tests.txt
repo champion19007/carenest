@@ -1,0 +1,16 @@
+npm notice run my-project@0.1.0 npx
+npm notice run tsx --test tests/session-service.test.mjs
+✔ authenticator matches standard SHA1 counter vectors and rejects malformed codes (3.4555ms)
+▶ actual sessions use current roles, current account state and privileged idle limits
+  ✔ invalid or obsolete routing claims cannot change current privilege (58.0497ms)
+  ✔ suspension takes effect without waiting for a cookie to expire (24.2011ms)
+  ✔ polling does not refresh idle age and an idle clinician session is revoked (46.0086ms)
+✔ actual sessions use current roles, current account state and privileged idle limits (10040.9437ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12552.413

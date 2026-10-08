@@ -13,22 +13,28 @@ import { splitStatements } from '../scripts/split-sql.mjs'
 /** The schema the app actually applies, read from its single source. */
 export function schemaStatements() {
   const src = readFileSync(path.join(process.cwd(), 'lib', 'db', 'schema.ts'), 'utf8')
-  return splitStatements(src.slice(src.indexOf('`') + 1, src.lastIndexOf('`')))
+  const foundation = readFileSync(path.join(process.cwd(), 'lib', 'db', 'foundation-schema.ts'), 'utf8')
+  const extended = readFileSync(path.join(process.cwd(), 'lib', 'db', 'extended-schema.ts'), 'utf8')
+  const maintenance = readFileSync(path.join(process.cwd(), 'lib', 'db', 'maintenance-schema.ts'), 'utf8')
+  const livekit = readFileSync(path.join(process.cwd(), 'lib', 'db', 'livekit-schema.ts'), 'utf8')
+  return [...splitStatements(src.slice(src.indexOf('`') + 1, src.lastIndexOf('`'))),
+    ...splitStatements(foundation.slice(foundation.indexOf('`') + 1, foundation.lastIndexOf('`'))),...splitStatements(extended.slice(extended.indexOf('`')+1,extended.lastIndexOf('`'))),...splitStatements(maintenance.slice(maintenance.indexOf('`')+1,maintenance.lastIndexOf('`'))),...splitStatements(livekit.slice(livekit.indexOf('`')+1,livekit.lastIndexOf('`')))]
 }
 
 export async function freshDb() {
-  const pg = new PGlite()
-  for (const stmt of schemaStatements()) await pg.query(stmt)
+  process.env.DATA_ENCRYPTION_KEY='1'.repeat(64)
+  const pg = new PGlite({parsers:{1184:value=>new Date(value).toISOString(),1082:value=>value}})
+  await pg.exec(schemaStatements().join(';\n'))
 
-  return {
-    async query(text, params = []) {
-      return (await pg.query(text, params)).rows
-    },
-    async one(text, params = []) {
-      return (await pg.query(text, params)).rows[0]
-    },
+  const wrap = client => ({
+    backend: 'pglite',
+    async query(text, params = []) { return (await client.query(text, params)).rows },
+    async one(text, params = []) { return (await client.query(text, params)).rows[0] },
+    async exec(text) { await client.exec(text) },
+    async transaction(work) { return client === pg ? pg.transaction(tx => work(wrap(tx))) : work(wrap(client)) },
     close: () => pg.close(),
-  }
+  })
+  return wrap(pg)
 }
 
 /* ── fixtures ──────────────────────────────────────────────────────── */

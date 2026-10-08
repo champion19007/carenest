@@ -1,0 +1,59 @@
+npm notice run my-project@0.1.0 npx
+npm notice run tsx --test --test-concurrency=2 tests/security-services.test.mjs tests/session-service.test.mjs tests/local-workflows.test.mjs tests/local-contracts.test.mjs tests/video-service.test.mjs
+✔ redirect parsing rejects encoded slashes, backslashes and foreign destinations (3.3981ms)
+✔ actual schedule generation anchors to the current IST date and respects closures (16222.4793ms)
+▶ actual provider onboarding and immutable estimates commit required evidence and audit together
+  ✔ submission requires clean private evidence and explicit human verification (195.7644ms)
+  ✔ outbox failure rolls back the complete estimate (128.7785ms)
+  ✔ concurrent stale reprices cannot fork the immutable quote chain (154.2555ms)
+✔ actual provider onboarding and immutable estimates commit required evidence and audit together (13941.2417ms)
+▶ actual local pet, lab, file, finance, profile, review and worker workflows
+  ✔ owned pet health persists; foreign access and mutation fail (208.8945ms)
+  ✔ lab intent is idempotent and foreign family ownership is enforced (99.7083ms)
+  ✔ result upload is staff scoped, PDFs quarantined and normalized images private (600.7201ms)
+  ✔ duplicate offline receipts produce one balanced integer ledger posting (152.0432ms)
+  ✔ duplicate captures and refund callbacks cannot double-post money (170.5523ms)
+  ✔ cancelled lab invoices cannot collect payment and a late capture stays refundable (191.2928ms)
+  ✔ profile demographic synchronization and audit rollback are atomic (136.7362ms)
+  ✔ clinical attendance gates reviews and duplicate reviews do not corrupt aggregates (501.2223ms)
+  ✔ expired worker leases and unknown handlers fail closed (925.5618ms)
+  ✔ support review uses current admin access and an expected-state transition (164.9848ms)
+  ✔ old ambiguous email delivery is held beyond the provider deduplication window (105.7635ms)
+✔ actual local pet, lab, file, finance, profile, review and worker workflows (15257.4828ms)
+▶ actual OTP and limiter services enforce atomic challenge and all-key budgets
+  ✔ stored OTP is a MAC, correct code can be consumed once (100.7748ms)
+  ✔ concurrent guesses cannot exceed five attempts or revive a challenge (96.8587ms)
+  ✔ denial on one key does not charge another key (107.6981ms)
+  ✔ concurrent budget consumption admits exactly its limit (251.7905ms)
+✔ actual OTP and limiter services enforce atomic challenge and all-key budgets (11739.0463ms)
+▶ actual clinical services reject foreign encounters, malformed prescriptions and failed audits
+  ✔ assigned clinician names are resolved on server; foreign clinician denied (224.9948ms)
+  ✔ invalid medicine duration and arbitrary prescription object rejected (1.1974ms)
+  ✔ patient can read own records, but audit failure prevents returning them (235.3204ms)
+  ✔ clinical recipient identity is distinct from the household account owner (694.2296ms)
+  ✔ repeated clinical save intent produces one immutable record and rejects changed content (268.5265ms)
+✔ actual clinical services reject foreign encounters, malformed prescriptions and failed audits (10637.0614ms)
+✔ authenticator matches standard SHA1 counter vectors and rejects malformed codes (5.7325ms)
+▶ actual sessions use current roles, current account state and privileged idle limits
+  ✔ invalid or obsolete routing claims cannot change current privilege (107.6266ms)
+  ✔ suspension takes effect without waiting for a cookie to expire (37.1923ms)
+  ✔ polling does not refresh idle age and an idle clinician session is revoked (62.5337ms)
+✔ actual sessions use current roles, current account state and privileged idle limits (27816.1031ms)
+▶ actual meeting adapters use participant scope, reconciliation and cancellation
+  ✔ unsafe local OAuth origins and foreign state are rejected (92.1721ms)
+  ✔ unconnected or unconsented video requests are not accepted (38.5987ms)
+  ✔ Google pending conferences are reconciled without duplicate creates (363.8352ms)
+  ✔ cancelled appointment closes provider resource and denies subsequent joins (166.9768ms)
+  ✔ cancellation during Google creation cleans up the resource returned late (476.8146ms)
+  ✔ concurrent Zoom workers cannot both create the same appointment room (484.3987ms)
+  ✔ unknown Zoom create outcome is held for reconciliation, never blindly recreated (61.1521ms)
+  ✔ patient receives join URL while only clinician receives host URL (195.5165ms)
+✔ actual meeting adapters use participant scope, reconciliation and cancellation (34898.7101ms)
+ℹ tests 43
+ℹ suites 0
+ℹ pass 43
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 88019.0954

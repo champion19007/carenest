@@ -1,0 +1,32 @@
+[
+  {
+    "Path": "/",
+    "Status": 200,
+    "FinalPath": "/",
+    "ApplicationError": false
+  },
+  {
+    "Path": "/policies/privacy",
+    "Status": 200,
+    "FinalPath": "/policies/privacy",
+    "ApplicationError": false
+  },
+  {
+    "Path": "/staff/pharmacy",
+    "Status": 200,
+    "FinalPath": "/sign-in?next=%2Fstaff%2Fpharmacy",
+    "ApplicationError": false
+  },
+  {
+    "Path": "/account/mobile",
+    "Status": 200,
+    "FinalPath": "/sign-in?next=%2Faccount%2Fmobile",
+    "ApplicationError": false
+  },
+  {
+    "Path": "/api/mobile/state",
+    "Status": 401,
+    "FinalPath": "/api/mobile/state",
+    "ApplicationError": false
+  }
+]

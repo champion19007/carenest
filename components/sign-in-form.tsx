@@ -13,7 +13,7 @@ export function SignInForm({ next, google }: { next?: string; google?: boolean }
 
   /* Once a code has been issued we swap to the verification step. */
   const phone = verifyState.phone ?? phoneState.phone
-  const stage: 'phone' | 'code' = phoneState.otpHint ? 'code' : 'phone'
+  const stage: 'phone' | 'code' = phoneState.phone && phoneState.notice && !phoneState.error ? 'code' : 'phone'
 
   if (stage === 'code' && phone) {
     return (
@@ -120,7 +120,7 @@ function VerifyStep({
   return (
     <form action={action} className="mt-8 space-y-5">
       <input type="hidden" name="phone" value={phone} />
-      <input type="hidden" name="next" value={next ?? '/dashboard/patient'} />
+      <input type="hidden" name="next" value={next ?? ''} />
 
       <div>
         <label htmlFor="code" className="block font-semibold">

@@ -1,7 +1,7 @@
-import { Analytics } from '@vercel/analytics/next'
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import { MobileNavigation } from '@/components/mobile-navigation'
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -17,15 +17,15 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'CareNest | Book doctors, video consults & lab tests in India',
+  title: 'CareNest | Find doctors and care for your family',
   description:
-    'Find verified doctors near you, book clinic visits or video consults, and get lab tests done at home — with cashless and Ayushman Bharat support.',
+    'Explore doctors, compare consultation fees, book appointments, and discover veterinary care for your pets.',
 }
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#16265e' },
-    { media: '(prefers-color-scheme: dark)', color: '#0d0a1a' },
+    { media: '(prefers-color-scheme: light)', color: '#e8f3ff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0c1525' },
   ],
   userScalable: true,
 }
@@ -52,13 +52,13 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en-IN" suppressHydrationWarning>
+    <html lang="en-IN" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>
       <body className={`${inter.variable} ${jakarta.variable} font-sans`}>
         {children}
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+        <MobileNavigation />
       </body>
     </html>
   )

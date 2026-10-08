@@ -21,7 +21,7 @@ function linksFor(role: string) {
     return [
       { href: '/practice/requests', label: 'Appointment requests', Icon: Stethoscope },
       { href: '/practice/patients', label: 'My practice', Icon: CalendarClock },
-      { href: '/account/profile', label: 'Profile & details', Icon: UserRound },
+      { href: '/account/profile', label: 'Profile & details', Icon: UserRound },{href:'/staff',label:'Staff workspace',Icon:Stethoscope},
     ]
   }
   return [
@@ -38,7 +38,7 @@ export function AccountMenu({
   role = 'patient',
 }: {
   name: string
-  phone: string
+  phone: string | null
   role?: string
 }) {
   const links = linksFor(role)
