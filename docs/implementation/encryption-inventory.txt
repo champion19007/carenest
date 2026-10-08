@@ -1,0 +1,3 @@
+npm notice run my-project@0.1.0 encryption:inventory
+npm notice run tsx scripts/rotate-encryption.ts
+{"mode":"dry-run","databaseEnvelopes":2,"privateObjects":0,"allReadable":true,"activeKeyId":"not-selected"}

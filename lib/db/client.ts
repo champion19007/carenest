@@ -1,126 +1,45 @@
 import 'server-only'
-
-/**
- * One Postgres interface, two backends.
- *
- *   DATABASE_URL set  → Neon (serverless driver, HTTP — no connection pool to
- *                       exhaust, which is what matters on Vercel where every
- *                       request may be a cold function)
- *   DATABASE_URL unset → PGlite, Postgres compiled to WASM, running in-process
- *                        against a local directory
- *
- * Both speak the same dialect, so the SQL exercised by `npm test` is the SQL
- * that runs in production. Developing against SQLite and deploying to Postgres
- * would let `now()`, `RETURNING`, `jsonb` and `ON CONFLICT` differences hide
- * until they broke something live.
- */
-
-export type Row = Record<string, unknown>
-
-export interface Db {
-  /** Parameterised query. Placeholders are $1, $2 … (Postgres style). */
-  query<T = Row>(text: string, params?: unknown[]): Promise<T[]>
-  /** First row, or undefined. */
-  one<T = Row>(text: string, params?: unknown[]): Promise<T | undefined>
-  /** Statements with no result set. */
-  exec(text: string): Promise<void>
-  readonly backend: 'neon' | 'pglite'
-}
-
+import { createDatabase, type Db } from './adapters'
+import { LATEST_MIGRATION } from './migrations'
+export type { Db, Row } from './adapters'
 declare global {
-  // eslint-disable-next-line no-var
   var __carenestDb: Db | undefined
-  // eslint-disable-next-line no-var
+  var __carenestDbPromise: Promise<Db> | undefined
   var __carenestDbReady: Promise<void> | undefined
 }
-
-function createNeon(url: string): Db {
-  /* Imported lazily so PGlite-only environments never load the driver. */
-  const { neon } = require('@neondatabase/serverless') as typeof import('@neondatabase/serverless')
-  const sql = neon(url)
-
-  return {
-    backend: 'neon',
-    async query<T>(text: string, params: unknown[] = []) {
-      return (await sql.query(text, params)) as T[]
-    },
-    async one<T>(text: string, params: unknown[] = []) {
-      const rows = (await sql.query(text, params)) as T[]
-      return rows[0]
-    },
-    async exec(text: string) {
-      await sql.query(text)
-    },
-  }
-}
-
-function createPglite(): Db {
-  /**
-   * PGlite writes to the local filesystem, which is fine on a developer's
-   * machine and impossible on a serverless platform: the bundle directory is
-   * read-only, and each invocation gets its own container anyway, so two
-   * requests would not even see the same data.
-   *
-   * Failing here with a sentence that says what to do beats the EROFS error
-   * that would otherwise surface from deep inside a WASM filesystem shim.
-   */
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error(
-      'DATABASE_URL is not set. The embedded database only works locally — a ' +
-        'deployed instance needs a Postgres connection string (a free Neon ' +
-        'project is enough). Add DATABASE_URL in your hosting provider’s ' +
-        'environment settings and redeploy.',
-    )
-  }
-
-  const { PGlite } = require('@electric-sql/pglite') as typeof import('@electric-sql/pglite')
-  const path = require('node:path') as typeof import('node:path')
-  const { mkdirSync } = require('node:fs') as typeof import('node:fs')
-
-  const dir = path.join(process.cwd(), '.data', 'pg')
-  mkdirSync(dir, { recursive: true })
-  const pg = new PGlite(dir)
-
-  return {
-    backend: 'pglite',
-    async query<T>(text: string, params: unknown[] = []) {
-      const result = await pg.query<T>(text, params)
-      return result.rows
-    },
-    async one<T>(text: string, params: unknown[] = []) {
-      const result = await pg.query<T>(text, params)
-      return result.rows[0]
-    },
-    async exec(text: string) {
-      await pg.exec(text)
-    },
-  }
-}
-
 export function getDb(): Db {
   if (globalThis.__carenestDb) return globalThis.__carenestDb
-
-  const url = process.env.DATABASE_URL
-  const db = url ? createNeon(url) : createPglite()
-
-  globalThis.__carenestDb = db
-  return db
+  const ready = () => {
+    if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL && process.env.CARENEST_LOCAL_MODE !== '1') {
+      throw new Error('Configure DATABASE_URL, or run npm run start:local for a single local embedded database.')
+    }
+    globalThis.__carenestDbPromise ??= createDatabase(process.env.CARENEST_LOCAL_MODE === '1' ? undefined : process.env.DATABASE_URL).catch(error => {
+      globalThis.__carenestDbPromise = undefined
+      throw error
+    })
+    return globalThis.__carenestDbPromise
+  }
+  const facade: Db = {
+    backend: process.env.DATABASE_URL && process.env.CARENEST_LOCAL_MODE !== '1' ? 'postgres' : 'pglite',
+    async query<T>(sql: string, values: unknown[] = []) { return (await ready()).query<T>(sql, values) },
+    async one<T>(sql: string, values: unknown[] = []) { return (await ready()).one<T>(sql, values) },
+    async exec(sql: string) { await (await ready()).exec(sql) },
+    async transaction<T>(work: (tx: Db) => Promise<T>) { return (await ready()).transaction(work) },
+    async close() { await (await ready()).close?.() },
+  }
+  globalThis.__carenestDb = facade
+  return facade
 }
-
-/**
- * Applies the schema once per process.
- *
- * Neon deployments should run `npm run migrate` from CI instead — this is here
- * so a local checkout works with no setup step, and so serverless cold starts
- * against an empty database self-heal rather than 500.
- */
+/** Schema readiness is a read. DDL runs in the explicit migration command. */
 export async function ensureSchema(): Promise<void> {
-  if (globalThis.__carenestDbReady) return globalThis.__carenestDbReady
-
-  globalThis.__carenestDbReady = (async () => {
-    const { SCHEMA } = await import('./schema')
-    await getDb().exec(SCHEMA)
+  globalThis.__carenestDbReady ??= (async () => {
+    try {
+      const row = await getDb().one('SELECT version FROM public.schema_migrations WHERE version = $1', [LATEST_MIGRATION])
+      if (!row) throw new Error('Database migrations are pending. Run npm run migrate before starting CareNest.')
+    } catch (error) {
+      globalThis.__carenestDbReady = undefined
+      throw error
+    }
   })()
-
   return globalThis.__carenestDbReady
 }

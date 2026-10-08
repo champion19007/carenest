@@ -1,0 +1,65 @@
+[
+  {
+    "Path": "/",
+    "Status": 200,
+    "FinalPath": "/",
+    "ApplicationError": false,
+    "HasContent": true
+  },
+  {
+    "Path": "/staff/clinic",
+    "Status": 200,
+    "FinalPath": "/sign-in?next=%2Fstaff%2Fclinic",
+    "ApplicationError": false,
+    "HasContent": true
+  },
+  {
+    "Path": "/staff/pharmacy",
+    "Status": 200,
+    "FinalPath": "/sign-in?next=%2Fstaff%2Fpharmacy",
+    "ApplicationError": false,
+    "HasContent": true
+  },
+  {
+    "Path": "/account/privacy",
+    "Status": 200,
+    "FinalPath": "/sign-in?next=%2Faccount%2Fprivacy",
+    "ApplicationError": false,
+    "HasContent": true
+  },
+  {
+    "Path": "/account/mobile",
+    "Status": 200,
+    "FinalPath": "/sign-in?next=%2Faccount%2Fmobile",
+    "ApplicationError": false,
+    "HasContent": true
+  },
+  {
+    "Path": "/account/integrations",
+    "Status": 200,
+    "FinalPath": "/sign-in?next=%2Faccount%2Fintegrations",
+    "ApplicationError": false,
+    "HasContent": true
+  },
+  {
+    "Path": "/admin/setup",
+    "Status": 200,
+    "FinalPath": "/admin/setup",
+    "ApplicationError": false,
+    "HasContent": true
+  },
+  {
+    "Path": "/policies/privacy",
+    "Status": 200,
+    "FinalPath": "/policies/privacy",
+    "ApplicationError": false,
+    "HasContent": true
+  },
+  {
+    "Path": "/api/mobile/state",
+    "Status": 401,
+    "FinalPath": "/api/mobile/state",
+    "ApplicationError": false,
+    "HasContent": true
+  }
+]

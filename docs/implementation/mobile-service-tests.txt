@@ -1,0 +1,17 @@
+npm notice run my-project@0.1.0 npx
+npm notice run tsx --test tests/mobile-maintenance.test.mjs
+▶ mobile access, offline intents, interoperability and legacy quarantine
+  ✔ pairing is one-use, session token is hashed and revocation is immediate (507.5911ms)
+  ✔ offline intents make one server booking and cannot overwrite reused intent details (1239.5172ms)
+  ✔ partner cases are owned, encrypted and intake-only; exports exclude veterinary subjects (398.7558ms)
+  ✔ legacy records are encrypted and ownership is not guessed; mismatched imports are rejected (494.6726ms)
+  ✔ named encryption keys preserve old reads and authenticated context during rotation (7.3007ms)
+✔ mobile access, offline intents, interoperability and legacy quarantine (30716.7633ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 39613.1857

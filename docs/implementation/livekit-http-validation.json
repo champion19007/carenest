@@ -1,0 +1,50 @@
+[
+  {
+    "path": "/",
+    "method": "GET",
+    "origin": null,
+    "status": 200,
+    "cache": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "frame": "DENY"
+  },
+  {
+    "path": "/consult/missing",
+    "method": "GET",
+    "origin": null,
+    "status": 307,
+    "cache": "private, no-store",
+    "frame": "DENY"
+  },
+  {
+    "path": "/api/video/missing/livekit",
+    "method": "POST",
+    "origin": "http://127.0.0.1:3000",
+    "status": 401,
+    "cache": "private, no-store",
+    "frame": "DENY"
+  },
+  {
+    "path": "/api/video/missing/livekit",
+    "method": "POST",
+    "origin": "https://foreign.example",
+    "status": 403,
+    "cache": "private, no-store",
+    "frame": "DENY"
+  },
+  {
+    "path": "/api/video/missing/embedded",
+    "method": "GET",
+    "origin": null,
+    "status": 410,
+    "cache": "private, no-store",
+    "frame": "DENY"
+  },
+  {
+    "path": "/api/webhooks/zoom",
+    "method": "POST",
+    "origin": null,
+    "status": 410,
+    "cache": "no-store",
+    "frame": "DENY"
+  }
+]

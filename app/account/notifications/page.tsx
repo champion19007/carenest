@@ -1,0 +1,7 @@
+import {notificationPreferences} from '@/lib/domain/notification-preferences'
+import {NotificationPreferences} from '@/components/notification-preferences'
+import {requireUser} from '@/lib/auth'
+import {getDb,ensureSchema} from '@/lib/db/client'
+import {PatientWorkspace} from '@/components/patient-workspace'
+export const dynamic='force-dynamic'
+export default async function UpdatesPage(){const user=await requireUser('/account/notifications');await ensureSchema();const items=await getDb().query<{id:string;title:string;body:string;created_at:string}>('SELECT id,title,body,created_at FROM patient.notifications WHERE user_id=$1 ORDER BY created_at DESC LIMIT 100',[user.id]);return <PatientWorkspace title="Your updates" description="Durable in-app messages. Local mode does not pretend an SMS or email was sent."><NotificationPreferences preferences={await notificationPreferences(user.id)}/><div className="space-y-4">{items.map(i=><article key={i.id} className="rounded-2xl border border-border bg-card p-5"><h2 className="text-lg">{i.title}</h2><p className="mt-2 text-sm">{i.body}</p><p className="mt-3 text-xs text-muted-foreground">{String(i.created_at).slice(0,16).replace('T',' ')} UTC</p></article>)}{!items.length&&<p className="rounded-2xl border border-dashed border-border p-6 text-sm">No messages yet. Keep the local worker running to process updates.</p>}</div></PatientWorkspace>}

@@ -1,0 +1,1534 @@
+{
+  "capturedAt": "2026-10-06T16:57:09.387Z",
+  "url": "https://cloud.google.com/sql/pricing",
+  "region": "asia-south1",
+  "note": "Raw flattened regional pricing tables; distinguish edition, hourly/monthly, and CUD columns before using.",
+  "rows": [
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "enterprise-edition---general-purpose-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "vCPUs",
+        "$0.0496 / 1 hour",
+        "Memory",
+        "$0.0084 / 1 gibibyte hour",
+        "HA vCPUs",
+        "$0.0991 / 1 hour",
+        "HA Memory",
+        "$0.0168 / 1 gibibyte hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "enterprise-edition---general-purpose-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "vCPUs",
+        "$36.208 / 1 month",
+        "Memory",
+        "$6.132 / 1 gibibyte month",
+        "HA vCPUs",
+        "$72.343 / 1 month",
+        "HA Memory",
+        "$12.264 / 1 gibibyte month",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "enterprise-edition---general-purpose-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "7754-699E-0EBF",
+        "61F8-639B-D89C",
+        "52FB-D69D-95BE",
+        "vCPUs",
+        "$0.0496 / 1 hour",
+        "$0.0372 / 1 hour",
+        "$0.023808 / 1 hour",
+        "Memory",
+        "$0.0084 / 1 gibibyte hour",
+        "$0.0063 / 1 gibibyte hour",
+        "$0.004032 / 1 gibibyte hour",
+        "HA vCPUs",
+        "$0.0991 / 1 hour",
+        "$0.074325 / 1 hour",
+        "$0.047568 / 1 hour",
+        "HA Memory",
+        "$0.0168 / 1 gibibyte hour",
+        "$0.0126 / 1 gibibyte hour",
+        "$0.008064 / 1 gibibyte hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "enterprise-edition---general-purpose-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "7754-699E-0EBF",
+        "61F8-639B-D89C",
+        "52FB-D69D-95BE",
+        "vCPUs",
+        "$36.208 / 1 month",
+        "$27.156 / 1 month",
+        "$17.37984 / 1 month",
+        "Memory",
+        "$6.132 / 1 gibibyte month",
+        "$4.599 / 1 gibibyte month",
+        "$2.94336 / 1 gibibyte month",
+        "HA vCPUs",
+        "$72.343 / 1 month",
+        "$54.25725 / 1 month",
+        "$34.72464 / 1 month",
+        "HA Memory",
+        "$12.264 / 1 gibibyte month",
+        "$9.198 / 1 gibibyte month",
+        "$5.88672 / 1 gibibyte month",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "enterprise-edition---n4-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "vCPUs",
+        "$0.04956 / 1 hour",
+        "Memory",
+        "$0.0084 / 1 gibibyte hour",
+        "HA vCPUs",
+        "$0.09912 / 1 hour",
+        "HA Memory",
+        "$0.0168 / 1 gibibyte hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "enterprise-edition---n4-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "vCPUs",
+        "$36.1788 / 1 month",
+        "Memory",
+        "$6.132 / 1 gibibyte month",
+        "HA vCPUs",
+        "$72.3576 / 1 month",
+        "HA Memory",
+        "$12.264 / 1 gibibyte month",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "enterprise-edition---n4-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "7754-699E-0EBF",
+        "61F8-639B-D89C",
+        "52FB-D69D-95BE",
+        "vCPUs",
+        "$0.04956 / 1 hour",
+        "$0.03717 / 1 hour",
+        "$0.0237888 / 1 hour",
+        "Memory",
+        "$0.0084 / 1 gibibyte hour",
+        "$0.0063 / 1 gibibyte hour",
+        "$0.004032 / 1 gibibyte hour",
+        "HA vCPUs",
+        "$0.09912 / 1 hour",
+        "$0.07434 / 1 hour",
+        "$0.0475776 / 1 hour",
+        "HA Memory",
+        "$0.0168 / 1 gibibyte hour",
+        "$0.0126 / 1 gibibyte hour",
+        "$0.008064 / 1 gibibyte hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "enterprise-edition---n4-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "7754-699E-0EBF",
+        "61F8-639B-D89C",
+        "52FB-D69D-95BE",
+        "vCPUs",
+        "$36.1788 / 1 month",
+        "$27.1341 / 1 month",
+        "$17.365824 / 1 month",
+        "Memory",
+        "$6.132 / 1 gibibyte month",
+        "$4.599 / 1 gibibyte month",
+        "$2.94336 / 1 gibibyte month",
+        "HA vCPUs",
+        "$72.3576 / 1 month",
+        "$54.2682 / 1 month",
+        "$34.731648 / 1 month",
+        "HA Memory",
+        "$12.264 / 1 gibibyte month",
+        "$9.198 / 1 gibibyte month",
+        "$5.88672 / 1 gibibyte month",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "enterprise-plus-edition---c4-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "vCPUs",
+        "$0.0648 / 1 hour",
+        "Memory",
+        "$0.0108 / 1 gibibyte hour",
+        "HA vCPUs",
+        "$0.1296 / 1 hour",
+        "HA Memory",
+        "$0.0216 / 1 gibibyte hour",
+        "Data Cache Storage",
+        "$0.000345205 / 1 gibibyte hour",
+        "HA Data Cache Storage",
+        "$0.000690411 / 1 gibibyte hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "enterprise-plus-edition---c4-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "vCPUs",
+        "$47.304 / 1 month",
+        "Memory",
+        "$7.884 / 1 gibibyte month",
+        "HA vCPUs",
+        "$94.608 / 1 month",
+        "HA Memory",
+        "$15.768 / 1 gibibyte month",
+        "Data Cache Storage",
+        "$0.252 / 1 gibibyte month",
+        "HA Data Cache Storage",
+        "$0.504 / 1 gibibyte month",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "enterprise-plus-edition---c4-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "7754-699E-0EBF",
+        "61F8-639B-D89C",
+        "52FB-D69D-95BE",
+        "vCPUs",
+        "$0.0648 / 1 hour",
+        "$0.0486 / 1 hour",
+        "$0.031104 / 1 hour",
+        "Memory",
+        "$0.0108 / 1 gibibyte hour",
+        "$0.0081 / 1 gibibyte hour",
+        "$0.005184 / 1 gibibyte hour",
+        "HA vCPUs",
+        "$0.1296 / 1 hour",
+        "$0.0972 / 1 hour",
+        "$0.062208 / 1 hour",
+        "HA Memory",
+        "$0.0216 / 1 gibibyte hour",
+        "$0.0162 / 1 gibibyte hour",
+        "$0.010368 / 1 gibibyte hour",
+        "Data Cache Storage",
+        "$0.000345205 / 1 gibibyte hour",
+        "-",
+        "-",
+        "HA Data Cache Storage",
+        "$0.000690411 / 1 gibibyte hour",
+        "-",
+        "-",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "enterprise-plus-edition---c4-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "7754-699E-0EBF",
+        "61F8-639B-D89C",
+        "52FB-D69D-95BE",
+        "vCPUs",
+        "$47.304 / 1 month",
+        "$35.478 / 1 month",
+        "$22.70592 / 1 month",
+        "Memory",
+        "$7.884 / 1 gibibyte month",
+        "$5.913 / 1 gibibyte month",
+        "$3.78432 / 1 gibibyte month",
+        "HA vCPUs",
+        "$94.608 / 1 month",
+        "$70.956 / 1 month",
+        "$45.41184 / 1 month",
+        "HA Memory",
+        "$15.768 / 1 gibibyte month",
+        "$11.826 / 1 gibibyte month",
+        "$7.56864 / 1 gibibyte month",
+        "Data Cache Storage",
+        "$0.252 / 1 gibibyte month",
+        "-",
+        "-",
+        "HA Data Cache Storage",
+        "$0.504 / 1 gibibyte month",
+        "-",
+        "-",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "enterprise-plus-edition --n2-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "vCPUs",
+        "$0.0644 / 1 hour",
+        "Memory",
+        "$0.0109 / 1 gibibyte hour",
+        "HA vCPUs",
+        "$0.1289 / 1 hour",
+        "HA Memory",
+        "$0.0218 / 1 gibibyte hour",
+        "Data Cache Storage",
+        "$0.000263014 / 1 gibibyte hour",
+        "HA Data Cache Storage",
+        "$0.000526027 / 1 gibibyte hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "enterprise-plus-edition --n2-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "vCPUs",
+        "$47.012 / 1 month",
+        "Memory",
+        "$7.957 / 1 gibibyte month",
+        "HA vCPUs",
+        "$94.097 / 1 month",
+        "HA Memory",
+        "$15.914 / 1 gibibyte month",
+        "Data Cache Storage",
+        "$0.192 / 1 gibibyte month",
+        "HA Data Cache Storage",
+        "$0.384 / 1 gibibyte month",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "enterprise-plus-edition --n2-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "7754-699E-0EBF",
+        "61F8-639B-D89C",
+        "52FB-D69D-95BE",
+        "vCPUs",
+        "$0.0644 / 1 hour",
+        "$0.0483 / 1 hour",
+        "$0.030912 / 1 hour",
+        "Memory",
+        "$0.0109 / 1 gibibyte hour",
+        "$0.008175 / 1 gibibyte hour",
+        "$0.005232 / 1 gibibyte hour",
+        "HA vCPUs",
+        "$0.1289 / 1 hour",
+        "$0.096675 / 1 hour",
+        "$0.061872 / 1 hour",
+        "HA Memory",
+        "$0.0218 / 1 gibibyte hour",
+        "$0.01635 / 1 gibibyte hour",
+        "$0.010464 / 1 gibibyte hour",
+        "Data Cache Storage",
+        "$0.000263014 / 1 gibibyte hour",
+        "-",
+        "-",
+        "HA Data Cache Storage",
+        "$0.000526027 / 1 gibibyte hour",
+        "-",
+        "-",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "enterprise-plus-edition --n2-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "7754-699E-0EBF",
+        "61F8-639B-D89C",
+        "52FB-D69D-95BE",
+        "vCPUs",
+        "$47.012 / 1 month",
+        "$35.259 / 1 month",
+        "$22.56576 / 1 month",
+        "Memory",
+        "$7.957 / 1 gibibyte month",
+        "$5.96775 / 1 gibibyte month",
+        "$3.81936 / 1 gibibyte month",
+        "HA vCPUs",
+        "$94.097 / 1 month",
+        "$70.57275 / 1 month",
+        "$45.16656 / 1 month",
+        "HA Memory",
+        "$15.914 / 1 gibibyte month",
+        "$11.9355 / 1 gibibyte month",
+        "$7.63872 / 1 gibibyte month",
+        "Data Cache Storage",
+        "$0.192 / 1 gibibyte month",
+        "-",
+        "-",
+        "HA Data Cache Storage",
+        "$0.384 / 1 gibibyte month",
+        "-",
+        "-",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "enterprise-plus-edition --c4a-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "vCPUs",
+        "$0.0644 / 1 hour",
+        "Memory",
+        "$0.0109 / 1 gibibyte hour",
+        "HA vCPUs",
+        "$0.1289 / 1 hour",
+        "HA Memory",
+        "$0.0218 / 1 gibibyte hour",
+        "Data Cache Storage",
+        "$0.000263014 / 1 gibibyte hour",
+        "HA Data Cache Storage",
+        "$0.000526027 / 1 gibibyte hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "enterprise-plus-edition --c4a-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "vCPUs",
+        "$47.012 / 1 month",
+        "Memory",
+        "$7.957 / 1 gibibyte month",
+        "HA vCPUs",
+        "$94.097 / 1 month",
+        "HA Memory",
+        "$15.914 / 1 gibibyte month",
+        "Data Cache Storage",
+        "$0.192 / 1 gibibyte month",
+        "HA Data Cache Storage",
+        "$0.384 / 1 gibibyte month",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "enterprise-plus-edition --c4a-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "7754-699E-0EBF",
+        "61F8-639B-D89C",
+        "52FB-D69D-95BE",
+        "vCPUs",
+        "$0.0644 / 1 hour",
+        "$0.0483 / 1 hour",
+        "$0.030912 / 1 hour",
+        "Memory",
+        "$0.0109 / 1 gibibyte hour",
+        "$0.008175 / 1 gibibyte hour",
+        "$0.005232 / 1 gibibyte hour",
+        "HA vCPUs",
+        "$0.1289 / 1 hour",
+        "$0.096675 / 1 hour",
+        "$0.061872 / 1 hour",
+        "HA Memory",
+        "$0.0218 / 1 gibibyte hour",
+        "$0.01635 / 1 gibibyte hour",
+        "$0.010464 / 1 gibibyte hour",
+        "Data Cache Storage",
+        "$0.000263014 / 1 gibibyte hour",
+        "-",
+        "-",
+        "HA Data Cache Storage",
+        "$0.000526027 / 1 gibibyte hour",
+        "-",
+        "-",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "enterprise-plus-edition --c4a-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "7754-699E-0EBF",
+        "61F8-639B-D89C",
+        "52FB-D69D-95BE",
+        "vCPUs",
+        "$47.012 / 1 month",
+        "$35.259 / 1 month",
+        "$22.56576 / 1 month",
+        "Memory",
+        "$7.957 / 1 gibibyte month",
+        "$5.96775 / 1 gibibyte month",
+        "$3.81936 / 1 gibibyte month",
+        "HA vCPUs",
+        "$94.097 / 1 month",
+        "$70.57275 / 1 month",
+        "$45.16656 / 1 month",
+        "HA Memory",
+        "$15.914 / 1 gibibyte month",
+        "$11.9355 / 1 gibibyte month",
+        "$7.63872 / 1 gibibyte month",
+        "Data Cache Storage",
+        "$0.192 / 1 gibibyte month",
+        "-",
+        "-",
+        "HA Data Cache Storage",
+        "$0.384 / 1 gibibyte month",
+        "-",
+        "-",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "storage"
+      ],
+      "strings": [
+        "Item",
+        "Price (USD)",
+        "SSD storage capacity",
+        "$0.000279452 / 1 gibibyte hour",
+        "HDD storage capacity",
+        "$0.000147945 / 1 gibibyte hour",
+        "Backups (used)",
+        "$0.000131507 / 1 gibibyte hour",
+        "Hyperdisk Balanced Capacity",
+        "$0.000189041 / 1 gibibyte hour",
+        "Hyperdisk Balanced IOPS",
+        "$0.000032877 / 1 hour",
+        "Hyperdisk Balanced Throughput",
+        "$0.000131507 / 1 hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "storage"
+      ],
+      "strings": [
+        "Item",
+        "Price (USD)",
+        "SSD storage capacity",
+        "$0.204 / 1 gibibyte month",
+        "HDD storage capacity",
+        "$0.108 / 1 gibibyte month",
+        "Backups (used)",
+        "$0.096 / 1 gibibyte month",
+        "Hyperdisk Balanced Capacity",
+        "$0.138 / 1 gibibyte month",
+        "Hyperdisk Balanced IOPS",
+        "$0.024 / 1 month",
+        "Hyperdisk Balanced Throughput",
+        "$0.096 / 1 month",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "ha-storage"
+      ],
+      "strings": [
+        "Item",
+        "Price (USD)",
+        "SSD storage capacity",
+        "$0.000558904 / 1 gibibyte hour",
+        "HDD storage capacity",
+        "$0.00029589 / 1 gibibyte hour",
+        "Backups (used)",
+        "$0.000131507 / 1 gibibyte hour",
+        "Hyperdisk Balanced HA Capacity",
+        "$0.000378082 / 1 gibibyte hour",
+        "Hyperdisk Balanced HA IOPS",
+        "$0.000065753 / 1 hour",
+        "Hyperdisk Balanced HA Throughput",
+        "$0.000263014 / 1 hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "ha-storage"
+      ],
+      "strings": [
+        "Item",
+        "Price (USD)",
+        "SSD storage capacity",
+        "$0.408 / 1 gibibyte month",
+        "HDD storage capacity",
+        "$0.216 / 1 gibibyte month",
+        "Backups (used)",
+        "$0.096 / 1 gibibyte month",
+        "Hyperdisk Balanced HA Capacity",
+        "$0.276 / 1 gibibyte month",
+        "Hyperdisk Balanced HA IOPS",
+        "$0.048 / 1 month",
+        "Hyperdisk Balanced HA Throughput",
+        "$0.192 / 1 month",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "network"
+      ],
+      "strings": [
+        "Item",
+        "Price (USD)",
+        "Ingress to Cloud SQL",
+        "FreeNote: Egress charges may apply on the source. For example, egress from Compute Engine is charged at the external IP addresses rate.",
+        "Egress from Cloud SQL",
+        "Egress from Cloud SQL: See Network Egress Pricing.",
+        "IPv4 addresses while idle",
+        "$0.012 / 1 hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "network"
+      ],
+      "strings": [
+        "Item",
+        "Price (USD)",
+        "Ingress to Cloud SQL",
+        "FreeNote: Egress charges may apply on the source. For example, egress from Compute Engine is charged at the external IP addresses rate.",
+        "Egress from Cloud SQL",
+        "Egress from Cloud SQL: See Network Egress Pricing.",
+        "IPv4 addresses while idle",
+        "$8.76 / 1 month",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "instance-pricing-1"
+      ],
+      "strings": [
+        "Shared-Core Machine Type",
+        "Virtual CPUs",
+        "RAM (GiB)",
+        "Maximum Storage Capacity",
+        "Price (USD)",
+        "db-f1-micro*",
+        "Shared",
+        "0.6",
+        "3,062 GiB",
+        "$0.0126 / 1 hour",
+        "db-g1-small*",
+        "Shared",
+        "1.7",
+        "3,062 GiB",
+        "$0.042 / 1 hour",
+        "HA db-f1-micro*",
+        "Shared",
+        "0.6",
+        "3,062 GiB",
+        "$0.0252 / 1 hour",
+        "HA db-g1-small*",
+        "Shared",
+        "1.7",
+        "3,062 GiB",
+        "$0.084 / 1 hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "instance-pricing-1"
+      ],
+      "strings": [
+        "Shared-Core Machine Type",
+        "Virtual CPUs",
+        "RAM (GiB)",
+        "Maximum Storage Capacity",
+        "Price (USD)",
+        "db-f1-micro*",
+        "Shared",
+        "0.6",
+        "3,062 GiB",
+        "$9.198 / 1 month",
+        "db-g1-small*",
+        "Shared",
+        "1.7",
+        "3,062 GiB",
+        "$30.66 / 1 month",
+        "HA db-f1-micro*",
+        "Shared",
+        "0.6",
+        "3,062 GiB",
+        "$18.396 / 1 month",
+        "HA db-g1-small*",
+        "Shared",
+        "1.7",
+        "3,062 GiB",
+        "$61.32 / 1 month",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "serverless-export-pricing"
+      ],
+      "strings": [
+        "Item",
+        "Price (USD)",
+        "Serverless export pricing",
+        "$0.012 / 1 gibibyte",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "extended-support-pricing-1"
+      ],
+      "strings": [
+        "Extended support price",
+        "Year 1 &amp; Year 2 Price (USD)",
+        "Year 3 Price (USD)",
+        "vCPUs",
+        "$0.084 / 1 hour",
+        "$0.168 / 1 hour",
+        "HA vCPUs",
+        "$0.168 / 1 hour",
+        "$0.336 / 1 hour",
+        "db-f1-micro",
+        "$0.0216 / 1 hour",
+        "$0.042 / 1 hour",
+        "HA db-f1-micro",
+        "$0.042 / 1 hour",
+        "$0.084 / 1 hour",
+        "db-g1-small",
+        "$0.042 / 1 hour",
+        "$0.084 / 1 hour",
+        "HA db-g1-small",
+        "$0.084 / 1 hour",
+        "$0.168 / 1 hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "mysql-and-postgresql-pricing-1",
+        "extended-support-pricing-1"
+      ],
+      "strings": [
+        "Extended support price",
+        "Year 1 &amp; Year 2 Price (USD)",
+        "Year 3 Price (USD)",
+        "vCPUs",
+        "$61.32 / 1 month",
+        "$122.64 / 1 month",
+        "HA vCPUs",
+        "$122.64 / 1 month",
+        "$245.28 / 1 month",
+        "db-f1-micro",
+        "$15.768 / 1 month",
+        "$30.66 / 1 month",
+        "HA db-f1-micro",
+        "$30.66 / 1 month",
+        "$61.32 / 1 month",
+        "db-g1-small",
+        "$30.66 / 1 month",
+        "$61.32 / 1 month",
+        "HA db-g1-small",
+        "$61.32 / 1 month",
+        "$122.64 / 1 month",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "enterprise-edition-general-purpose-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "vCPUs",
+        "$0.0496 / 1 hour",
+        "Memory",
+        "$0.0084 / 1 gibibyte hour",
+        "HA vCPUs",
+        "$0.09912 / 1 hour",
+        "HA Memory",
+        "$0.0168 / 1 gibibyte hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "enterprise-edition-general-purpose-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "vCPUs",
+        "$36.208 / 1 month",
+        "Memory",
+        "$6.132 / 1 gibibyte month",
+        "HA vCPUs",
+        "$72.3576 / 1 month",
+        "HA Memory",
+        "$12.264 / 1 gibibyte month",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "enterprise-edition-general-purpose-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "7754-699E-0EBF",
+        "61F8-639B-D89C",
+        "52FB-D69D-95BE",
+        "vCPUs",
+        "$0.0496 / 1 hour",
+        "$0.0372 / 1 hour",
+        "$0.023808 / 1 hour",
+        "Memory",
+        "$0.0084 / 1 gibibyte hour",
+        "$0.0063 / 1 gibibyte hour",
+        "$0.004032 / 1 gibibyte hour",
+        "HA vCPUs",
+        "$0.09912 / 1 hour",
+        "$0.07434 / 1 hour",
+        "$0.0475776 / 1 hour",
+        "HA Memory",
+        "$0.0168 / 1 gibibyte hour",
+        "$0.0126 / 1 gibibyte hour",
+        "$0.008064 / 1 gibibyte hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "enterprise-edition-general-purpose-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "7754-699E-0EBF",
+        "61F8-639B-D89C",
+        "52FB-D69D-95BE",
+        "vCPUs",
+        "$36.208 / 1 month",
+        "$27.156 / 1 month",
+        "$17.37984 / 1 month",
+        "Memory",
+        "$6.132 / 1 gibibyte month",
+        "$4.599 / 1 gibibyte month",
+        "$2.94336 / 1 gibibyte month",
+        "HA vCPUs",
+        "$72.3576 / 1 month",
+        "$54.2682 / 1 month",
+        "$34.731648 / 1 month",
+        "HA Memory",
+        "$12.264 / 1 gibibyte month",
+        "$9.198 / 1 gibibyte month",
+        "$5.88672 / 1 gibibyte month",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "enterprise-edition---n4-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "vCPUs",
+        "$0.04956 / 1 hour",
+        "Memory",
+        "$0.0084 / 1 gibibyte hour",
+        "HA vCPUs",
+        "$0.09912 / 1 hour",
+        "HA Memory",
+        "$0.0168 / 1 gibibyte hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "enterprise-edition---n4-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "vCPUs",
+        "$36.1788 / 1 month",
+        "Memory",
+        "$6.132 / 1 gibibyte month",
+        "HA vCPUs",
+        "$72.3576 / 1 month",
+        "HA Memory",
+        "$12.264 / 1 gibibyte month",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "enterprise-edition---n4-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "7754-699E-0EBF",
+        "61F8-639B-D89C",
+        "52FB-D69D-95BE",
+        "vCPUs",
+        "$0.04956 / 1 hour",
+        "$0.03717 / 1 hour",
+        "$0.0237888 / 1 hour",
+        "Memory",
+        "$0.0084 / 1 gibibyte hour",
+        "$0.0063 / 1 gibibyte hour",
+        "$0.004032 / 1 gibibyte hour",
+        "HA vCPUs",
+        "$0.09912 / 1 hour",
+        "$0.07434 / 1 hour",
+        "$0.0475776 / 1 hour",
+        "HA Memory",
+        "$0.0168 / 1 gibibyte hour",
+        "$0.0126 / 1 gibibyte hour",
+        "$0.008064 / 1 gibibyte hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "enterprise-edition---n4-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "7754-699E-0EBF",
+        "61F8-639B-D89C",
+        "52FB-D69D-95BE",
+        "vCPUs",
+        "$36.1788 / 1 month",
+        "$27.1341 / 1 month",
+        "$17.365824 / 1 month",
+        "Memory",
+        "$6.132 / 1 gibibyte month",
+        "$4.599 / 1 gibibyte month",
+        "$2.94336 / 1 gibibyte month",
+        "HA vCPUs",
+        "$72.3576 / 1 month",
+        "$54.2682 / 1 month",
+        "$34.731648 / 1 month",
+        "HA Memory",
+        "$12.264 / 1 gibibyte month",
+        "$9.198 / 1 gibibyte month",
+        "$5.88672 / 1 gibibyte month",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "enterprise-plus-edition---c4-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "vCPUs",
+        "$0.0648 / 1 hour",
+        "Memory",
+        "$0.0108 / 1 gibibyte hour",
+        "HA vCPUs",
+        "$0.1296 / 1 hour",
+        "HA Memory",
+        "$0.0216 / 1 gibibyte hour",
+        "Data Cache Storage",
+        "$0.000345205 / 1 gibibyte hour",
+        "HA Data Cache Storage",
+        "$0.000690411 / 1 gibibyte hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "enterprise-plus-edition---c4-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "vCPUs",
+        "$47.304 / 1 month",
+        "Memory",
+        "$7.884 / 1 gibibyte month",
+        "HA vCPUs",
+        "$94.608 / 1 month",
+        "HA Memory",
+        "$15.768 / 1 gibibyte month",
+        "Data Cache Storage",
+        "$0.252 / 1 gibibyte month",
+        "HA Data Cache Storage",
+        "$0.504 / 1 gibibyte month",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "enterprise-plus-edition---c4-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "7754-699E-0EBF",
+        "61F8-639B-D89C",
+        "52FB-D69D-95BE",
+        "vCPUs",
+        "$0.0648 / 1 hour",
+        "$0.0486 / 1 hour",
+        "$0.031104 / 1 hour",
+        "Memory",
+        "$0.0108 / 1 gibibyte hour",
+        "$0.0081 / 1 gibibyte hour",
+        "$0.005184 / 1 gibibyte hour",
+        "HA vCPUs",
+        "$0.1296 / 1 hour",
+        "$0.0972 / 1 hour",
+        "$0.062208 / 1 hour",
+        "HA Memory",
+        "$0.0216 / 1 gibibyte hour",
+        "$0.0162 / 1 gibibyte hour",
+        "$0.010368 / 1 gibibyte hour",
+        "Data Cache Storage",
+        "$0.000345205 / 1 gibibyte hour",
+        "-",
+        "-",
+        "HA Data Cache Storage",
+        "$0.000690411 / 1 gibibyte hour",
+        "-",
+        "-",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "enterprise-plus-edition---c4-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "7754-699E-0EBF",
+        "61F8-639B-D89C",
+        "52FB-D69D-95BE",
+        "vCPUs",
+        "$47.304 / 1 month",
+        "$35.478 / 1 month",
+        "$22.70592 / 1 month",
+        "Memory",
+        "$7.884 / 1 gibibyte month",
+        "$5.913 / 1 gibibyte month",
+        "$3.78432 / 1 gibibyte month",
+        "HA vCPUs",
+        "$94.608 / 1 month",
+        "$70.956 / 1 month",
+        "$45.41184 / 1 month",
+        "HA Memory",
+        "$15.768 / 1 gibibyte month",
+        "$11.826 / 1 gibibyte month",
+        "$7.56864 / 1 gibibyte month",
+        "Data Cache Storage",
+        "$0.252 / 1 gibibyte month",
+        "-",
+        "-",
+        "HA Data Cache Storage",
+        "$0.504 / 1 gibibyte month",
+        "-",
+        "-",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "enterprise-plus-edition---n2-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "vCPUs",
+        "$0.0644 / 1 hour",
+        "Memory",
+        "$0.0109 / 1 gibibyte hour",
+        "HA vCPUs",
+        "$0.1289 / 1 hour",
+        "HA Memory",
+        "$0.0218 / 1 gibibyte hour",
+        "Data Cache Storage",
+        "$0.000263014 / 1 gibibyte hour",
+        "HA Data Cache Storage",
+        "$0.000526027 / 1 gibibyte hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "enterprise-plus-edition---n2-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "vCPUs",
+        "$47.012 / 1 month",
+        "Memory",
+        "$7.957 / 1 gibibyte month",
+        "HA vCPUs",
+        "$94.097 / 1 month",
+        "HA Memory",
+        "$15.914 / 1 gibibyte month",
+        "Data Cache Storage",
+        "$0.192 / 1 gibibyte month",
+        "HA Data Cache Storage",
+        "$0.384 / 1 gibibyte month",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "enterprise-plus-edition---n2-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "7754-699E-0EBF",
+        "61F8-639B-D89C",
+        "52FB-D69D-95BE",
+        "vCPUs",
+        "$0.0644 / 1 hour",
+        "$0.0483 / 1 hour",
+        "$0.030912 / 1 hour",
+        "Memory",
+        "$0.0109 / 1 gibibyte hour",
+        "$0.008175 / 1 gibibyte hour",
+        "$0.005232 / 1 gibibyte hour",
+        "HA vCPUs",
+        "$0.1289 / 1 hour",
+        "$0.096675 / 1 hour",
+        "$0.061872 / 1 hour",
+        "HA Memory",
+        "$0.0218 / 1 gibibyte hour",
+        "$0.01635 / 1 gibibyte hour",
+        "$0.010464 / 1 gibibyte hour",
+        "Data Cache Storage",
+        "$0.000263014 / 1 gibibyte hour",
+        "-",
+        "-",
+        "HA Data Cache Storage",
+        "$0.000526027 / 1 gibibyte hour",
+        "-",
+        "-",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "enterprise-plus-edition---n2-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "7754-699E-0EBF",
+        "61F8-639B-D89C",
+        "52FB-D69D-95BE",
+        "vCPUs",
+        "$47.012 / 1 month",
+        "$35.259 / 1 month",
+        "$22.56576 / 1 month",
+        "Memory",
+        "$7.957 / 1 gibibyte month",
+        "$5.96775 / 1 gibibyte month",
+        "$3.81936 / 1 gibibyte month",
+        "HA vCPUs",
+        "$94.097 / 1 month",
+        "$70.57275 / 1 month",
+        "$45.16656 / 1 month",
+        "HA Memory",
+        "$15.914 / 1 gibibyte month",
+        "$11.9355 / 1 gibibyte month",
+        "$7.63872 / 1 gibibyte month",
+        "Data Cache Storage",
+        "$0.192 / 1 gibibyte month",
+        "-",
+        "-",
+        "HA Data Cache Storage",
+        "$0.384 / 1 gibibyte month",
+        "-",
+        "-",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "enterprise-plus-edition---memory-optimized-n2-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "vCPUs",
+        "$0.0644 / 1 hour",
+        "Memory",
+        "$0.0193 / 1 gibibyte hour",
+        "HA vCPUs",
+        "$0.1289 / 1 hour",
+        "HA Memory",
+        "$0.0386 / 1 gibibyte hour",
+        "Data Cache Storage",
+        "$0.000263014 / 1 gibibyte hour",
+        "HA Data Cache Storage",
+        "$0.000526027 / 1 gibibyte hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "enterprise-plus-edition---memory-optimized-n2-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "vCPUs",
+        "$47.012 / 1 month",
+        "Memory",
+        "$14.089 / 1 gibibyte month",
+        "HA vCPUs",
+        "$94.097 / 1 month",
+        "HA Memory",
+        "$28.178 / 1 gibibyte month",
+        "Data Cache Storage",
+        "$0.192 / 1 gibibyte month",
+        "HA Data Cache Storage",
+        "$0.384 / 1 gibibyte month",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "enterprise-plus-edition---memory-optimized-n2-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "7754-699E-0EBF",
+        "61F8-639B-D89C",
+        "52FB-D69D-95BE",
+        "vCPUs",
+        "$0.0644 / 1 hour",
+        "$0.0483 / 1 hour",
+        "$0.030912 / 1 hour",
+        "Memory",
+        "$0.0193 / 1 gibibyte hour",
+        "$0.014475 / 1 gibibyte hour",
+        "$0.009264 / 1 gibibyte hour",
+        "HA vCPUs",
+        "$0.1289 / 1 hour",
+        "$0.096675 / 1 hour",
+        "$0.061872 / 1 hour",
+        "HA Memory",
+        "$0.0386 / 1 gibibyte hour",
+        "$0.02895 / 1 gibibyte hour",
+        "$0.018528 / 1 gibibyte hour",
+        "Data Cache Storage",
+        "$0.000263014 / 1 gibibyte hour",
+        "-",
+        "-",
+        "HA Data Cache Storage",
+        "$0.000526027 / 1 gibibyte hour",
+        "-",
+        "-",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "enterprise-plus-edition---memory-optimized-n2-machine-series"
+      ],
+      "strings": [
+        "Price (USD)",
+        "7754-699E-0EBF",
+        "61F8-639B-D89C",
+        "52FB-D69D-95BE",
+        "vCPUs",
+        "$47.012 / 1 month",
+        "$35.259 / 1 month",
+        "$22.56576 / 1 month",
+        "Memory",
+        "$14.089 / 1 gibibyte month",
+        "$10.56675 / 1 gibibyte month",
+        "$6.76272 / 1 gibibyte month",
+        "HA vCPUs",
+        "$94.097 / 1 month",
+        "$70.57275 / 1 month",
+        "$45.16656 / 1 month",
+        "HA Memory",
+        "$28.178 / 1 gibibyte month",
+        "$21.1335 / 1 gibibyte month",
+        "$13.52544 / 1 gibibyte month",
+        "Data Cache Storage",
+        "$0.192 / 1 gibibyte month",
+        "-",
+        "-",
+        "HA Data Cache Storage",
+        "$0.384 / 1 gibibyte month",
+        "-",
+        "-",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "storage"
+      ],
+      "strings": [
+        "Item",
+        "Price (USD)",
+        "SSD storage capacity",
+        "$0.000558904 / 1 gibibyte hour",
+        "Backups (used)",
+        "$0.000131507 / 1 gibibyte hour",
+        "Hyperdisk Balanced Capacity",
+        "$0.000189041 / 1 gibibyte hour",
+        "Hyperdisk Balanced IOPS",
+        "$0.000032877 / 1 hour",
+        "Hyperdisk Balanced Throughput",
+        "$0.000131507 / 1 hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "storage"
+      ],
+      "strings": [
+        "Item",
+        "Price (USD)",
+        "SSD storage capacity",
+        "$0.408 / 1 gibibyte month",
+        "Backups (used)",
+        "$0.096 / 1 gibibyte month",
+        "Hyperdisk Balanced Capacity",
+        "$0.138 / 1 gibibyte month",
+        "Hyperdisk Balanced IOPS",
+        "$0.024 / 1 month",
+        "Hyperdisk Balanced Throughput",
+        "$0.096 / 1 month",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "ha-storage"
+      ],
+      "strings": [
+        "Item",
+        "Price (USD)",
+        "SSD storage capacity",
+        "$0.000558904 / 1 gibibyte hour",
+        "Backups (used)",
+        "$0.000131507 / 1 gibibyte hour",
+        "Hyperdisk Balanced HA Capacity",
+        "$0.000378082 / 1 gibibyte hour",
+        "Hyperdisk Balanced HA IOPS",
+        "$0.000065753 / 1 hour",
+        "Hyperdisk Balanced HA Throughput",
+        "$0.000263014 / 1 hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "ha-storage"
+      ],
+      "strings": [
+        "Item",
+        "Price (USD)",
+        "SSD storage capacity",
+        "$0.408 / 1 gibibyte month",
+        "Backups (used)",
+        "$0.096 / 1 gibibyte month",
+        "Hyperdisk Balanced HA Capacity",
+        "$0.276 / 1 gibibyte month",
+        "Hyperdisk Balanced HA IOPS",
+        "$0.048 / 1 month",
+        "Hyperdisk Balanced HA Throughput",
+        "$0.192 / 1 month",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "network"
+      ],
+      "strings": [
+        "Item",
+        "Price (USD)",
+        "Ingress to Cloud SQL",
+        "FreeNote: Egress charges may apply on the source. For example, egress from Compute Engine is charged at the external IP addresses rate.",
+        "Egress from Cloud SQL",
+        "Egress from Cloud SQL: See Network Egress Pricing.",
+        "IPv4 addresses while idle",
+        "$0.012 / 1 hour",
+        "Mumbai (asia-south1)"
+      ]
+    },
+    {
+      "context": [
+        "3d6roqqa2o120",
+        "sql-server-pricing-1",
+        "network"
+      ],
+      "strings": [
+        "Item",
+        "Price (USD)",
+        "Ingress to Cloud SQL",
+        "FreeNote: Egress charges may apply on the source. For example, egress from Compute Engine is charged at the external IP addresses rate.",
+        "Egress from Cloud SQL",
+        "Egress from Cloud SQL: See Network Egress Pricing.",
+        "IPv4 addresses while idle",
+        "$8.76 / 1 month",
+        "Mumbai (asia-south1)"
+      ]
+    }
+  ]
+}

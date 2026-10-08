@@ -1,0 +1,9 @@
+
+Directory Protected Entries Mode
+--------- --------- ------- ----
+.              True       3 Applied
+secrets        True       3 Applied
+pg             True       3 Applied
+backups        True       3 Applied
+infrastr…      True       3 Applied
+.env.loc…      True       3 Applied

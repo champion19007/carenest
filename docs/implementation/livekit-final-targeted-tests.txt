@@ -1,0 +1,21 @@
+npm notice run my-project@0.1.0 npx
+npm notice run tsx --test --test-concurrency=1 tests/livekit-service.test.mjs
+▶ LiveKit consultation enforces current participants, consent, token grants and cleanup
+  ✔ loopback Host normalization permits the actual local origin without trusting foreign hosts (23.8841ms)
+  ✔ only a loopback server is accepted in local mode (1.9114ms)
+  ✔ Zoom cannot connect and retired SDK/webhook endpoints make no external calls (16.9673ms)
+  ✔ tokens bind opaque identity to one room for 30 seconds with camera/microphone only (224.9613ms)
+  ✔ wrong participant, inactive practitioner, expired window and revoked consent fail closed (35.5863ms)
+  ✔ active fence removes unexpected identity and closes revoked rooms (38.3261ms)
+  ✔ late creation after cancellation is deleted; idempotent cleanup remains available (167.9775ms)
+  ✔ cleanup of a future empty room does not permanently close its appointment (144.2738ms)
+  ✔ token route rejects cross-origin and anonymous requests (849.8169ms)
+✔ LiveKit consultation enforces current participants, consent, token grants and cleanup (10354.4901ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 16261.042

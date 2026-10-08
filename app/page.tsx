@@ -1,392 +1,86 @@
 import Link from 'next/link'
-import {
-  ArrowRight,
-  BadgeCheck,
-  Check,
-  IndianRupee,
-  Lock,
-  Phone,
-} from 'lucide-react'
-import { Disclosure } from '@/components/disclosure'
-import { Photo } from '@/components/photo'
-import { serviceArt } from '@/components/service-art'
-import { SiteFooter } from '@/components/site-footer'
+import { ArrowRight, CalendarDays, Clock3, Heart, PawPrint, ShieldCheck, Stethoscope, Video } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
-import { faqs, glossary, services, trustPoints } from '@/lib/content'
+import { SiteFooter } from '@/components/site-footer'
+import { DiscoverySearch, SpecialtyChips } from '@/components/discovery-search'
+import { ProviderCard } from '@/components/provider-card'
+import { Photo } from '@/components/photo'
 import { photos } from '@/lib/images'
-import { cities, healthConcerns, insurers } from '@/lib/data'
+import { searchDoctors } from '@/lib/db/sql'
+import { currentUser } from '@/lib/auth'
+import { nextHomeAppointment } from '@/lib/db/home'
+import { slotDay, slotTime } from '@/lib/slot-format'
 
-const steps = [
-  {
-    n: '01',
-    title: 'Tell us what is wrong',
-    body: 'Search by a symptom in plain words — “chest pain”, “skin rash”, “child not eating” — or by speciality if you already know who you need. Set your locality so results are places you can actually reach.',
-  },
-  {
-    n: '02',
-    title: 'Compare before you commit',
-    body: 'Every doctor shows their qualification, years of practice, consultation fee, languages spoken, and reviews from patients who actually attended. Nothing is hidden until the reception desk.',
-  },
-  {
-    n: '03',
-    title: 'Book a real slot',
-    body: 'You pick a specific time from the clinic’s live calendar and get an SMS and WhatsApp confirmation with the address — not a token number and an open-ended wait.',
-  },
-  {
-    n: '04',
-    title: 'Keep everything afterwards',
-    body: 'Prescriptions and lab reports land in your account. Bring them to the next visit, share them with another doctor, or link an ABHA number so they follow you automatically.',
-  },
-]
+export const dynamic = 'force-dynamic'
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [doctors, user] = await Promise.all([
+    searchDoctors({ kind: 'human', sort: 'rating', limit: 6 }),
+    currentUser(),
+  ])
+  const next = user ? await nextHomeAppointment(user.id) : undefined
+  const firstName = user?.name?.trim().split(/\s+/)[0]
+
   return (
     <main className="min-h-screen bg-background">
       <SiteHeader />
-
-      {/* Hero ----------------------------------------------------------- */}
-      <section className="border-b border-border bg-surface">
-        <div className="mx-auto max-w-[1320px] px-5 py-16 lg:px-8 lg:py-24">
-          <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr]">
+      <section className="discovery-hero">
+        <div className="care-container grid items-center gap-10 py-4 sm:py-7 lg:grid-cols-[1.2fr_0.8fr] lg:py-14">
           <div>
-            <p className="eyebrow">Healthcare booking · India</p>
-            <h1 className="mt-6 text-balance text-5xl leading-[1.05] sm:text-6xl lg:text-[4.5rem]">
-              Find the right doctor,
-              <br />
-              <span className="text-primary">and know the price first</span>
-            </h1>
-            <p className="mt-8 max-w-2xl text-lg leading-9 text-muted-foreground">
-              CareNest is a booking platform for clinic visits, video consultations, lab tests at
-              home, planned surgery and veterinary care. We are not a hospital — the doctors and
-              clinics are independent. What we do is verify that they are registered, show you their
-              real availability and fees, and hold your slot.
-            </p>
-
-            <div className="mt-10 flex flex-wrap items-center gap-4">
-              <Link
-                href="/sign-up"
-                className="inline-flex min-h-14 items-center gap-3 rounded-lg bg-cta px-8 font-semibold text-cta-foreground transition-opacity hover:opacity-90"
-              >
-                Create a free account <ArrowRight className="size-4" />
-              </Link>
-              <Link
-                href="#what-we-do"
-                className="inline-flex min-h-14 items-center rounded-lg border border-foreground/25 px-8 font-semibold transition-colors hover:bg-muted"
-              >
-                See how it works
-              </Link>
+            <div className="mb-4 flex items-center gap-3 sm:mb-5">
+              <span className="flex size-11 items-center justify-center rounded-2xl border border-primary/15 bg-card text-primary"><Heart className="size-5" /></span>
+              <div><p className="text-xs text-muted-foreground">A little care goes a long way</p><p className="text-sm font-semibold">{firstName ? `Welcome back, ${firstName}` : 'Welcome to CareNest'}</p></div>
             </div>
-
-            <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-              <Lock className="size-4 shrink-0" />
-              Free to join. No booking fee — you pay the clinic directly for care.
-            </p>
+            <p className="hidden text-xs font-semibold uppercase tracking-[0.18em] text-primary lg:block">Your family. Your pets. Your care.</p>
+            <h1 className="sr-only max-w-xl leading-[1.2] sm:not-sr-only sm:text-5xl lg:mt-4 lg:text-[3.8rem]">Feeling better starts<br className="hidden sm:block" /> with the <span className="text-primary">right care.</span></h1>
+            <p className="mt-4 hidden max-w-lg text-sm leading-7 text-muted-foreground sm:block sm:text-base">Find a doctor, compare consultation fees, and choose a time that works for you.</p>
+            <div className="sm:mt-6"><DiscoverySearch /></div>
+            <div className="mt-5 hidden flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground sm:flex"><span className="flex items-center gap-1.5"><ShieldCheck className="size-4 text-primary" /> Fees shown upfront</span><span className="flex items-center gap-1.5"><CalendarDays className="size-4 text-primary" /> Choose your appointment</span></div>
           </div>
+          <div className="relative hidden pl-8 lg:block">
+            <Photo photo={photos.heroConsult} ratio={1.15} width={640} priority className="rounded-[2rem]" scrim="none" />
+            <div className="absolute -bottom-5 left-0 flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-lg shadow-primary/5"><span className="flex size-11 items-center justify-center rounded-xl bg-soft text-primary"><Stethoscope className="size-5" /></span><div><p className="text-sm font-semibold">Care that fits your life</p><p className="text-xs text-muted-foreground">At the clinic or over a video call</p></div></div>
+          </div>
+        </div>
+      </section>
 
-            {/* The photograph carries the warmth the copy deliberately does
-                not: the text stays plain about what we are and are not. */}
-            <div className="relative">
-              <Photo
-                photo={photos.heroConsult}
-                ratio={4 / 5}
-                width={720}
-                priority
-                className="rounded-2xl shadow-xl"
-              />
-              <div className="absolute -bottom-8 -left-6 hidden w-48 sm:block lg:-left-10 lg:w-56">
-                <Photo
-                  photo={photos.clinicianPhone}
-                  ratio={1}
-                  width={320}
-                  scrim="none"
-                  className="rounded-2xl border-4 border-background shadow-lg"
-                />
-              </div>
-              <div className="absolute -right-4 -top-5 hidden rounded-xl border border-border bg-card px-4 py-3 shadow-lg sm:block">
-                <p className="text-xs text-muted-foreground">Average wait after booking</p>
-                <p className="font-display text-2xl font-semibold text-accent">12 min</p>
-              </div>
+      <div className="care-container space-y-6 pb-12 pt-4 sm:space-y-8 sm:pt-6 lg:space-y-12 lg:pt-10">
+        <section className="grid gap-4 lg:grid-cols-[1.35fr_1fr]" aria-label="Your next steps">
+          <div className="appointment-banner">
+            <div className="flex items-center justify-between gap-3"><p className="text-xs font-medium text-white/85">{next ? (next.status === 'requested' ? 'Appointment request' : 'Upcoming appointment') : 'Your next appointment'}</p><CalendarDays className="size-5 text-white/80" /></div>
+            <h2 className="mt-2 text-lg sm:mt-3 sm:text-2xl">{next ? next.doctor_name : 'Make room for your wellbeing.'}</h2>
+            <p className={`mt-2 max-w-md text-xs leading-6 text-white/85 sm:text-sm ${next ? '' : 'hidden sm:block'}`}>{next ? `${next.speciality} · ${next.status === 'requested' ? 'Awaiting clinic confirmation' : 'Confirmed'}` : 'Browse doctors and take the first step. Your upcoming visits will appear here.'}</p>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 sm:mt-5">
+              {next ? <span className="inline-flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2 text-xs"><Clock3 className="size-4" />{slotDay(next.starts_at)}, {slotTime(next.starts_at)} · IST</span> : <span className="hidden text-xs text-white/85 sm:inline">For you and the people you care about</span>}
+              <Link className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-[#075ac9]" href={next ? '/account' : '/search'}>{next ? 'View appointment' : 'Find a doctor'}<ArrowRight className="size-4" /></Link>
             </div>
           </div>
+          <Link href="/pets" className="pet-discovery group hidden items-center gap-5 rounded-[1.5rem] border border-border p-6 sm:flex">
+            <span className="flex size-16 shrink-0 items-center justify-center rounded-[1.3rem] bg-[#ffede5] text-[#b55a2f]"><PawPrint className="size-8" /></span>
+            <div className="min-w-0"><p className="text-xs font-medium text-muted-foreground">Because they’re family, too</p><h2 className="mt-2 text-xl">A little care for your pet</h2><p className="mt-2 text-sm text-muted-foreground">Explore veterinary care <ArrowRight className="ml-1 inline size-4 transition-transform group-hover:translate-x-1" /></p></div>
+          </Link>
+        </section>
 
-          <dl className="mt-16 grid gap-8 border-t border-border pt-10 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              ['38,000+', 'Registered doctors, each checked against the medical council register'],
-              ['120+', 'Cities, from metros to tier-2 towns'],
-              ['₹0', 'Booking fee — we charge you nothing to reserve a slot'],
-              ['24 hrs', 'Typical turnaround for a home lab report'],
-            ].map(([value, label]) => (
-              <div key={value}>
-                <dt className="font-display text-3xl font-semibold text-accent">{value}</dt>
-                <dd className="mt-2 text-sm leading-6 text-muted-foreground">{label}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </section>
+        <section><SectionHeading title="Medical specialties" href="/search" /><SpecialtyChips /></section>
+        <section><SectionHeading title="Doctors to explore" subtitle="Compare experience, reviews and fees before you choose." href="/search?sort=rating" />
+          {doctors.length ? <div className="provider-strip">{doctors.slice(0, 4).map(doctor => <ProviderCard key={doctor.id} doctor={doctor} variant="compact" />)}</div> : <EmptyProviders />}
+        </section>
 
-      {/* What we do ----------------------------------------------------- */}
-      <section id="what-we-do" className="mx-auto max-w-[1320px] px-5 py-20 lg:px-8">
-        <div className="max-w-3xl">
-          <p className="eyebrow">What we do</p>
-          <h2 className="gold-rule mt-4 text-4xl sm:text-5xl">Five things you can book</h2>
-          <p className="mt-8 text-lg leading-9 text-muted-foreground">
-            Each of these solves a different problem, and they work differently. Here is what each
-            one actually is, when it is the right choice, and what it costs.
-          </p>
-        </div>
-
-        <div className="mt-14 space-y-6">
-          {services.map((service) => {
-            const Art = serviceArt[service.slug] ?? serviceArt.doctors
-            return (
-              <article
-                key={service.slug}
-                className="grid gap-8 border border-border bg-card p-7 lg:grid-cols-[1fr_1.4fr] lg:p-10"
-              >
-                <div>
-                  <div className="w-40">
-                    <Art />
-                  </div>
-                  <h3 className="mt-6 text-3xl">{service.name}</h3>
-                  <p className="mt-3 text-lg text-accent">{service.oneLine}</p>
-                  <p className="mt-6 inline-flex items-baseline gap-1.5 text-sm text-muted-foreground">
-                    Starts from
-                    <span className="inline-flex items-center text-xl font-bold text-foreground">
-                      <IndianRupee className="size-4" />
-                      {service.from.toLocaleString('en-IN')}
-                    </span>
-                  </p>
-                  <Link
-                    href={service.href}
-                    className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-lg border border-foreground/25 px-6 font-semibold transition-colors hover:bg-muted"
-                  >
-                    Browse <ArrowRight className="size-3.5" />
-                  </Link>
-                </div>
-
-                <div className="space-y-6">
-                  <div>
-                    <p className="eyebrow">What it is</p>
-                    <p className="mt-2 leading-8 text-muted-foreground">{service.what}</p>
-                  </div>
-                  <div>
-                    <p className="eyebrow">When to choose it</p>
-                    <p className="mt-2 leading-8 text-muted-foreground">{service.why}</p>
-                  </div>
-                  <div>
-                    <p className="eyebrow">How it works</p>
-                    <ul className="mt-3 space-y-2.5">
-                      {service.how.map((line) => (
-                        <li key={line} className="flex gap-3 leading-7">
-                          <Check className="mt-1.5 size-4 shrink-0 text-accent" />
-                          {line}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </article>
-            )
-          })}
-        </div>
-      </section>
-
-      {/* How booking works ---------------------------------------------- */}
-      <section className="border-y border-border bg-surface">
-        <div className="mx-auto max-w-[1320px] px-5 py-20 lg:px-8">
-          <div className="max-w-3xl">
-            <p className="eyebrow">The process</p>
-            <h2 className="gold-rule mt-4 text-4xl sm:text-5xl">From symptom to prescription</h2>
-          </div>
-
-          <ol className="mt-14 grid gap-10 md:grid-cols-2">
-            {steps.map(({ n, title, body }) => (
-              <li key={n} className="border-t border-border pt-6">
-                <span className="font-display text-4xl text-accent">{n}</span>
-                <h3 className="mt-4 text-2xl">{title}</h3>
-                <p className="mt-3 leading-8 text-muted-foreground">{body}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      {/* Why trust us ---------------------------------------------------- */}
-      <section className="mx-auto max-w-[1320px] px-5 py-20 lg:px-8">
-        <div className="max-w-3xl">
-          <p className="eyebrow">Why trust this</p>
-          <h2 className="gold-rule mt-4 text-4xl sm:text-5xl">
-            The parts people usually get burned on
-          </h2>
-        </div>
-
-        <div className="mt-14 grid gap-8 sm:grid-cols-2">
-          {trustPoints.map(({ title, body }) => (
-            <div key={title} className="border-l-2 border-accent pl-6">
-              <h3 className="text-2xl">{title}</h3>
-              <p className="mt-3 leading-8 text-muted-foreground">{body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Glossary -------------------------------------------------------- */}
-      <section className="border-y border-border bg-surface">
-        <div className="mx-auto max-w-[1320px] px-5 py-20 lg:px-8">
-          <div className="max-w-3xl">
-            <p className="eyebrow">Plain English</p>
-            <h2 className="gold-rule mt-4 text-4xl sm:text-5xl">What these words mean</h2>
-            <p className="mt-8 text-lg leading-9 text-muted-foreground">
-              Healthcare and insurance are full of jargon that nobody explains. If a term on this
-              site is unfamiliar, it is defined here.
-            </p>
-          </div>
-
-          <dl className="mt-14 grid gap-x-12 gap-y-8 md:grid-cols-2">
-            {glossary.map(({ term, plain }) => (
-              <div key={term} className="border-t border-border pt-5">
-                <dt className="text-xl font-semibold text-accent">{term}</dt>
-                <dd className="mt-2 leading-8 text-muted-foreground">{plain}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </section>
-
-      {/* Insurance ------------------------------------------------------- */}
-      <section className="mx-auto max-w-[1320px] px-5 py-20 lg:px-8">
-        <div className="grid gap-12 lg:grid-cols-[1fr_1.2fr]">
-          <div>
-            <p className="eyebrow">Insurance</p>
-            <h2 className="mt-4 text-4xl">Using your health cover</h2>
-            <p className="mt-6 leading-9 text-muted-foreground">
-              If a clinic is empanelled with your insurer, you can go cashless — the insurer settles
-              with the hospital and you do not pay upfront. Add your policy once and we check
-              eligibility before you confirm a booking, so you are not turned away at the desk.
-            </p>
-            <p className="mt-4 leading-9 text-muted-foreground">
-              Bring your policy card and a photo ID. Approval is granted by the insurer, not by us —
-              we can prepare the paperwork but we cannot guarantee the outcome.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            {insurers.map(({ name, tint }) => (
-              <div
-                key={name}
-                className="flex h-24 items-center justify-center border border-border bg-card px-4 text-center"
-              >
-                <span className="text-sm font-bold leading-tight" style={{ color: tint }}>
-                  {name}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ ------------------------------------------------------------- */}
-      <section className="border-y border-border bg-surface">
-        <div className="mx-auto max-w-[900px] px-5 py-20 lg:px-8">
-          <p className="eyebrow">Questions</p>
-          <h2 className="gold-rule mt-4 text-4xl sm:text-5xl">Before you sign up</h2>
-
-          <dl className="mt-12 divide-y divide-border border-t border-border">
-            {faqs.map(({ q, a }) => (
-              <div key={q} className="py-7">
-                <dt className="font-display text-2xl">{q}</dt>
-                <dd className="mt-3 leading-9 text-muted-foreground">{a}</dd>
-              </div>
-            ))}
-          </dl>
-
-          <div className="mt-12 flex flex-wrap items-center gap-4 border border-accent/40 bg-card p-7">
-            <Phone className="size-6 shrink-0 text-accent" />
-            <p className="min-w-0 flex-1 leading-7">
-              <strong>In an emergency, do not book online.</strong> Call 108 for an ambulance or go
-              to the nearest hospital emergency department.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Concerns + cities ---------------------------------------------- */}
-      <section className="mx-auto max-w-[1320px] px-5 py-20 lg:px-8">
-        <div className="grid gap-16 lg:grid-cols-2">
-          <div>
-            <p className="eyebrow">Common concerns</p>
-            <h2 className="mt-4 text-3xl">Not sure who to see?</h2>
-            <p className="mt-4 leading-8 text-muted-foreground">
-              Pick the thing that sounds closest to your problem and we will show you the right
-              speciality.
-            </p>
-            <div className="mt-8">
-              {Object.entries(healthConcerns).map(([group, items]) => (
-                <Disclosure key={group} label={group} items={items} />
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <p className="eyebrow">Where we operate</p>
-            <h2 className="mt-4 text-3xl">Cities we cover</h2>
-            <p className="mt-4 leading-8 text-muted-foreground">
-              Coverage is deepest in the metros. In smaller cities the doctor list is shorter, but
-              every listing is verified the same way.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-2.5">
-              {cities.map((city) => (
-                <Link
-                  key={city}
-                  href="/search"
-                  className="border border-border px-4 py-2 text-sm font-medium transition-colors hover:border-accent hover:text-accent"
-                >
-                  {city}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Closing CTA ----------------------------------------------------- */}
-      <section className="bg-banner text-banner-foreground">
-        <div className="mx-auto max-w-[1320px] px-5 py-20 text-center lg:px-8">
-          <p className="eyebrow">Get started</p>
-          <h2 className="mx-auto mt-5 max-w-2xl text-4xl sm:text-5xl">
-            Creating an account takes about a minute
-          </h2>
-          <p className="mx-auto mt-6 max-w-xl leading-9 text-banner-muted">
-            Enter your mobile number, confirm the code we text you, and you are in. No password, no
-            card details, nothing to cancel later.
-          </p>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-            <Link
-              href="/sign-up"
-              className="inline-flex min-h-14 items-center gap-3 rounded-lg bg-cta px-8 font-semibold text-cta-foreground transition-opacity hover:opacity-90"
-            >
-              Create an account <ArrowRight className="size-4" />
-            </Link>
-            <Link
-              href="/sign-in"
-              className="inline-flex min-h-14 items-center rounded-lg border border-banner-foreground/30 px-8 font-semibold transition-colors hover:bg-banner-foreground/10"
-            >
-              I already have one
-            </Link>
-          </div>
-
-          <p className="mt-8 inline-flex flex-wrap items-center justify-center gap-2 text-sm text-banner-muted">
-            <BadgeCheck className="size-4" />
-            Are you a doctor or clinic?
-            <Link href="/join" className="font-semibold text-banner-foreground underline">
-              List your practice
-            </Link>
-          </p>
-        </div>
-      </section>
-
+        <section className="grid gap-7 lg:grid-cols-[1.65fr_1fr]">
+          <div className="min-w-0"><SectionHeading title="Find your doctor" subtitle="Add an area or PIN code to narrow your search." href="/search" /><div className="space-y-4">{doctors.slice(0, 3).map(doctor => <ProviderCard key={doctor.id} doctor={doctor} />)}{!doctors.length && <EmptyProviders />}</div></div>
+          <aside className="space-y-5 lg:pt-1">
+            <div className="rounded-[1.5rem] border border-border bg-soft/50 p-6"><span className="flex size-12 items-center justify-center rounded-2xl bg-card text-primary"><Video className="size-6" /></span><h2 className="mt-5 text-2xl">Care, wherever you are.</h2><p className="mt-3 text-sm leading-7 text-muted-foreground">Explore doctors who offer scheduled video consultations. Check their profile to find the right fit.</p><Link href="/search?video=1" className="care-button mt-5 w-full">Explore video consultations<ArrowRight className="size-4" /></Link></div>
+            <div className="rounded-[1.5rem] border border-border bg-card p-6"><h2 className="text-lg">A simpler way to find care</h2><ol className="mt-4 space-y-5">{[['01', 'Find your doctor', 'Search by specialty, name or location.'], ['02', 'Choose a time', 'Review the fee and available appointments.'], ['03', 'Track your visit', 'Check your request and confirmation in your account.']].map(([n,title,body]) => <li key={n} className="flex gap-3"><span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-soft text-xs font-bold text-primary">{n}</span><div><p className="text-sm font-semibold">{title}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{body}</p></div></li>)}</ol></div>
+            <Link href="/join" className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card px-5 py-4 text-sm font-semibold">Are you a doctor or clinic?<ArrowRight className="size-4 text-primary" /></Link>
+          </aside>
+        </section>
+      </div>
       <SiteFooter />
     </main>
   )
 }
+
+function SectionHeading({ title, subtitle, href }: { title: string; subtitle?: string; href: string }) {
+  return <div className="mb-3 flex items-center justify-between gap-4 sm:mb-4"><div><h2 className="text-base sm:text-2xl">{title}</h2>{subtitle && <p className="mt-1.5 hidden text-xs leading-6 text-muted-foreground sm:block sm:text-sm">{subtitle}</p>}</div><Link href={href} className="inline-flex min-h-11 shrink-0 items-center gap-1 text-xs font-semibold text-primary sm:text-sm">View all<ArrowRight className="size-3.5" /></Link></div>
+}
+function EmptyProviders() { return <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">No doctors are listed yet. Please check back soon.</div> }

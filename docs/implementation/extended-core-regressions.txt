@@ -1,0 +1,32 @@
+npm notice run my-project@0.1.0 npx
+npm notice run tsx --test --test-concurrency=2 tests/security-services.test.mjs tests/booking-service.test.mjs
+▶ actual booking service enforces ownership, atomicity, stale reservations and idempotency
+  ✔ replay returns the same appointment and one committed event (22.3647ms)
+  ✔ expired A cannot confirm or decline B reservation (87.7136ms)
+  ✔ foreign family and unsupported mode rejected before reservation (19.4891ms)
+  ✔ outbox failure rolls back appointment and slot hold (164.3352ms)
+  ✔ failed replacement keeps original confirmed appointment (51.4283ms)
+  ✔ foreign cancellation fails and own cancellation releases exactly its slot (37.599ms)
+  ✔ suspended practitioner rejected from state transitions and public booking (16.8118ms)
+✔ actual booking service enforces ownership, atomicity, stale reservations and idempotency (7686.642ms)
+▶ actual OTP and limiter services enforce atomic challenge and all-key budgets
+  ✔ stored OTP is a MAC, correct code can be consumed once (42.976ms)
+  ✔ concurrent guesses cannot exceed five attempts or revive a challenge (49.2729ms)
+  ✔ denial on one key does not charge another key (39.5115ms)
+  ✔ concurrent budget consumption admits exactly its limit (60.6675ms)
+✔ actual OTP and limiter services enforce atomic challenge and all-key budgets (6782.8905ms)
+▶ actual clinical services reject foreign encounters, malformed prescriptions and failed audits
+  ✔ assigned clinician names are resolved on server; foreign clinician denied (88.0445ms)
+  ✔ invalid medicine duration and arbitrary prescription object rejected (0.7195ms)
+  ✔ patient can read own records, but audit failure prevents returning them (72.0948ms)
+  ✔ clinical recipient identity is distinct from the household account owner (120.757ms)
+  ✔ repeated clinical save intent produces one immutable record and rejects changed content (65.0994ms)
+✔ actual clinical services reject foreign encounters, malformed prescriptions and failed audits (3933.5542ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 13359.9765

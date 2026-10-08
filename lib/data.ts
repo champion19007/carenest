@@ -8,9 +8,8 @@ export type ServiceTab = 'doctors' | 'video' | 'labs' | 'medicines'
 
 export const serviceTabs: { id: ServiceTab; label: string; hint: string }[] = [
   { id: 'doctors', label: 'Find doctors', hint: 'Condition, speciality or doctor name' },
-  { id: 'video', label: 'Video consult', hint: 'Talk to a doctor in 15 minutes' },
+  { id: 'video', label: 'Video consult', hint: 'Explore scheduled video consultations' },
   { id: 'labs', label: 'Lab tests', hint: 'Blood test, thyroid, full body checkup' },
-  { id: 'medicines', label: 'Medicines', hint: 'Search medicines and healthcare products' },
 ]
 
 export const browseMenu = [
@@ -279,7 +278,7 @@ export const helpCollections: HelpCollection[] = [
         body: [
           'Anyone booking an appointment on CareNest needs an account. Tap Sign up at the top of any page and enter your 10-digit mobile number.',
           'We send a 6-digit OTP to that number. CareNest is passwordless — you log in with an OTP every time, so there is no password to remember or reset.',
-          'Enter your name, date of birth and gender exactly as they appear on your government ID or insurance policy. Clinics use these details to register you, and insurers use them to verify cashless eligibility.',
+          'Add the correct name and household details for the person receiving care. This app does not verify insurance eligibility.',
           'You can add family members to the same account later, which is useful if you book for parents or children.',
         ],
       },
@@ -299,7 +298,7 @@ export const helpCollections: HelpCollection[] = [
         blurb: 'Update the number that receives your OTP.',
         date: '4 June 2026',
         body: [
-          'Go to Account settings, select Mobile number, and enter the new number. We send an OTP to both the old and new numbers to confirm the change.',
+          'Phone changes are not yet self-service. Submit a support request; never share an OTP with an operator.',
         ],
       },
       {
@@ -325,7 +324,7 @@ export const helpCollections: HelpCollection[] = [
         date: '4 June 2026',
         body: [
           'Search for a speciality or doctor, set your city and locality, then pick an open slot from the doctor’s card.',
-          'Confirm who the appointment is for, add your reason for visiting, and submit. You get an SMS and WhatsApp confirmation with the clinic address.',
+          'Select an owned household member or pet, consent to appointment sharing and request the time. The clinic must accept the request. Current status and updates appear in your account.',
         ],
       },
       {
@@ -343,7 +342,7 @@ export const helpCollections: HelpCollection[] = [
         blurb: 'What to expect on a video call.',
         date: '4 June 2026',
         body: [
-          'Join from the link in your confirmation SMS about five minutes before the slot. You will need a stable connection and a quiet space.',
+          'For a confirmed video appointment, open your account near the appointment time. Joining opens ten minutes before the slot and requires the clinician to have a connected Zoom or Google Meet account.',
           'The doctor can issue a digital prescription at the end of the call, which appears in your CareNest account.',
         ],
       },
@@ -360,7 +359,7 @@ export const helpCollections: HelpCollection[] = [
         blurb: 'UPI, cards, net banking and cash at clinic.',
         date: '4 June 2026',
         body: [
-          'You can pay online using UPI, debit or credit card, net banking, or a supported wallet. Many clinics also allow you to pay in cash at the reception.',
+          'Online payments appear only when the payment provider is configured. Otherwise arrange payment directly with the clinic. Recorded offline receipts do not process a transfer.',
         ],
       },
       {
@@ -369,7 +368,7 @@ export const helpCollections: HelpCollection[] = [
         blurb: 'Using your health insurance at a partner clinic.',
         date: '4 June 2026',
         body: [
-          'Doctors marked Cashless are empanelled with one or more insurers or TPAs. Add your policy to your account and we check eligibility before you confirm.',
+          'CareNest does not currently perform policy checks or cashless claims. Confirm arrangements directly with the provider and insurer.',
           'Carry your policy card and a photo ID to the clinic. Cashless approval is granted by the insurer, not by CareNest.',
         ],
       },
@@ -379,7 +378,7 @@ export const helpCollections: HelpCollection[] = [
         blurb: 'PM-JAY at empanelled hospitals.',
         date: '4 June 2026',
         body: [
-          'Hospitals empanelled under Ayushman Bharat PM-JAY show a PM-JAY badge. Bring your Ayushman card and Aadhaar to the hospital help desk for verification.',
+          'CareNest does not currently verify or process PM-JAY benefits. Ask the hospital and official scheme help desk about eligibility.',
         ],
       },
       {
@@ -388,7 +387,7 @@ export const helpCollections: HelpCollection[] = [
         blurb: 'Timelines for cancelled appointments.',
         date: '4 June 2026',
         body: [
-          'Refunds for appointments cancelled in time are returned to the original payment method, usually within 5 to 7 working days.',
+          'Cancellation does not automatically issue a refund. For a captured online payment, request refund review from billing. The account shows the authoritative recorded state; processing times depend on the provider.',
         ],
       },
     ],
@@ -404,8 +403,8 @@ export const helpCollections: HelpCollection[] = [
         blurb: 'A phlebotomist visits you.',
         date: '4 June 2026',
         body: [
-          'Pick a package and a time slot. A trained phlebotomist arrives at your address with sealed kits and collects the sample.',
-          'Reports are uploaded to your CareNest account, usually within 24 to 36 hours depending on the test.',
+          'Request a published lab package. The lab must confirm the actual collection arrangement and time. Sample packages are local demonstrations.',
+          'A result appears after authorized lab staff upload a safety-checked file and complete the order. No turnaround-time guarantee is provided.',
         ],
       },
       {
@@ -414,7 +413,7 @@ export const helpCollections: HelpCollection[] = [
         blurb: 'Preparing for your sample.',
         date: '4 June 2026',
         body: [
-          'Tests such as fasting blood sugar and lipid profile need 8 to 12 hours of fasting. Water is allowed. Your booking confirmation lists the exact preparation.',
+          'Ask the laboratory or treating clinician for preparation instructions for your specific test. Do not change medicines or diet based on a generic help article.',
         ],
       },
     ],
@@ -456,7 +455,7 @@ export const helpCollections: HelpCollection[] = [
         date: '4 June 2026',
         body: [
           'We collect only what is needed to book and verify your care. Prescriptions and reports are visible to you and to the doctor you booked with.',
-          'We do not sell your health data. You can request deletion of your account and records at any time from Account settings.',
+          'Use the account export to obtain your data. Submit privacy, correction or deletion requests through Contact support. Clinical and financial retention requires operator review.',
         ],
       },
     ],

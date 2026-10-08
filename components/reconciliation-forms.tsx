@@ -1,0 +1,5 @@
+'use client'
+import {useActionState} from 'react'
+import {scanLegacy,linkLegacy,type ReconcileState} from '@/app/actions/reconciliation'
+export function ScanLegacyForm(){const[s,a,p]=useActionState(scanLegacy,{} as ReconcileState);return <form action={a}><button disabled={p} className="care-button">Inventory and encrypt unscoped legacy records</button><p className="mt-3" role="status">{s.error??s.notice}</p></form>}
+export function LinkLegacyForm({id}:{id:string}){const[s,a,p]=useActionState(linkLegacy,{} as ReconcileState);return <form action={a} className="mt-4 space-y-3"><input name="id" value={id} type="hidden"/><label>Existing owned encounter ID<input name="encounterId" required className="field"/></label><label>Actual source identity/ownership review evidence<textarea name="evidence" minLength={20} maxLength={2000} required className="field"/></label><label className="flex gap-2"><input name="checked" required type="checkbox"/>I checked the original source and matching subject/clinician identifiers</label><button disabled={p} className="care-button">Link reviewed record</button><p role="status">{s.error??s.notice}</p></form>}

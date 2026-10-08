@@ -1,0 +1,20 @@
+npm notice run my-project@0.1.0 npx
+npm notice run tsx --test tests/extended-workflows.test.mjs
+▶ extended local clinic, dispatch, privacy and pharmacy contracts
+  ✔ arrival creates encrypted identity, encounter and invoice atomically without linking by phone (105.5065ms)
+  ✔ only assigned clinician starts and signs; private receipt and matching phone are both required (207.8019ms)
+  ✔ owned encrypted addresses and home bookings enforce scope and dispatch revisions (190.3901ms)
+  ✔ pharmacy cannot publish without professional policy; actual partner verification and catalogue required (91.7156ms)
+  ✔ owned medicine requests are idempotent and approval needs current prescriber safety review (245.6295ms)
+  ✔ courier sees minimum dispatch information; only licensed cashier settles correct pharmacy invoice (231.7106ms)
+  ✔ withdrawal prevents new clinical and pharmacy sharing while owner retains care access (146.3247ms)
+  ✔ privacy requests are scoped and erasure cannot bypass approved retention and holds (225.1154ms)
+✔ extended local clinic, dispatch, privacy and pharmacy contracts (7822.4054ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9511.253

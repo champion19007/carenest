@@ -1,0 +1,669 @@
+{
+  "capturedAt": "2026-10-06T16:55:55.521Z",
+  "region": "ap-south-1",
+  "services": [
+    {
+      "service": "AmazonECS",
+      "url": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonECS/current/ap-south-1/index.json",
+      "publicationDate": "2026-09-11T12:44:25Z",
+      "rows": [
+        {
+          "sku": "R3B3XUQQ8A2CS8S9",
+          "attributes": {
+            "servicecode": "AmazonECS",
+            "location": "Asia Pacific (Mumbai)",
+            "locationType": "AWS Region",
+            "usagetype": "APS3-Fargate-EphemeralStorage-GB-Hours",
+            "operation": "",
+            "regionCode": "ap-south-1",
+            "servicename": "Amazon Elastic Container Service",
+            "storagetype": "default"
+          },
+          "rates": [
+            {
+              "rateCode": "R3B3XUQQ8A2CS8S9.JRTCKXETXF.6YS6EN2CT7",
+              "description": "AWS Fargate - Ephemeral Storage - Asia Pacific (Mumbai)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "GB-Hours",
+              "pricePerUnit": {
+                "USD": "0.0001270000"
+              },
+              "appliesTo": []
+            }
+          ]
+        },
+        {
+          "sku": "2FMN22NTTSFVP7KR",
+          "attributes": {
+            "servicecode": "AmazonECS",
+            "location": "Asia Pacific (Mumbai)",
+            "locationType": "AWS Region",
+            "tenancy": "Shared",
+            "usagetype": "APS3-Fargate-ARM-GB-Hours",
+            "operation": "",
+            "cpuArchitecture": "ARM",
+            "memorytype": "perGB",
+            "regionCode": "ap-south-1",
+            "resource": "per GB per hour",
+            "servicename": "Amazon Elastic Container Service"
+          },
+          "rates": [
+            {
+              "rateCode": "2FMN22NTTSFVP7KR.JRTCKXETXF.6YS6EN2CT7",
+              "description": "AWS Fargate - ARM - Memory - Asia Pacific (Mumbai)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "hours",
+              "pricePerUnit": {
+                "USD": "0.0026100000"
+              },
+              "appliesTo": []
+            }
+          ]
+        },
+        {
+          "sku": "KV4FGA39G96M59TH",
+          "attributes": {
+            "servicecode": "AmazonECS",
+            "location": "Asia Pacific (Mumbai)",
+            "locationType": "AWS Region",
+            "tenancy": "Shared",
+            "usagetype": "APS3-Fargate-vCPU-Hours:perCPU",
+            "operation": "",
+            "cputype": "perCPU",
+            "regionCode": "ap-south-1",
+            "servicename": "Amazon Elastic Container Service"
+          },
+          "rates": [
+            {
+              "rateCode": "KV4FGA39G96M59TH.JRTCKXETXF.6YS6EN2CT7",
+              "description": "AWS Fargate - vCPU  - Asia Pacific (Mumbai)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "hours",
+              "pricePerUnit": {
+                "USD": "0.0425600000"
+              },
+              "appliesTo": []
+            }
+          ]
+        },
+        {
+          "sku": "D8HH737U8NPWA5K7",
+          "attributes": {
+            "servicecode": "AmazonECS",
+            "location": "Asia Pacific (Mumbai)",
+            "locationType": "AWS Region",
+            "tenancy": "Shared",
+            "usagetype": "APS3-Fargate-ARM-vCPU-Hours:perCPU",
+            "operation": "",
+            "cpuArchitecture": "ARM",
+            "cputype": "perCPU",
+            "regionCode": "ap-south-1",
+            "resource": "per vCPU per hour",
+            "servicename": "Amazon Elastic Container Service"
+          },
+          "rates": [
+            {
+              "rateCode": "D8HH737U8NPWA5K7.JRTCKXETXF.6YS6EN2CT7",
+              "description": "AWS Fargate - ARM - vCPU - Asia Pacific (Mumbai)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "hours",
+              "pricePerUnit": {
+                "USD": "0.0238300000"
+              },
+              "appliesTo": []
+            }
+          ]
+        },
+        {
+          "sku": "N4Q5MGA6V9TFA2MG",
+          "attributes": {
+            "servicecode": "AmazonECS",
+            "location": "Asia Pacific (Mumbai)",
+            "locationType": "AWS Region",
+            "tenancy": "Shared",
+            "usagetype": "APS3-Fargate-GB-Hours",
+            "operation": "",
+            "memorytype": "perGB",
+            "regionCode": "ap-south-1",
+            "servicename": "Amazon Elastic Container Service"
+          },
+          "rates": [
+            {
+              "rateCode": "N4Q5MGA6V9TFA2MG.JRTCKXETXF.6YS6EN2CT7",
+              "description": "AWS Fargate - Memory  - Asia Pacific (Mumbai)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "hours",
+              "pricePerUnit": {
+                "USD": "0.0046550000"
+              },
+              "appliesTo": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "service": "AmazonRDS",
+      "url": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRDS/current/ap-south-1/index.json",
+      "publicationDate": "2026-10-06T02:47:42Z",
+      "rows": [
+        {
+          "sku": "7Z4F2SQPHDHNHDBP",
+          "attributes": {
+            "servicecode": "AmazonRDS",
+            "location": "Asia Pacific (Mumbai)",
+            "locationType": "AWS Region",
+            "storageMedia": "SSD",
+            "volumeType": "General Purpose-GP3",
+            "minVolumeSize": "5 GB",
+            "maxVolumeSize": "16 TB",
+            "engineCode": "14",
+            "databaseEngine": "PostgreSQL",
+            "deploymentOption": "Single-AZ",
+            "usagetype": "APS3-RDS:GP3-Storage",
+            "operation": "CreateDBInstance:0014",
+            "regionCode": "ap-south-1",
+            "servicename": "Amazon Relational Database Service"
+          },
+          "rates": [
+            {
+              "rateCode": "7Z4F2SQPHDHNHDBP.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.131 per GB-month of provisioned GP3 storage running PostgreSQL",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "GB-Mo",
+              "pricePerUnit": {
+                "USD": "0.1310000000"
+              },
+              "appliesTo": []
+            }
+          ]
+        },
+        {
+          "sku": "XM7MWF7WAQDJ997K",
+          "attributes": {
+            "servicecode": "AmazonRDS",
+            "location": "Asia Pacific (Mumbai)",
+            "locationType": "AWS Region",
+            "storageMedia": "SSD",
+            "volumeType": "General Purpose-GP3",
+            "minVolumeSize": "5 GB",
+            "maxVolumeSize": "16 TB",
+            "engineCode": "14",
+            "databaseEngine": "PostgreSQL",
+            "deploymentOption": "Multi-AZ",
+            "usagetype": "APS3-RDS:Multi-AZ-GP3-Storage",
+            "operation": "CreateDBInstance:0014",
+            "regionCode": "ap-south-1",
+            "servicename": "Amazon Relational Database Service"
+          },
+          "rates": [
+            {
+              "rateCode": "XM7MWF7WAQDJ997K.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.262 per GB-month of provisioned GP3 storage for Multi-AZ deployments running PostgreSQL",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "GB-Mo",
+              "pricePerUnit": {
+                "USD": "0.2620000000"
+              },
+              "appliesTo": []
+            }
+          ]
+        },
+        {
+          "sku": "YA9RJG9UAYJKR7G8",
+          "attributes": {
+            "servicecode": "AmazonRDS",
+            "location": "Asia Pacific (Mumbai)",
+            "locationType": "AWS Region",
+            "instanceType": "db.t4g.small",
+            "currentGeneration": "Yes",
+            "instanceFamily": "General purpose",
+            "vcpu": "2",
+            "physicalProcessor": "AWS Graviton2",
+            "memory": "2 GiB",
+            "storage": "EBS Only",
+            "networkPerformance": "Up to 5 Gigabit",
+            "processorArchitecture": "64-bit",
+            "engineCode": "14",
+            "databaseEngine": "PostgreSQL",
+            "licenseModel": "No license required",
+            "deploymentOption": "Single-AZ",
+            "usagetype": "APS3-InstanceUsage:db.t4g.small",
+            "operation": "CreateDBInstance:0014",
+            "instanceTypeFamily": "T4G",
+            "normalizationSizeFactor": "1",
+            "regionCode": "ap-south-1",
+            "servicename": "Amazon Relational Database Service",
+            "unbundledLicensing": "FALSE"
+          },
+          "rates": [
+            {
+              "rateCode": "YA9RJG9UAYJKR7G8.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$ 0.042 per RDS db.t4g.small Single-AZ instance hour (or partial hour) running PostgreSQL",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "Hrs",
+              "pricePerUnit": {
+                "USD": "0.0420000000"
+              },
+              "appliesTo": []
+            }
+          ]
+        },
+        {
+          "sku": "VW4C639C825PJ4M5",
+          "attributes": {
+            "servicecode": "AmazonRDS",
+            "location": "Asia Pacific (Mumbai)",
+            "locationType": "AWS Region",
+            "storageMedia": "SSD",
+            "volumeType": "General Purpose-GP3",
+            "minVolumeSize": "5 GB",
+            "maxVolumeSize": "16 TB",
+            "engineCode": "14",
+            "databaseEngine": "PostgreSQL",
+            "deploymentOption": "Multi-AZ (readable standbys)",
+            "usagetype": "APS3-RDS:Multi-AZCluster-GP3-Storage",
+            "operation": "CreateDBInstance:0014",
+            "regionCode": "ap-south-1",
+            "servicename": "Amazon Relational Database Service"
+          },
+          "rates": [
+            {
+              "rateCode": "VW4C639C825PJ4M5.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.393 per GB-month of provisioned GP3 storage Multi-AZ (readable standbys) deployments running PostgreSQL",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "GB-Mo",
+              "pricePerUnit": {
+                "USD": "0.3930000000"
+              },
+              "appliesTo": []
+            }
+          ]
+        },
+        {
+          "sku": "GUT9JVEQBEMZ2FC7",
+          "attributes": {
+            "servicecode": "AmazonRDS",
+            "location": "Asia Pacific (Mumbai)",
+            "locationType": "AWS Region",
+            "instanceType": "db.t4g.micro",
+            "currentGeneration": "Yes",
+            "instanceFamily": "General purpose",
+            "vcpu": "2",
+            "physicalProcessor": "AWS Graviton2",
+            "memory": "1 GiB",
+            "storage": "EBS Only",
+            "networkPerformance": "Up to 5 Gigabit",
+            "processorArchitecture": "64-bit",
+            "engineCode": "14",
+            "databaseEngine": "PostgreSQL",
+            "licenseModel": "No license required",
+            "deploymentOption": "Single-AZ",
+            "usagetype": "APS3-InstanceUsage:db.t4g.micro",
+            "operation": "CreateDBInstance:0014",
+            "instanceTypeFamily": "T4G",
+            "normalizationSizeFactor": "0.5",
+            "regionCode": "ap-south-1",
+            "servicename": "Amazon Relational Database Service",
+            "unbundledLicensing": "FALSE"
+          },
+          "rates": [
+            {
+              "rateCode": "GUT9JVEQBEMZ2FC7.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$ 0.021 per RDS db.t4g.micro Single-AZ instance hour (or partial hour) running PostgreSQL",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "Hrs",
+              "pricePerUnit": {
+                "USD": "0.0210000000"
+              },
+              "appliesTo": []
+            }
+          ]
+        },
+        {
+          "sku": "99GF8YV6C84MEVUU",
+          "attributes": {
+            "servicecode": "AmazonRDS",
+            "location": "Asia Pacific (Mumbai)",
+            "locationType": "AWS Region",
+            "instanceType": "db.t4g.micro",
+            "currentGeneration": "Yes",
+            "instanceFamily": "General purpose",
+            "vcpu": "2",
+            "physicalProcessor": "AWS Graviton2",
+            "memory": "1 GiB",
+            "storage": "EBS Only",
+            "networkPerformance": "Up to 5 Gigabit",
+            "processorArchitecture": "64-bit",
+            "engineCode": "14",
+            "databaseEngine": "PostgreSQL",
+            "licenseModel": "No license required",
+            "deploymentOption": "Multi-AZ",
+            "usagetype": "APS3-Multi-AZUsage:db.t4g.micro",
+            "operation": "CreateDBInstance:0014",
+            "instanceTypeFamily": "T4G",
+            "normalizationSizeFactor": "1",
+            "regionCode": "ap-south-1",
+            "servicename": "Amazon Relational Database Service",
+            "unbundledLicensing": "FALSE"
+          },
+          "rates": [
+            {
+              "rateCode": "99GF8YV6C84MEVUU.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$ 0.042 per RDS db.t4g.micro Multi-AZ instance hour (or partial hour) running PostgreSQL",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "Hrs",
+              "pricePerUnit": {
+                "USD": "0.0420000000"
+              },
+              "appliesTo": []
+            }
+          ]
+        },
+        {
+          "sku": "MW7NTAKEDVDGNW9Q",
+          "attributes": {
+            "servicecode": "AmazonRDS",
+            "location": "Asia Pacific (Mumbai)",
+            "locationType": "AWS Region",
+            "instanceType": "db.t4g.large",
+            "currentGeneration": "Yes",
+            "instanceFamily": "General purpose",
+            "vcpu": "2",
+            "physicalProcessor": "AWS Graviton2",
+            "memory": "8 GiB",
+            "storage": "EBS Only",
+            "networkPerformance": "Up to 5 Gigabit",
+            "processorArchitecture": "64-bit",
+            "engineCode": "14",
+            "databaseEngine": "PostgreSQL",
+            "licenseModel": "No license required",
+            "deploymentOption": "Single-AZ",
+            "usagetype": "APS3-InstanceUsage:db.t4g.large",
+            "operation": "CreateDBInstance:0014",
+            "instanceTypeFamily": "T4G",
+            "normalizationSizeFactor": "4",
+            "regionCode": "ap-south-1",
+            "servicename": "Amazon Relational Database Service",
+            "unbundledLicensing": "FALSE"
+          },
+          "rates": [
+            {
+              "rateCode": "MW7NTAKEDVDGNW9Q.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$ 0.167 per RDS db.t4g.large Single-AZ instance hour (or partial hour) running PostgreSQL",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "Hrs",
+              "pricePerUnit": {
+                "USD": "0.1670000000"
+              },
+              "appliesTo": []
+            }
+          ]
+        },
+        {
+          "sku": "G9TBJHECSCYNG22J",
+          "attributes": {
+            "servicecode": "AmazonRDS",
+            "location": "Asia Pacific (Mumbai)",
+            "locationType": "AWS Region",
+            "instanceType": "db.t4g.small",
+            "currentGeneration": "Yes",
+            "instanceFamily": "General purpose",
+            "vcpu": "2",
+            "physicalProcessor": "AWS Graviton2",
+            "memory": "2 GiB",
+            "storage": "EBS Only",
+            "networkPerformance": "Up to 5 Gigabit",
+            "processorArchitecture": "64-bit",
+            "engineCode": "14",
+            "databaseEngine": "PostgreSQL",
+            "licenseModel": "No license required",
+            "deploymentOption": "Multi-AZ",
+            "usagetype": "APS3-Multi-AZUsage:db.t4g.small",
+            "operation": "CreateDBInstance:0014",
+            "instanceTypeFamily": "T4G",
+            "normalizationSizeFactor": "2",
+            "regionCode": "ap-south-1",
+            "servicename": "Amazon Relational Database Service",
+            "unbundledLicensing": "FALSE"
+          },
+          "rates": [
+            {
+              "rateCode": "G9TBJHECSCYNG22J.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$ 0.084 per RDS db.t4g.small Multi-AZ instance hour (or partial hour) running PostgreSQL",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "Hrs",
+              "pricePerUnit": {
+                "USD": "0.0840000000"
+              },
+              "appliesTo": []
+            }
+          ]
+        },
+        {
+          "sku": "9F3GBBF4A269Q9AD",
+          "attributes": {
+            "servicecode": "AmazonRDS",
+            "location": "Asia Pacific (Mumbai)",
+            "locationType": "AWS Region",
+            "instanceType": "db.t4g.large",
+            "currentGeneration": "Yes",
+            "instanceFamily": "General purpose",
+            "vcpu": "2",
+            "physicalProcessor": "AWS Graviton2",
+            "memory": "8 GiB",
+            "storage": "EBS Only",
+            "networkPerformance": "Up to 5 Gigabit",
+            "processorArchitecture": "64-bit",
+            "engineCode": "14",
+            "databaseEngine": "PostgreSQL",
+            "licenseModel": "No license required",
+            "deploymentOption": "Multi-AZ",
+            "usagetype": "APS3-Multi-AZUsage:db.t4g.large",
+            "operation": "CreateDBInstance:0014",
+            "instanceTypeFamily": "T4G",
+            "normalizationSizeFactor": "8",
+            "regionCode": "ap-south-1",
+            "servicename": "Amazon Relational Database Service",
+            "unbundledLicensing": "FALSE"
+          },
+          "rates": [
+            {
+              "rateCode": "9F3GBBF4A269Q9AD.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$ 0.334 per RDS db.t4g.large Multi-AZ instance hour (or partial hour) running PostgreSQL",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "Hrs",
+              "pricePerUnit": {
+                "USD": "0.3340000000"
+              },
+              "appliesTo": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "service": "AWSELB",
+      "url": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSELB/current/ap-south-1/index.json",
+      "publicationDate": "2026-09-11T12:45:44Z",
+      "rows": [
+        {
+          "sku": "WJ2MHASNP2ZNKFXX",
+          "attributes": {
+            "servicecode": "AWSELB",
+            "location": "Asia Pacific (Mumbai)",
+            "locationType": "AWS Region",
+            "group": "ELB:Balancing",
+            "groupDescription": "LoadBalancer hourly usage by Application Load Balancer",
+            "usagetype": "APS3-LoadBalancerUsage",
+            "operation": "LoadBalancing:Application",
+            "regionCode": "ap-south-1",
+            "servicename": "Elastic Load Balancing"
+          },
+          "rates": [
+            {
+              "rateCode": "WJ2MHASNP2ZNKFXX.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.0239 per Application LoadBalancer-hour (or partial hour)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "Hrs",
+              "pricePerUnit": {
+                "USD": "0.0239000000"
+              },
+              "appliesTo": []
+            }
+          ]
+        },
+        {
+          "sku": "KYYA9H758MN2649H",
+          "attributes": {
+            "servicecode": "AWSELB",
+            "location": "Asia Pacific (Mumbai)",
+            "locationType": "AWS Region",
+            "group": "ELB:Balancing",
+            "groupDescription": "Reserved Application Load Balancer capacity units-hr",
+            "usagetype": "APS3-ReservedLCUUsage",
+            "operation": "LoadBalancing:Application",
+            "regionCode": "ap-south-1",
+            "servicename": "Elastic Load Balancing"
+          },
+          "rates": [
+            {
+              "rateCode": "KYYA9H758MN2649H.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.008 per reserved Application load balancer capacity unit-hour",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "ReservedLCU-Hr",
+              "pricePerUnit": {
+                "USD": "0.0080000000"
+              },
+              "appliesTo": []
+            }
+          ]
+        },
+        {
+          "sku": "SXSGM54V3XBP4Z5Y",
+          "attributes": {
+            "servicecode": "AWSELB",
+            "location": "Asia Pacific (Mumbai)",
+            "locationType": "AWS Outposts",
+            "group": "ELB:Balancing",
+            "groupDescription": "Used Application Load Balancer capacity On Outposts units-hr",
+            "usagetype": "APS3-Outposts-LCUUsage",
+            "operation": "LoadBalancing:Application",
+            "regionCode": "ap-south-1",
+            "servicename": "Elastic Load Balancing"
+          },
+          "rates": [
+            {
+              "rateCode": "SXSGM54V3XBP4Z5Y.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.0 per LCU-Hrs for Outposts-LCUUsage:LoadBalancing:Application in Asia Pacific (Mumbai)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "LCU-Hrs",
+              "pricePerUnit": {
+                "USD": "0.0000000000"
+              },
+              "appliesTo": []
+            }
+          ]
+        },
+        {
+          "sku": "85KUR6TVZSMFSKY8",
+          "attributes": {
+            "servicecode": "AWSELB",
+            "location": "Asia Pacific (Mumbai)",
+            "locationType": "AWS Region",
+            "group": "ELB:Balancing",
+            "groupDescription": "TS hourly usage by Application Load Balancer",
+            "usagetype": "APS3-TS-LoadBalancerUsage",
+            "operation": "LoadBalancing:Application",
+            "regionCode": "ap-south-1",
+            "servicename": "Elastic Load Balancing"
+          },
+          "rates": [
+            {
+              "rateCode": "85KUR6TVZSMFSKY8.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.0053 per associated Application load balancer Trust Store unit-hour ",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "Hrs",
+              "pricePerUnit": {
+                "USD": "0.0053000000"
+              },
+              "appliesTo": []
+            }
+          ]
+        },
+        {
+          "sku": "HFFD75W4GFXQPHZR",
+          "attributes": {
+            "servicecode": "AWSELB",
+            "location": "Asia Pacific (Mumbai)",
+            "locationType": "AWS Region",
+            "group": "ELB:Balancing",
+            "groupDescription": "Used Application Load Balancer capacity units-hr",
+            "usagetype": "APS3-LCUUsage",
+            "operation": "LoadBalancing:Application",
+            "regionCode": "ap-south-1",
+            "servicename": "Elastic Load Balancing"
+          },
+          "rates": [
+            {
+              "rateCode": "HFFD75W4GFXQPHZR.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.008 per used Application load balancer capacity unit-hour (or partial hour)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "LCU-Hrs",
+              "pricePerUnit": {
+                "USD": "0.0080000000"
+              },
+              "appliesTo": []
+            }
+          ]
+        },
+        {
+          "sku": "47P5JUQVXYPSBXFF",
+          "attributes": {
+            "servicecode": "AWSELB",
+            "location": "Asia Pacific (Mumbai)",
+            "locationType": "AWS Outposts",
+            "group": "ELB:Balancing",
+            "groupDescription": "LoadBalancer hourly usage by Application Load Balancer on Outposts",
+            "usagetype": "APS3-Outposts-LoadBalancerUsage",
+            "operation": "LoadBalancing:Application",
+            "regionCode": "ap-south-1",
+            "servicename": "Elastic Load Balancing"
+          },
+          "rates": [
+            {
+              "rateCode": "47P5JUQVXYPSBXFF.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.0239 per Hrs for Outposts-LoadBalancerUsage:LoadBalancing:Application in Asia Pacific (Mumbai)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "Hrs",
+              "pricePerUnit": {
+                "USD": "0.0239000000"
+              },
+              "appliesTo": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

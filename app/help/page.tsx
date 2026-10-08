@@ -28,21 +28,21 @@ export default function HelpPage() {
           <div>
             <h2 className="text-xl font-bold">Still need help?</h2>
             <p className="mt-2 leading-7 text-muted-foreground">
-              Our support team replies within 24 hours, in English and Hindi.
+              Submit a support request and check its recorded status from your account.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3 sm:justify-end">
             <a
-              href="tel:+911800123456"
+              href="/contact"
               className="inline-flex min-h-12 items-center rounded-lg bg-cta px-6 font-semibold text-cta-foreground"
             >
-              Call 1800-123-456
+              Contact support
             </a>
             <a
-              href="mailto:support@carenest.in"
+              href="/policies/privacy"
               className="inline-flex min-h-12 items-center rounded-lg border border-primary px-6 font-semibold text-primary"
             >
-              Email us
+              Privacy details
             </a>
           </div>
         </div>

@@ -1,0 +1,5 @@
+'use client'
+import {useActionState} from 'react'
+import {submitSupport,retryWorkerEvent,type SupportState} from '@/app/actions/support'
+export function SupportForm(){const[state,action,pending]=useActionState(submitSupport,{} as SupportState);return <form action={action} className="rounded-2xl border border-border bg-card p-5"><label className="block">Subject<input name="subject" required minLength={5} maxLength={120} className="field mt-2"/></label><label className="mt-4 block">Details<textarea name="detail" required minLength={10} maxLength={2000} rows={5} className="field mt-2"/></label><button disabled={pending} className="care-button mt-4">{pending?'Recording…':'Create support case'}</button><p role="status" className="mt-3 text-sm">{state.error??state.notice}</p></form>}
+export function RetryEventForm({id}:{id:string}){const[state,action,pending]=useActionState(retryWorkerEvent,{} as SupportState);return <form action={action} className="mt-3"><input name="eventId" type="hidden" value={id}/><button disabled={pending} className="care-button">Schedule audited retry</button><p role="status" className="mt-2 text-sm">{state.error??state.notice}</p></form>}

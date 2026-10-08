@@ -1,0 +1,9 @@
+npm notice run my-project@0.1.0 start:local
+npm notice run node scripts/local-start.mjs
+Ordered migrations applied successfully.
+Local worker waiting for the app or an operation to recover.
+▲ Next.js 16.3.8
+- Local:         http://127.0.0.1:3000
+- Network:       http://127.0.0.1:3000
+✓ Ready in 597ms
+✓ Running next.config.mjs took 73ms

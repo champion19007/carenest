@@ -3,8 +3,8 @@
  *
  *   npm run seed
  *
- * Runs against Neon when DATABASE_URL is set, otherwise the local PGlite
- * instance under .data/pg. Idempotent: re-running upserts rather than
+ * Uses only the local PGlite instance under .data/pg, with the app stopped.
+ * DATABASE_URL is deliberately ignored. Idempotent: re-running upserts rather than
  * duplicating.
  *
  * The adjacency graph is built here, offline, from locality centroids — a
@@ -15,42 +15,17 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { splitStatements } from './split-sql.mjs'
 
-/* ── connection ─────────────────────────────────────────────────────── */
-
-const url = process.env.DATABASE_URL
-let query, close
-
-if (url) {
-  const { neon } = await import('@neondatabase/serverless')
-  const sql = neon(url)
-  query = (text, params = []) => sql.query(text, params)
-  close = async () => {}
-  console.log('Target: Neon')
-} else {
-  const { PGlite } = await import('@electric-sql/pglite')
-  const { mkdirSync } = await import('node:fs')
-  const dir = path.join(process.cwd(), '.data', 'pg')
-  mkdirSync(dir, { recursive: true })
-  const pg = new PGlite(dir)
-  query = async (text, params = []) => (await pg.query(text, params)).rows
-  close = () => pg.close()
-  console.log('Target: PGlite (.data/pg)')
-}
-
-/* ── schema ─────────────────────────────────────────────────────────── */
-
-// Pull the schema straight out of the TypeScript module so it can never drift
-// from what the app applies at runtime.
-const schemaSrc = readFileSync(path.join(process.cwd(), 'lib', 'db', 'schema.ts'), 'utf8')
-const SCHEMA = schemaSrc.slice(schemaSrc.indexOf('`') + 1, schemaSrc.lastIndexOf('`'))
-
-const statements = splitStatements(SCHEMA)
-
-for (const stmt of statements) {
-  await query(stmt)
-}
-console.log('Schema applied')
-
+/* Local seed only: run with the app stopped because PGlite has one process owner. */
+import { createDatabase } from '../lib/db/adapters.ts'
+import { applyMigrations } from '../lib/db/migrations.ts'
+import { materializeSlots } from '../lib/db/schedule-materializer.ts'
+import { assertLocalStopped } from './local-lock.mjs'
+process.env.CARENEST_LOCAL_MODE = '1'
+await assertLocalStopped()
+const seedDb = await createDatabase()
+await applyMigrations(seedDb)
+const query = (sql, params = []) => seedDb.query(sql, params)
+const close = () => seedDb.close()
 /* ── areas ──────────────────────────────────────────────────────────── */
 
 // Centroids are used once, here, to compute adjacency. They are never read at
@@ -103,10 +78,11 @@ const K = 4          // neighbours per ring
 const RING1_KM = 6   // within this, ring 1; beyond, ring 2
 const MAX_KM = 15    // never suggest anything further than this
 
-await query('DELETE FROM locality_adjacency')
+const seededAreas=localityRows.filter(row=>areas.some(area=>area[0]===row.pin_code))
+await query('DELETE FROM locality_adjacency WHERE locality_id=ANY($1::integer[])',[seededAreas.map(row=>row.locality_id)])
 
 let edges = 0
-for (const origin of localityRows) {
+for (const origin of seededAreas) {
   const ranked = localityRows
     .filter((other) => other.locality_id !== origin.locality_id)
     .map((other) => ({ other, km: haversine(origin, other) }))
@@ -158,11 +134,7 @@ for (const d of doctors) {
        video, cashless, home_visit, gender, languages, next_slot, kind, about)
      VALUES ($1,$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'ACTIVE',$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
      ON CONFLICT (id) DO UPDATE SET
-       locality_id = excluded.locality_id, pin_code = excluded.pin_code,
-       locality = excluded.locality, city = excluded.city, rating = excluded.rating,
-       reviews_count = excluded.reviews_count, video = excluded.video,
-       cashless = excluded.cashless, home_visit = excluded.home_visit,
-       next_slot = excluded.next_slot, about = excluded.about, status = 'ACTIVE'`,
+       id = provider.doctors.id`,
     [slug,name,spec,qual,exp,clinic,area.locality_id,pin,area.name,
      area.name.includes('Mumbai') ? 'Mumbai' : (pin.startsWith('41') || pin === '400703' || pin === '400614' || pin === '400706' || pin === '400708' ? 'Navi Mumbai' : 'Mumbai'),
      fee,reg,council,rating,reviews,video,cashless,home,gender,langs,slot,kind,about],
@@ -170,13 +142,24 @@ for (const d of doctors) {
 }
 console.log(`Doctors: ${(await query('SELECT COUNT(*) AS n FROM provider.doctors'))[0].n}`)
 
+// Only known fixture identities are marked as demonstrations; never reset provider suspension.
+for (const d of doctors) {
+  const [slug,name] = d
+  await query("UPDATE provider.doctors SET is_demo=true,cashless=false,next_slot='',rating=coalesce((SELECT avg((body->>'rating')::numeric) FROM documents WHERE collection='reviews' AND subject_id=$1),0),reviews_count=(SELECT count(*) FROM documents WHERE collection='reviews' AND subject_id=$1) WHERE id=$1 AND name=$2 AND verified_at IS NULL",[slug,name])
+  await query("UPDATE provider.doctors SET supported_species=$2 WHERE id=$1 AND is_demo=true",[slug,slug==='lakshmi-raman'?['bird','rabbit','other']:['dog','cat','rabbit']])
+  const clinicId='demo_clinic_'+slug
+  await query('INSERT INTO clinic.clinics(id,name,city) SELECT $2,clinic,city FROM provider.doctors WHERE id=$1 AND is_demo=true ON CONFLICT DO NOTHING',[slug,clinicId])
+  await query('UPDATE provider.doctors SET clinic_id=$2 WHERE id=$1 AND is_demo=true AND clinic_id IS NULL',[slug,clinicId])
+  for(let weekday=0;weekday<7;weekday++) await query('INSERT INTO provider.schedule_rules(id,doctor_id,weekday,start_minute,end_minute,duration_minutes) SELECT $1,id,$3,540,1200,30 FROM provider.doctors WHERE id=$2 AND is_demo=true ON CONFLICT DO NOTHING',[`rule_${slug}_${weekday}`,slug,weekday])
+}
+
 /* ── demo clinic login ──────────────────────────────────────────────── */
 
 const DEMO_PHONE = '9000000001'
 await query(
   `INSERT INTO patient.users (id, phone, name, role, kyc_level)
    VALUES ($1,$2,$3,'doctor','verified')
-   ON CONFLICT (phone) DO UPDATE SET role = 'doctor', kyc_level = 'verified'`,
+   ON CONFLICT (phone) DO NOTHING`,
   ['usr_demo_doctor', DEMO_PHONE, 'Dr. Ananya Deshmukh'],
 )
 
@@ -185,10 +168,13 @@ await query(
    and the clinic app is empty for the one login meant to demonstrate it. */
 const linked = await query(
   `UPDATE provider.doctors SET user_id = 'usr_demo_doctor'
-   WHERE slug = (SELECT slug FROM provider.doctors WHERE name = $1 LIMIT 1)
+   WHERE slug = (SELECT slug FROM provider.doctors WHERE name = $1 AND is_demo=true LIMIT 1)
+   AND (user_id IS NULL OR user_id='usr_demo_doctor')
+   AND EXISTS(SELECT 1 FROM patient.users WHERE id='usr_demo_doctor')
    RETURNING id, name`,
   ['Dr. Ananya Deshmukh'],
 )
+await query("INSERT INTO clinic.memberships(clinic_id,user_id,role) SELECT clinic_id,user_id,'clinician' FROM provider.doctors WHERE user_id='usr_demo_doctor' AND clinic_id IS NOT NULL ON CONFLICT DO NOTHING")
 console.log(
   linked.length
     ? `Demo doctor linked to provider row ${linked[0].id}`
@@ -207,5 +193,14 @@ for (const row of coverage) {
   console.log(`  ${row.pin_code}  ${row.name.padEnd(16)} ${String(row.n).padStart(2)} doctors`)
 }
 console.log(`\nDemo clinic login: +91 ${DEMO_PHONE} (role: doctor)`)
+
+await query("INSERT INTO patient.users(id,phone,name,role,kyc_level) VALUES('usr_demo_vet','9000000002','Dr. Neha Kulkarni','doctor','verified'),('usr_demo_lab','9000000003','Local sample lab operator','patient','none') ON CONFLICT(phone) DO NOTHING")
+await query("UPDATE provider.doctors SET user_id='usr_demo_vet' WHERE id='neha-kulkarni' AND is_demo=true AND (user_id IS NULL OR user_id='usr_demo_vet') AND EXISTS(SELECT 1 FROM patient.users WHERE id='usr_demo_vet')")
+await query("INSERT INTO clinic.memberships(clinic_id,user_id,role) SELECT clinic_id,user_id,'clinician' FROM provider.doctors WHERE user_id='usr_demo_vet' ON CONFLICT DO NOTHING")
+await query("INSERT INTO clinic.clinics(id,name,city,address) VALUES('demo_lab','Sample laboratory — local demonstration','Navi Mumbai','Sample location; no real collection service') ON CONFLICT DO NOTHING")
+await query("INSERT INTO clinic.memberships(clinic_id,user_id,role) SELECT 'demo_lab',id,'lab' FROM patient.users WHERE id='usr_demo_lab' ON CONFLICT DO NOTHING")
+await query("INSERT INTO clinic.lab_packages(id,clinic_id,name,description,fee_paise,status,is_demo) VALUES('demo_cbc','demo_lab','Sample complete blood count','Local workflow demonstration. No actual diagnostic test is performed.',35000,'ACTIVE',true) ON CONFLICT DO NOTHING")
+for(const row of await query("SELECT id FROM provider.doctors WHERE is_demo=true AND status='ACTIVE'"))await materializeSlots(seedDb,row.id,7)
+console.log('Sample veterinarian: 9000000002; sample lab operator: 9000000003. Sample calendars published for the next seven days.')
 
 await close()

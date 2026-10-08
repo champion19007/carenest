@@ -1,0 +1,9 @@
+'use server'
+import {currentAdmin,requireUser} from '@/lib/auth'
+import {revalidatePath} from 'next/cache'
+import {saveProviderApplication,submitProviderApplication,reviewProviderApplication} from '@/lib/domain/providers'
+import {DomainError} from '@/lib/domain/errors'
+export type ProviderState={error?:string;notice?:string;applicationId?:string}
+export async function saveProviderDraft(_prev:ProviderState,form:FormData):Promise<ProviderState>{const user=await requireUser('/join');try{const raw:Record<string,unknown>=Object.fromEntries(form);raw.supportedSpecies=form.getAll('supportedSpecies');const id=await saveProviderApplication(user.id,raw);revalidatePath('/join');return {notice:'Draft saved. Upload registration evidence, then submit for review.',applicationId:id}}catch(error){if(error instanceof DomainError)return {error:error.message};throw error}}
+export async function submitProviderDraft(_prev:ProviderState,form:FormData):Promise<ProviderState>{const user=await requireUser('/join');try{const id=await submitProviderApplication(user.id,String(form.get('applicationId')??''));revalidatePath('/join');return {notice:'Submitted for verification. This does not publish a provider.',applicationId:id}}catch(error){if(error instanceof DomainError)return {error:error.message};throw error}}
+export async function reviewProvider(_prev:ProviderState,form:FormData):Promise<ProviderState>{const admin=await currentAdmin();if(!admin)return {error:'Administrator sign-in required.'};try{await reviewProviderApplication(admin.id,String(form.get('applicationId')??''),String(form.get('decision')??''),String(form.get('reason')??''),form.get('registrationChecked')==='on');revalidatePath('/admin/providers');return {notice:'Verification decision recorded.'}}catch(error){if(error instanceof DomainError)return {error:error.message};throw error}}

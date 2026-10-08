@@ -14,7 +14,16 @@ export function destinationFor(role: string, next?: string) {
   /* An explicit destination wins — it means the person was already on their
      way somewhere. The `//` guard stops `//evil.example` being read by the
      browser as a protocol-relative URL to another origin. */
-  if (next && next.startsWith('/') && !next.startsWith('//')) return next
+  if (next && next.length <= 2000 && next.startsWith('/') && !next.startsWith('//')) {
+    try {
+      const decoded = decodeURIComponent(next)
+      if (!/[\\\u0000-\u001f\u007f]/.test(decoded) && !decoded.startsWith('//')) {
+        const origin = 'https://carenest.invalid'
+        const parsed = new URL(next, origin)
+        if (parsed.origin === origin) return parsed.pathname + parsed.search + parsed.hash
+      }
+    } catch { /* Malformed destinations fall back to the role landing page. */ }
+  }
   return role === 'doctor' ? '/practice/requests' : '/dashboard/patient'
 }
 

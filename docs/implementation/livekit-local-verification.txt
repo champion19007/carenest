@@ -1,0 +1,3 @@
+{"level":20,"time":1791478478087,"pid":30152,"hostname":"sai","name":"lk-rtc","msg":"Connect callback received"}
+{"level":20,"time":1791478478545,"pid":30152,"hostname":"sai","name":"lk-rtc","msg":"Connect callback received"}
+{"date":"2026-10-08T16:54:30.605Z","hosting":"local","roomCreated":true,"twoParticipants":true,"deletedRoomDisconnected":true,"realCameraMicrophoneTest":false}

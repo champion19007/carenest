@@ -1,14 +1,13 @@
 import Link from 'next/link'
 
 /**
- * Rounded-square mark with a nest/leaf glyph, set in the brand colour so it
- * flips from navy to violet with the theme.
+ * Rounded-square care mark and responsive blue wordmark.
  */
 export function Logo({ compact = false, onDark = false }: { compact?: boolean; onDark?: boolean }) {
   return (
-    <Link href="/" className="flex shrink-0 items-center gap-2.5">
+    <Link href="/" className="flex shrink-0 items-center gap-2 sm:gap-2.5">
       <span
-        className={`flex size-10 items-center justify-center rounded-xl ${
+        className={`flex size-9 items-center justify-center rounded-xl sm:size-10 ${
           onDark ? 'bg-banner-foreground text-banner' : 'bg-cta text-cta-foreground'
         }`}
         aria-hidden="true"
@@ -19,8 +18,8 @@ export function Logo({ compact = false, onDark = false }: { compact?: boolean; o
         </svg>
       </span>
       {!compact && (
-        <span className={`text-2xl font-extrabold tracking-[-0.03em] ${onDark ? 'text-banner-foreground' : ''}`}>
-          Care<span className="text-accent">Nest</span>
+        <span className={`text-xl font-extrabold tracking-[-0.03em] sm:text-2xl ${onDark ? 'text-banner-foreground' : ''}`}>
+          Care<span className={onDark ? '' : 'text-primary'}>Nest</span>
         </span>
       )}
     </Link>

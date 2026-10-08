@@ -1,0 +1,22 @@
+npm notice run my-project@0.1.0 npx
+npm notice run tsx --test tests/video-service.test.mjs
+▶ actual meeting adapters use participant scope, reconciliation and cancellation
+  ✔ unsafe local OAuth origins and foreign state are rejected (16.522ms)
+  ✔ unconnected or unconsented video requests are not accepted (11.9205ms)
+  ✔ Google pending conferences are reconciled without duplicate creates (84.9705ms)
+  ✔ cancelled appointment closes provider resource and denies subsequent joins (25.979ms)
+  ✔ cancellation during Google creation cleans up the resource returned late (92.7284ms)
+  ✔ concurrent Zoom workers cannot both create the same appointment room (175.6516ms)
+  ✔ unknown Zoom create outcome is held for reconciliation, never blindly recreated (15.5681ms)
+  ✔ patient receives join URL while only clinician receives host URL (49.8798ms)
+  ✔ embedded SDK is owner-account scoped and emits a short, role-bound JWT with host-only ZAK (239.8148ms)
+  ✔ Zoom webhook rejects forgery and replay cannot duplicate a verified meeting event (35.7044ms)
+✔ actual meeting adapters use participant scope, reconciliation and cancellation (3993.2982ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5188.1446

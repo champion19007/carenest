@@ -1,0 +1,65 @@
+npm notice run my-project@0.1.0 npx
+npm notice run tsx --test --test-concurrency=1 tests/mobile-maintenance.test.mjs tests/extended-workflows.test.mjs tests/local-workflows.test.mjs tests/security-services.test.mjs tests/video-service.test.mjs
+▶ extended local clinic, dispatch, privacy and pharmacy contracts
+  ✔ arrival creates encrypted identity, encounter and invoice atomically without linking by phone (102.9016ms)
+  ✔ only assigned clinician starts and signs; private receipt and matching phone are both required (352.7701ms)
+  ✔ owned encrypted addresses and home bookings enforce scope and dispatch revisions (340.224ms)
+  ✔ pharmacy cannot publish without professional policy; actual partner verification and catalogue required (182.0697ms)
+  ✔ owned medicine requests are idempotent and approval needs current prescriber safety review (189.5057ms)
+  ✔ courier sees minimum dispatch information; only licensed cashier settles correct pharmacy invoice (117.5884ms)
+  ✔ withdrawal prevents new clinical and pharmacy sharing while owner retains care access (175.5717ms)
+  ✔ privacy requests are scoped and erasure cannot bypass approved retention and holds (282.9646ms)
+✔ extended local clinic, dispatch, privacy and pharmacy contracts (6454.2832ms)
+▶ actual local pet, lab, file, finance, profile, review and worker workflows
+  ✔ owned pet health persists; foreign access and mutation fail (145.0381ms)
+  ✔ lab intent is idempotent and foreign family ownership is enforced (57.6876ms)
+  ✔ result upload is staff scoped, PDFs quarantined and normalized images private (519.6478ms)
+  ✔ duplicate offline receipts produce one balanced integer ledger posting (163.9095ms)
+  ✔ duplicate captures and refund callbacks cannot double-post money (93.9202ms)
+  ✔ cancelled lab invoices cannot collect payment and a late capture stays refundable (80.9031ms)
+  ✔ profile demographic synchronization and audit rollback are atomic (71.313ms)
+  ✔ clinical attendance gates reviews and duplicate reviews do not corrupt aggregates (339.8466ms)
+  ✔ expired worker leases and unknown handlers fail closed (653.115ms)
+  ✔ support review uses current admin access and an expected-state transition (58.8547ms)
+  ✔ old ambiguous email delivery is held beyond the provider deduplication window (52.4972ms)
+✔ actual local pet, lab, file, finance, profile, review and worker workflows (18327.2ms)
+▶ mobile access, offline intents, interoperability and legacy quarantine
+  ✔ pairing is one-use, session token is hashed and revocation is immediate (215.454ms)
+  ✔ offline intents make one server booking and cannot overwrite reused intent details (165.3071ms)
+  ✔ partner cases are owned, encrypted and intake-only; exports exclude veterinary subjects (54.296ms)
+  ✔ legacy records are encrypted and ownership is not guessed; mismatched imports are rejected (106.6231ms)
+  ✔ named encryption keys preserve old reads and authenticated context during rotation (27.9318ms)
+✔ mobile access, offline intents, interoperability and legacy quarantine (9141.3625ms)
+▶ actual OTP and limiter services enforce atomic challenge and all-key budgets
+  ✔ stored OTP is a MAC, correct code can be consumed once (43.8392ms)
+  ✔ concurrent guesses cannot exceed five attempts or revive a challenge (60.0665ms)
+  ✔ denial on one key does not charge another key (45.8699ms)
+  ✔ concurrent budget consumption admits exactly its limit (59.7492ms)
+✔ actual OTP and limiter services enforce atomic challenge and all-key budgets (6209.1619ms)
+▶ actual clinical services reject foreign encounters, malformed prescriptions and failed audits
+  ✔ assigned clinician names are resolved on server; foreign clinician denied (73.6158ms)
+  ✔ invalid medicine duration and arbitrary prescription object rejected (0.8009ms)
+  ✔ patient can read own records, but audit failure prevents returning them (74.9422ms)
+  ✔ clinical recipient identity is distinct from the household account owner (165.0098ms)
+  ✔ repeated clinical save intent produces one immutable record and rejects changed content (76.133ms)
+✔ actual clinical services reject foreign encounters, malformed prescriptions and failed audits (4083.6314ms)
+▶ actual meeting adapters use participant scope, reconciliation and cancellation
+  ✔ unsafe local OAuth origins and foreign state are rejected (15.3817ms)
+  ✔ unconnected or unconsented video requests are not accepted (12.4161ms)
+  ✔ Google pending conferences are reconciled without duplicate creates (112.0293ms)
+  ✔ cancelled appointment closes provider resource and denies subsequent joins (43.5945ms)
+  ✔ cancellation during Google creation cleans up the resource returned late (132.0694ms)
+  ✔ concurrent Zoom workers cannot both create the same appointment room (237.9172ms)
+  ✔ unknown Zoom create outcome is held for reconciliation, never blindly recreated (26.1127ms)
+  ✔ patient receives join URL while only clinician receives host URL (65.6682ms)
+  ✔ embedded SDK is owner-account scoped and emits a short, role-bound JWT with host-only ZAK (294.1243ms)
+  ✔ Zoom webhook rejects forgery and replay cannot duplicate a verified meeting event (47.9422ms)
+✔ actual meeting adapters use participant scope, reconciliation and cancellation (4889.2402ms)
+ℹ tests 49
+ℹ suites 0
+ℹ pass 49
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 62070.0235

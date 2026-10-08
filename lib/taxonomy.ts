@@ -167,12 +167,12 @@ const RULES: Rule[] = [
 
 /** Lowercased, punctuation flattened, so "Chest-pain!" matches "chest pain". */
 function normalise(text: string): string {
-  return ` ${text.toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim()} `
+  return ` ${text.toLowerCase().normalize('NFKC').replace(/[^\p{L}\p{M}\p{N}]+/gu, ' ').replace(/\s+/g, ' ').trim()} `
 }
 
 function matches(rule: Rule, text: string): boolean {
-  if (rule.not?.some((phrase) => text.includes(normalise(phrase).trim()))) return false
-  return rule.any.some((phrase) => text.includes(normalise(phrase).trim()))
+  if (rule.not?.some((phrase) => text.includes(normalise(phrase)))) return false
+  return rule.any.some((phrase) => text.includes(normalise(phrase)))
 }
 
 /**

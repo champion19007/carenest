@@ -1,0 +1,26 @@
+npm notice run my-project@0.1.0 npx
+npm notice run tsx --test --test-concurrency=1 tests/livekit-service.test.mjs tests/video-service.test.mjs
+▶ LiveKit consultation enforces current participants, consent, token grants and cleanup
+  ✔ only a loopback server is accepted in local mode (9.8313ms)
+  ✔ Zoom cannot connect and retired SDK/webhook endpoints make no external calls (29.8585ms)
+  ✔ tokens bind opaque identity to one room for 30 seconds with camera/microphone only (242.8484ms)
+  ✔ wrong participant, inactive practitioner, expired window and revoked consent fail closed (46.4023ms)
+  ✔ active fence removes unexpected identity and closes revoked rooms (44.9121ms)
+  ✔ late creation after cancellation is deleted; idempotent cleanup remains available (290.3714ms)
+  ✔ token route rejects cross-origin and anonymous requests (2606.2927ms)
+✔ LiveKit consultation enforces current participants, consent, token grants and cleanup (96370.8623ms)
+▶ actual meeting adapters use participant scope, reconciliation and cancellation
+  ✔ unsafe local OAuth origins and foreign state are rejected (678.8921ms)
+  ✔ unconnected or unconsented video requests are not accepted (293.9375ms)
+  ✔ Google pending conferences are reconciled without duplicate creates (3967.0794ms)
+  ✔ cancelled appointment closes provider resource and denies subsequent joins (273.8684ms)
+  ✔ cancellation during Google creation cleans up the resource returned late (5202.8141ms)
+✔ actual meeting adapters use participant scope, reconciliation and cancellation (94604.5872ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 257980.1633

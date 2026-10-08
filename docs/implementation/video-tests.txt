@@ -1,0 +1,18 @@
+npm notice run my-project@0.1.0 npx
+npm notice run tsx --test tests/video-service.test.mjs
+▶ actual meeting adapters use participant scope, reconciliation and cancellation
+  ✔ unsafe local OAuth origins and foreign state are rejected (103.7123ms)
+  ✔ unconnected or unconsented video requests are not accepted (46.0086ms)
+  ✔ Google pending conferences are reconciled without duplicate creates (337.7697ms)
+  ✔ cancelled appointment closes provider resource and denies subsequent joins (85.3752ms)
+  ✔ unknown Zoom create outcome is held for reconciliation, never blindly recreated (125.659ms)
+  ✔ patient receives join URL while only clinician receives host URL (127.3754ms)
+✔ actual meeting adapters use participant scope, reconciliation and cancellation (10395.4763ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 14066.8729

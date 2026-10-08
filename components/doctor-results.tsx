@@ -1,23 +1,14 @@
 'use client'
 
-import Link from 'next/link'
-import { Avatar } from '@/components/avatar'
 import { EmptyArt } from '@/components/empty-art'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import {
-  BadgeCheck,
-  CalendarClock,
-  IndianRupee,
-  Languages as LanguagesIcon,
-  MapPin,
   SlidersHorizontal,
-  Star,
-  ThumbsUp,
-  Video,
   X,
 } from 'lucide-react'
 import type { DoctorRow } from '@/lib/db/sql'
+import { ProviderCard } from '@/components/provider-card'
 
 const feeBands = ['Under ₹500', '₹500 - ₹800', '₹800 - ₹1200', '₹1200+']
 const experienceBands = ['0-5 years', '5-10 years', '10+ years', '15+ years']
@@ -62,6 +53,7 @@ export function DoctorResults({
 
   function apply(mutate: (next: URLSearchParams) => void) {
     const next = new URLSearchParams(params.toString())
+    next.delete('page')
     mutate(next)
     startTransition(() => router.push(`/search?${next.toString()}`, { scroll: false }))
   }
@@ -95,7 +87,7 @@ export function DoctorResults({
     (initial.femaleOnly ? 1 : 0)
 
   const panel = (
-    <div className="rounded-xl border border-border bg-card">
+    <div className="rounded-[1.5rem] border border-border bg-card">
       <div className="flex items-center justify-between border-b border-border px-5 py-4">
         <h2 className="font-bold">Filters</h2>
         {activeCount > 0 && (
@@ -229,9 +221,9 @@ export function DoctorResults({
             </div>
           </div>
 
-          <div className="mt-6 space-y-5">
+          <div className="mt-6 grid gap-4 xl:grid-cols-2">
             {doctors.map((doctor) => (
-              <DoctorCard key={doctor.id} doctor={doctor} />
+              <ProviderCard key={doctor.id} doctor={doctor} />
             ))}
 
             {doctors.length === 0 && (
@@ -329,92 +321,5 @@ function Toggle({
       />
       <span className="text-[0.95rem]">{label}</span>
     </label>
-  )
-}
-
-function DoctorCard({ doctor }: { doctor: DoctorRow }) {
-  return (
-    <article className="rounded-xl border border-border bg-card p-5 transition-shadow hover:shadow-md sm:p-6">
-      <div className="flex flex-col gap-6 lg:flex-row">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start gap-4">
-            <Avatar name={doctor.name} speciality={doctor.speciality} size={64} />
-            <div className="min-w-0">
-              <h3 className="flex flex-wrap items-center gap-2 text-xl">
-                <Link href={`/doctor/${doctor.slug}`} className="hover:underline">
-                  {doctor.name}
-                </Link>
-                <BadgeCheck className="size-5 text-primary" aria-label="Registration verified" />
-              </h3>
-              <p className="mt-0.5 text-muted-foreground">{doctor.speciality}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{doctor.qualification}</p>
-              <p className="mt-1 text-sm font-semibold">{doctor.experience} years experience</p>
-            </div>
-          </div>
-
-          <div className="mt-4 space-y-2 text-[0.95rem]">
-            <p className="flex items-start gap-2">
-              <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-              <span>
-                <span className="font-semibold">{doctor.locality}</span>, {doctor.city} ·{' '}
-                {doctor.clinic}
-              </span>
-            </p>
-            <p className="flex items-center gap-2">
-              <LanguagesIcon className="size-4 shrink-0 text-muted-foreground" />
-              {doctor.languages.split(',').join(', ')}
-            </p>
-            <p className="flex items-center gap-2 font-semibold">
-              <IndianRupee className="size-4" />
-              {doctor.fee} consultation fee
-            </p>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2 text-sm">
-            {doctor.reviews_count > 0 && (
-              <span className="inline-flex items-center gap-1.5 rounded-md bg-accent/15 px-2.5 py-1 font-semibold text-warning">
-                <Star className="size-3.5 fill-current" />
-                {doctor.rating.toFixed(1)} · {doctor.reviews_count} reviews
-              </span>
-            )}
-            <span className="inline-flex items-center gap-1.5 rounded-md bg-success/10 px-2.5 py-1 font-bold text-success">
-              <ThumbsUp className="size-3.5" />
-              Registration verified
-            </span>
-            {doctor.video && (
-              <span className="inline-flex items-center gap-1.5 rounded-md bg-soft px-2.5 py-1 font-semibold text-primary">
-                <Video className="size-3.5" />
-                Video consult
-              </span>
-            )}
-            {doctor.cashless && (
-              <span className="inline-flex items-center rounded-md bg-muted px-2.5 py-1 font-semibold">
-                Cashless available
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="flex shrink-0 flex-col justify-center gap-3 border-border lg:w-56 lg:border-l lg:pl-6">
-          <p className="inline-flex items-center gap-2 font-semibold text-success">
-            <CalendarClock className="size-4" />
-            {doctor.next_slot}
-          </p>
-          <Link
-            href={`/book/${doctor.slug}`}
-            className="inline-flex min-h-12 items-center justify-center rounded-lg bg-cta px-5 font-semibold text-cta-foreground transition-opacity hover:opacity-90"
-          >
-            Book appointment
-          </Link>
-          <Link
-            href={`/doctor/${doctor.slug}`}
-            className="inline-flex min-h-12 items-center justify-center rounded-lg border border-border px-5 font-semibold transition-colors hover:border-primary"
-          >
-            View profile
-          </Link>
-          <p className="text-center text-xs text-muted-foreground">No booking fee</p>
-        </div>
-      </div>
-    </article>
   )
 }

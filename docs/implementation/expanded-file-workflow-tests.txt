@@ -1,0 +1,24 @@
+npm notice run my-project@0.1.0 npx
+npm notice run tsx --test tests/local-workflows.test.mjs
+▶ actual local pet, lab, file, finance, profile, review and worker workflows
+  ✔ owned pet health persists; foreign access and mutation fail (51.5847ms)
+  ✔ lab intent is idempotent and foreign family ownership is enforced (35.4572ms)
+  ✔ result upload is staff scoped, PDFs quarantined and normalized images private (182.5649ms)
+  ✔ duplicate offline receipts produce one balanced integer ledger posting (55.1172ms)
+  ✔ duplicate captures and refund callbacks cannot double-post money (54.8442ms)
+  ✔ cancelled lab invoices cannot collect payment and a late capture stays refundable (40.6619ms)
+  ✔ profile demographic synchronization and audit rollback are atomic (34.9198ms)
+  ✔ clinical attendance gates reviews and duplicate reviews do not corrupt aggregates (110.8839ms)
+  ✔ expired worker leases and unknown handlers fail closed (232.0179ms)
+  ✔ support review uses current admin access and an expected-state transition (23.275ms)
+  ✔ old ambiguous email delivery is held beyond the provider deduplication window (27.7458ms)
+  ✔ private-object purge respects a new hold, removes the file and is idempotent (18.5132ms)
+✔ actual local pet, lab, file, finance, profile, review and worker workflows (4338.6487ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5595.5055

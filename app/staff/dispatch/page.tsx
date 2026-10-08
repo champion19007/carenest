@@ -1,0 +1,9 @@
+import Link from 'next/link'
+import {requireUser} from '@/lib/auth'
+import {getDb,ensureSchema} from '@/lib/db/client'
+import {ownClinics} from '@/lib/domain/clinic-access'
+import {dispatchList} from '@/lib/domain/home-visits'
+import {DispatchForm} from '@/components/operations-forms'
+import {slotDay,slotTime} from '@/lib/slot-format'
+export const dynamic='force-dynamic'
+export default async function Dispatch({searchParams}:{searchParams:Promise<{clinic?:string}>}){const user=await requireUser('/staff/dispatch');await ensureSchema();const db=getDb(),clinics=await ownClinics(db,user.id),params=await searchParams,clinic=clinics.find(c=>c.id===params.clinic)??clinics.find(c=>['clinician','receptionist','administrator'].includes(c.role));if(!clinic)return <main className="care-container py-10">Active dispatch access is required.</main>;const visits=await dispatchList(user.id,clinic.id),staff=await db.query<{id:string;name:string}>("SELECT u.id,u.name FROM clinic.memberships m JOIN patient.users u ON u.id=m.user_id WHERE m.clinic_id=$1 AND m.status='ACTIVE' AND u.status='ACTIVE' AND m.role IN ('clinician','receptionist','administrator')",[clinic.id]);return <main className="care-container py-10"><Link href="/staff/clinic">← Clinic desk</Link><h1 className="mt-4 text-3xl">{clinic.name} · home visits</h1><div className="mt-6 grid gap-5 lg:grid-cols-2">{visits.map(v=><article key={v.booking_id} className="rounded-2xl border border-border p-5"><h2 className="text-lg">{v.subject_name}</h2><p>{slotDay(v.starts_at)}, {slotTime(v.starts_at)} IST · {v.state}</p><p className="mt-3">{v.address.street}, {v.address.locality}, {v.address.city} {v.address.pin}</p><p>{v.address.contactPhone} · {v.address.instructions}</p><DispatchForm id={v.booking_id} revision={v.revision} state={v.state} staff={staff}/></article>)}</div></main>}

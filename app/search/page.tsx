@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { MapPin } from 'lucide-react'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
-import { AreaSearch } from '@/components/area-search'
+import { DiscoverySearch, SpecialtyChips } from '@/components/discovery-search'
 import { SymptomRouting } from '@/components/symptom-routing'
 import { routeSymptoms } from '@/lib/taxonomy'
 import { DoctorResults } from '@/components/doctor-results'
@@ -36,8 +37,8 @@ export async function generateMetadata({
   return {
     title: `${title} · CareNest`,
     description: area
-      ? `Verified doctors practising in ${area.name} (${area.pin_code}). Compare fees, experience and languages before you book.`
-      : 'Browse verified doctors by area, speciality, fee and language. Consultation fees shown upfront — no account needed to look.',
+      ? `Doctors practising in ${area.name} (${area.pin_code}). Compare fees, experience and languages before you book.`
+      : 'Browse doctors by area, speciality, fee and language. Consultation fees shown upfront — no account needed to look.',
     alternates: { canonical: area ? `/search?area=${area.pin_code}` : '/search' },
   }
 }
@@ -75,7 +76,7 @@ export default async function SearchPage({
   /* What was typed, if it reads like a complaint rather than a place. Pure
      table lookup — no model, no network, no key. */
   const symptomText = typeof params.q === 'string' ? params.q.trim() : ''
-  const routing = symptomText ? routeSymptoms(symptomText) : null
+  const routing = process.env.ENABLE_SYMPTOM_ROUTING==='1' && symptomText ? routeSymptoms(symptomText) : null
 
   const fees = typeof params.fees === 'string' ? params.fees : ''
   const experience = typeof params.experience === 'string' ? params.experience : ''
@@ -85,6 +86,7 @@ export default async function SearchPage({
   const query: DoctorQuery = {
     kind: 'human',
     pinCode: area?.pin_code,
+    text: routing?.specialities.length ? undefined : symptomText || undefined,
     /* An explicit filter always wins — the suggestion only fills the gap when
        the patient has not said who they want to see. */
     specialities: toArray(params.speciality).length
@@ -99,14 +101,17 @@ export default async function SearchPage({
     cashless: params.cashless === '1',
     femaleOnly: params.female === '1',
     sort: (params.sort as DoctorQuery['sort']) ?? 'relevance',
+    limit:31,
+    offset:(Math.min(333,Math.max(1,Number(params.page)||1))-1)*30,
   }
 
   /* Step 2 — the primary query. */
-  const doctors = rawArea && !area ? [] : await searchDoctors(query)
+  const matches = rawArea && !area ? [] : await searchDoctors(query)
+  const doctors=matches.slice(0,30)
 
   /* Step 3 — the fork. Only fall back when an area was actually asked for. */
   const showFallback = Boolean(rawArea) && doctors.length === 0
-  const suggestions = showFallback && area ? await neighbouringAreas(area.locality_id, 'human') : []
+  const suggestions = showFallback && area ? await neighbouringAreas(area.locality_id, 'human',2,query) : []
 
   /* Carry the other filters across so a suggestion chip doesn't reset them. */
   const preserved = new URLSearchParams()
@@ -122,7 +127,7 @@ export default async function SearchPage({
     <main className="min-h-screen bg-background">
       <SiteHeader />
 
-      <div className="border-b border-border bg-surface">
+      <div className="discovery-hero border-b border-border">
         <div className="mx-auto max-w-[1320px] px-5 py-8 lg:px-8">
           <p className="eyebrow">Find a doctor</p>
           <h1 className="mt-3 text-3xl sm:text-4xl">
@@ -135,16 +140,13 @@ export default async function SearchPage({
               {area.name}, {area.city} · PIN {area.pin_code}
             </p>
           ) : (
-            <p className="mt-3 max-w-3xl leading-8 text-muted-foreground">
-              Search by PIN code or area name. Every doctor listed has had their medical council
-              registration checked, and the fee shown is the consultation charge — tests and
-              medicines are billed separately by the clinic.
-            </p>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">Find a doctor by name, specialty, area or PIN code. Compare consultation fees before you book.</p>
           )}
 
-          <div className="mt-6 max-w-2xl">
-            <AreaSearch value={rawArea} />
+          <div className="mt-6 max-w-3xl">
+            <DiscoverySearch key={`${symptomText}|${rawArea}`} defaultQuery={symptomText} defaultArea={rawArea} />
           </div>
+          <div className="mt-5"><SpecialtyChips /></div>
         </div>
       </div>
 
@@ -181,6 +183,7 @@ export default async function SearchPage({
         />
       )}
 
+      {(matches.length>30||Number(params.page)>1)&&<nav aria-label="Result pages" className="care-container flex gap-4 py-6">{Number(params.page)>1&&<Link className="care-button" href={`/search?${new URLSearchParams({...Object.fromEntries(preserved),page:String(Math.max(1,(Number(params.page)||1)-1)),...(rawArea?{area:rawArea}:{})})}`}>Previous page</Link>}{matches.length>30&&<Link className="care-button" href={`/search?${new URLSearchParams({...Object.fromEntries(preserved),page:String((Number(params.page)||1)+1),...(rawArea?{area:rawArea}:{})})}`}>Next page</Link>}</nav>}
       <SiteFooter />
     </main>
   )

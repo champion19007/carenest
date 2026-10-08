@@ -1,0 +1,80 @@
+▶ actual booking service enforces ownership, atomicity, stale reservations and idempotency
+  ✔ replay returns the same appointment and one committed event (18.8665ms)
+  ✔ expired A cannot confirm or decline B reservation (68.0634ms)
+  ✔ foreign family and unsupported mode rejected before reservation (13.3778ms)
+  ✔ outbox failure rolls back appointment and slot hold (121.9492ms)
+  ✔ failed replacement keeps original confirmed appointment (55.678ms)
+  ✔ foreign cancellation fails and own cancellation releases exactly its slot (43.3629ms)
+  ✔ suspended practitioner rejected from state transitions and public booking (28.3955ms)
+✔ actual booking service enforces ownership, atomicity, stale reservations and idempotency (5024.8289ms)
+node:internal/modules/cjs/loader:1517
+  const err = new Error(message);
+              ^
+
+Error: Cannot find module 'server-only'
+Require stack:
+- C:\Users\champ\Desktop\carenest\lib\db\schema.ts
+- C:\Users\champ\Desktop\carenest\lib\db\migrations.ts
+    at node:internal/modules/cjs/loader:1517:15
+    at nextResolveSimple (C:\Users\champ\Desktop\carenest\node_modules\tsx\dist\register-B1c7OH6V.cjs:23:1010)
+    at C:\Users\champ\Desktop\carenest\node_modules\tsx\dist\register-B1c7OH6V.cjs:22:4512
+    at C:\Users\champ\Desktop\carenest\node_modules\tsx\dist\register-B1c7OH6V.cjs:22:2830
+    at resolveTsPaths (C:\Users\champ\Desktop\carenest\node_modules\tsx\dist\register-B1c7OH6V.cjs:23:762)
+    at C:\Users\champ\Desktop\carenest\node_modules\tsx\dist\register-B1c7OH6V.cjs:23:1203
+    at j._resolveFilename (file:///C:/Users/champ/Desktop/carenest/node_modules/tsx/dist/register-nyXW-TH3.mjs:2:18825)
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+    at defaultResolve (node:internal/modules/cjs/loader:1152:20) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\champ\\Desktop\\carenest\\lib\\db\\schema.ts',
+    'C:\\Users\\champ\\Desktop\\carenest\\lib\\db\\migrations.ts'
+  ]
+}
+
+Node.js v24.18.0
+✖ tests\migrations-service.test.mjs (933.11ms)
+▶ actual OTP and limiter services enforce atomic challenge and all-key budgets
+  ✔ stored OTP is a MAC, correct code can be consumed once (37.3354ms)
+  ✔ concurrent guesses cannot exceed five attempts or revive a challenge (34.4241ms)
+  ✔ denial on one key does not charge another key (41.1398ms)
+  ✔ concurrent budget consumption admits exactly its limit (57.8387ms)
+✔ actual OTP and limiter services enforce atomic challenge and all-key budgets (4999.1299ms)
+▶ actual clinical services reject foreign encounters, malformed prescriptions and failed audits
+  ✖ assigned clinician names are resolved on server; foreign clinician denied (55.3539ms)
+  ✔ invalid medicine duration and arbitrary prescription object rejected (1.6723ms)
+  ✔ patient can read own records, but audit failure prevents returning them (93.0699ms)
+✖ actual clinical services reject foreign encounters, malformed prescriptions and failed audits (3620.9543ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 15
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 19988.425
+
+✖ failing tests:
+
+test at tests\migrations-service.test.mjs:1:1
+✖ tests\migrations-service.test.mjs (933.11ms)
+  'test failed'
+
+test at tests\security-services.test.mjs:46:11
+✖ assigned clinician names are resolved on server; foreign clinician denied (55.3539ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  '' !== 'patient'
+
+      at TestContext.<anonymous> (file:///C:/Users/champ/Desktop/carenest/tests/security-services.test.mjs:52:11)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async TestContext.<anonymous> (file:///C:/Users/champ/Desktop/carenest/tests/security-services.test.mjs:46:3)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '',
+    expected: 'patient',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

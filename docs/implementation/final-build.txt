@@ -1,0 +1,93 @@
+npm notice run my-project@0.1.0 build
+npm notice run node scripts/local-build.mjs
+▲ Next.js 16.3.8 (Turbopack)
+✓ Running next.config.mjs took 134ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 48s
+  Running TypeScript ...
+  Finished TypeScript in 23.5s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/43) ...
+  Generating static pages using 7 workers (10/43)
+  Generating static pages using 7 workers (21/43)
+  Generating static pages using 7 workers (32/43)
+✓ Generating static pages using 7 workers (43/43) in 3.3s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /account
+├ ƒ /account/billing
+├ ƒ /account/enquiries
+├ ƒ /account/labs
+├ ƒ /account/notifications
+├ ƒ /account/pets
+├ ƒ /account/profile
+├ ƒ /account/records
+├ ƒ /admin
+├ ƒ /admin/operations
+├ ƒ /admin/partners
+├ ƒ /admin/providers
+├ ƒ /admin/refunds
+├ ƒ /api/account/export
+├ ƒ /api/auth/google
+├ ƒ /api/auth/google/callback
+├ ƒ /api/cron/sweep
+├ ƒ /api/files/[fileId]
+├ ƒ /api/files/upload
+├ ƒ /api/integrations/[provider]/callback
+├ ƒ /api/integrations/[provider]/connect
+├ ƒ /api/internal/worker
+├ ƒ /api/me
+├ ƒ /api/payments/orders
+├ ƒ /api/payments/verify
+├ ƒ /api/queue/[bookingId]
+├ ƒ /api/records/[recordId]/download
+├ ƒ /api/video/[bookingId]/join
+├ ƒ /api/webhooks/razorpay
+├ ƒ /book/[slug]
+├ ○ /contact
+├ ƒ /dashboard/patient
+├ ƒ /dashboard/provider
+├ ƒ /doctor/[slug]
+├ ○ /for-providers
+├ ○ /help
+├   /help/[collection]
+│ ├ ● /help/my-account
+│ ├ ● /help/booking
+│ ├ ● /help/payments-insurance
+│ └ ● [+3 more paths]
+├   /help/[collection]/[article]
+│ ├ ● /help/my-account/create-account
+│ ├ ● /help/my-account/account-locked
+│ ├ ● /help/my-account/change-mobile-number
+│ └ ● [+13 more paths]
+├ ƒ /join
+├ ƒ /labs
+├ ƒ /pets
+├ ƒ /policies/[policy]
+├ ƒ /practice
+├ ƒ /practice/billing
+├ ƒ /practice/calendar
+├ ƒ /practice/integrations
+├ ƒ /practice/patients
+├ ƒ /practice/reports
+├ ƒ /practice/requests
+├ ƒ /practice/settings
+├ ƒ /robots.txt
+├ ƒ /search
+├ ƒ /sign-in
+├ ƒ /sign-up
+├ ƒ /sitemap/[__metadata_id__]
+├ ƒ /staff/labs
+├ ○ /surgeries
+└ ƒ /welcome
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand

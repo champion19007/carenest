@@ -1,5 +1,3 @@
-import 'server-only'
-
 /**
  * Postgres schema. Idempotent — safe to run on every cold start.
  *

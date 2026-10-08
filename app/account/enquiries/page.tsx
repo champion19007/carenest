@@ -1,0 +1,7 @@
+import {requireUser} from '@/lib/auth'
+import {leadsForUser} from '@/lib/db/leads'
+import {estimatesForLead} from '@/lib/db/estimates'
+import {EstimateSheet} from '@/components/estimate-sheet'
+import {PatientWorkspace} from '@/components/patient-workspace'
+export const dynamic='force-dynamic'
+export default async function EnquiriesPage(){const user=await requireUser('/account/enquiries'),leads=await leadsForUser(user.id),estimates=await Promise.all(leads.map(l=>estimatesForLead(l.id)));return <PatientWorkspace title="Your care enquiries" description="Recorded requests, coordinator decisions, and immutable estimate versions."><div className="space-y-6">{leads.map((lead,i)=><section key={lead.id} className="rounded-2xl border border-border bg-card p-5"><h2 className="text-xl">{lead.procedure}</h2><p className="mt-3 text-sm">{lead.status} · {lead.city}</p><p className="mt-3 whitespace-pre-wrap text-sm">{lead.notes}</p>{lead.reject_reason&&<p className="mt-3 text-sm">Review note: {lead.reject_reason}</p>}<div className="mt-5 space-y-4">{estimates[i].map(e=><EstimateSheet key={e.id} estimate={{id:e.id,procedure:e.procedure,hospital:e.hospital,roomTier:e.room_tier,lineItems:e.line_items,total:e.total,contentHash:e.content_hash,supersedes:e.supersedes,validUntil:e.valid_until}}/>)}</div></section>)}{!leads.length&&<p className="rounded-2xl border border-dashed border-border p-6 text-sm">No enquiries are recorded yet.</p>}</div></PatientWorkspace>}

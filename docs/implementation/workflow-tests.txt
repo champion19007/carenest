@@ -1,0 +1,47 @@
+npm notice run my-project@0.1.0 npx
+npm notice run tsx --test tests/local-workflows.test.mjs
+▶ actual local pet, lab, file, finance, profile, review and worker workflows
+  ✔ owned pet health persists; foreign access and mutation fail (101.9156ms)
+  ✔ lab intent is idempotent and foreign family ownership is enforced (67.4697ms)
+  ✔ result upload is staff scoped, PDFs quarantined and normalized images private (323.3129ms)
+  ✔ duplicate offline receipts produce one balanced integer ledger posting (66.8117ms)
+  ✔ duplicate captures and refund callbacks cannot double-post money (111.8108ms)
+  ✖ profile demographic synchronization and audit rollback are atomic (58.9348ms)
+  ✔ clinical attendance gates reviews and duplicate reviews do not corrupt aggregates (201.8285ms)
+  ✔ expired worker leases and unknown handlers fail closed (2616.9893ms)
+✖ actual local pet, lab, file, finance, profile, review and worker workflows (11281.8689ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 7
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 26949.4066
+
+✖ failing tests:
+
+test at tests\local-workflows.test.mjs:81:11
+✖ profile demographic synchronization and audit rollback are atomic (58.9348ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    {
+  +   dob: 2000-02-29T00:00:00.000Z,
+  -   dob: '2000-02-29',
+      gender: 'Female',
+      name: 'Patient name'
+    }
+
+      at TestContext.<anonymous> (file:///C:/Users/champ/Desktop/carenest/tests/local-workflows.test.mjs:84:11)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async TestContext.<anonymous> (file:///C:/Users/champ/Desktop/carenest/tests/local-workflows.test.mjs:81:3)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { name: 'Patient name', dob: 2000-02-29T00:00:00.000Z, gender: 'Female' },
+    expected: { name: 'Patient name', dob: '2000-02-29', gender: 'Female' },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

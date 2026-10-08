@@ -1,0 +1,83 @@
+REPRODUCED B01: An expired request can confirm another patient's hold; both bookings become confirmed.
+REPRODUCED B02: Declining an expired request releases a different patient's confirmed slot.
+REPRODUCED B03: The real booking action accepts a family member belonging to another account.
+REPRODUCED B04: The real booking action accepts a past slot and video mode for a doctor without video enabled.
+REPRODUCED B05: A rejected booking insert leaves the slot held without any booking.
+REPRODUCED B06: An unverified doctor can write a note and prescription for an unrelated patient.
+REPRODUCED B07: The queue function returns a status for a requested appointment tomorrow.
+REPRODUCED B08: A backslash destination passes the redirect guard and resolves to an external origin.
+REPRODUCED B09: Looking up a doctor ID as a slug fails when IDs and slugs differ.
+REPRODUCED B10: After midnight IST, one-day slot generation uses the previous UTC date and generates no slots.
+REPRODUCED B11: A stored appointment label remains Today after the appointment date has passed.
+REPRODUCED B12: The real booking action accepts a suspended doctor.
+REPRODUCED B13: Concurrent submissions through the real review action create duplicate reviews.
+{
+  "total": 13,
+  "results": [
+    {
+      "id": "B01",
+      "description": "An expired request can confirm another patient's hold; both bookings become confirmed.",
+      "reproduced": true
+    },
+    {
+      "id": "B02",
+      "description": "Declining an expired request releases a different patient's confirmed slot.",
+      "reproduced": true
+    },
+    {
+      "id": "B03",
+      "description": "The real booking action accepts a family member belonging to another account.",
+      "reproduced": true
+    },
+    {
+      "id": "B04",
+      "description": "The real booking action accepts a past slot and video mode for a doctor without video enabled.",
+      "reproduced": true
+    },
+    {
+      "id": "B05",
+      "description": "A rejected booking insert leaves the slot held without any booking.",
+      "reproduced": true
+    },
+    {
+      "id": "B06",
+      "description": "An unverified doctor can write a note and prescription for an unrelated patient.",
+      "reproduced": true
+    },
+    {
+      "id": "B07",
+      "description": "The queue function returns a status for a requested appointment tomorrow.",
+      "reproduced": true
+    },
+    {
+      "id": "B08",
+      "description": "A backslash destination passes the redirect guard and resolves to an external origin.",
+      "reproduced": true
+    },
+    {
+      "id": "B09",
+      "description": "Looking up a doctor ID as a slug fails when IDs and slugs differ.",
+      "reproduced": true
+    },
+    {
+      "id": "B10",
+      "description": "After midnight IST, one-day slot generation uses the previous UTC date and generates no slots.",
+      "reproduced": true
+    },
+    {
+      "id": "B11",
+      "description": "A stored appointment label remains Today after the appointment date has passed.",
+      "reproduced": true
+    },
+    {
+      "id": "B12",
+      "description": "The real booking action accepts a suspended doctor.",
+      "reproduced": true
+    },
+    {
+      "id": "B13",
+      "description": "Concurrent submissions through the real review action create duplicate reviews.",
+      "reproduced": true
+    }
+  ]
+}

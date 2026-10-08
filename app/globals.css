@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
-@import 'shadcn/tailwind.css';
+@import './ui-variants.css';
 
 @source './**/*.{ts,tsx}';
 @source '../components/**/*.{ts,tsx}';
@@ -54,41 +54,41 @@
 :root {
   color-scheme: light;
 
-  --background: #ffffff;
-  --foreground: #0e1533;
+  --background: #f8faff;
+  --foreground: #18243b;
   --card: #ffffff;
   --card-foreground: #0e1533;
   --popover: #ffffff;
   --popover-foreground: #0e1533;
 
   /* Deep navy carries the brand in light mode. */
-  --primary: #16265e;
+  --primary: #0866d9;
   --primary-foreground: #ffffff;
-  --soft: #eef1fb;
+  --soft: #eaf3ff;
 
-  --cta: #16265e;
+  --cta: #0866d9;
   --cta-foreground: #ffffff;
 
-  --secondary: #eef1fb;
-  --secondary-foreground: #16265e;
+  --secondary: #eaf3ff;
+  --secondary-foreground: #075ac9;
 
   /* Marigold accent for badges, ratings and highlights. */
   --accent: #f5a524;
   --accent-foreground: #2a1a00;
 
   --muted: #f4f6fb;
-  --muted-foreground: #5a6280;
-  --surface: #f6f8fd;
+  --muted-foreground: #65718a;
+  --surface: #f2f6fc;
   --elevated: #ffffff;
 
-  --border: #e1e5f0;
+  --border: #e5ebf4;
   --input: #cbd2e4;
-  --ring: #2743a6;
+  --ring: #0866d9;
 
   --success: #1a7f5a;
   --warning: #b4530a;
 
-  --banner: #16265e;
+  --banner: #122d56;
   --banner-foreground: #ffffff;
   --banner-muted: #c3ccea;
 }
@@ -97,42 +97,42 @@
 .dark {
   color-scheme: dark;
 
-  --background: #0d0a1a;
-  --foreground: #ece8fb;
-  --card: #171129;
-  --card-foreground: #ece8fb;
-  --popover: #1c1533;
-  --popover-foreground: #ece8fb;
+  --background: #0c1525;
+  --foreground: #ecf3ff;
+  --card: #142239;
+  --card-foreground: #ecf3ff;
+  --popover: #172840;
+  --popover-foreground: #ecf3ff;
 
-  /* Violet takes over as the brand colour after dark. */
-  --primary: #8b5cf6;
-  --primary-foreground: #12061f;
-  --soft: #241a3d;
+  /* A lighter blue keeps controls legible after dark. */
+  --primary: #80b8ff;
+  --primary-foreground: #0b2448;
+  --soft: #1b3150;
 
-  --cta: #8b5cf6;
-  --cta-foreground: #12061f;
+  --cta: #0866d9;
+  --cta-foreground: #ffffff;
 
-  --secondary: #241a3d;
-  --secondary-foreground: #d9ccff;
+  --secondary: #1b3150;
+  --secondary-foreground: #b9d8ff;
 
   --accent: #f5a524;
   --accent-foreground: #2a1a00;
 
-  --muted: #1e1733;
-  --muted-foreground: #a79fc4;
-  --surface: #120e22;
-  --elevated: #1c1533;
+  --muted: #1b2a41;
+  --muted-foreground: #aabbd2;
+  --surface: #101d31;
+  --elevated: #172840;
 
-  --border: #2e2447;
-  --input: #3b2f5c;
-  --ring: #a78bfa;
+  --border: #293b56;
+  --input: #3c5271;
+  --ring: #80b8ff;
 
   --success: #3ddc97;
   --warning: #f5a524;
 
-  --banner: #1a1233;
+  --banner: #101d31;
   --banner-foreground: #ece8fb;
-  --banner-muted: #a79fc4;
+  --banner-muted: #aabbd2;
 }
 
 * {
@@ -242,3 +242,49 @@ h3 {
 .field:focus-visible {
   box-shadow: 0 0 0 2px var(--ring);
 }
+
+/* Patient-facing discovery system, inspired by the supplied mobile reference. */
+.care-container { width: 100%; max-width: 1240px; margin-inline: auto; padding-inline: 1.25rem; }
+.care-button { display: inline-flex; min-height: 2.875rem; align-items: center; justify-content: center; gap: .5rem; border-radius: .85rem; background: linear-gradient(115deg, #127cff, #0866d9); color: white; padding: .7rem 1.1rem; font-size: .875rem; font-weight: 600; box-shadow: 0 3px 8px #0866d914; transition: filter 160ms; }
+.care-button:hover { filter: brightness(.94); }
+.discovery-hero { background: radial-gradient(ellipse at 82% 12%, #b9dcff80, transparent 65%), linear-gradient(180deg, #e8f3ff, #f8faff); }
+.dark .discovery-hero { background: radial-gradient(ellipse at 82% 12%, #16467a80, transparent 65%), linear-gradient(180deg, #172d49, #0c1525); }
+.discovery-search { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; border: 1px solid var(--border); border-radius: 1.15rem; background: var(--card); padding: .4rem; box-shadow: 0 7px 25px #224c8910; }
+.discovery-search:focus-within { outline: 2px solid var(--ring); outline-offset: 2px; }
+.appointment-banner { border-radius: 1.5rem; padding: 1.5rem; color: white; background: radial-gradient(ellipse at 0% 0%, #5ab2ff70, transparent 65%), linear-gradient(120deg, #096ada, #0674fa); box-shadow: 0 8px 22px #0866d925; }
+.pet-discovery { background: linear-gradient(120deg, var(--card), var(--surface)); }
+.specialty-chip { display: inline-flex; align-items: center; gap: .6rem; flex-shrink: 0; padding: .5rem .9rem .5rem .5rem; min-height: 3.5rem; border: 1px solid var(--border); border-radius: 1rem; background: var(--card); font-size: .8rem; font-weight: 500; transition: border-color 160ms; }
+.specialty-chip:hover { border-color: var(--primary); }
+.specialty-blue { color: #236bc4; background: #e8f1ff; }
+.specialty-pink { color: #ce4867; background: #fff0f3; }
+.specialty-peach { color: #b6672b; background: #fff2e6; }
+.specialty-purple { color: #815fc2; background: #f3edff; }
+.specialty-teal { color: #148273; background: #e4f7f2; }
+.provider-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+.provider-compact { min-width: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 1.3rem; background: var(--card); }
+.provider-portrait { position: relative; display: flex; min-height: 10rem; align-items: center; justify-content: center; margin: .5rem .5rem 0; border-radius: 1rem; background: radial-gradient(ellipse at 70% 10%, #c3dbff55, transparent), var(--surface); }
+.provider-list { min-width: 0; border: 1px solid var(--border); border-radius: 1.3rem; background: var(--card); padding: 1.25rem; box-shadow: 0 2px 10px #244b8210; }
+.mobile-care-nav { display: none; }
+.profile-anchor { scroll-margin-top: 6rem; }
+a:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+@media (min-width: 1024px) { .care-container { padding-inline: 2rem; } }
+@media (max-width: 639px) {
+  .appointment-banner { padding: 1rem; border-radius: 1.3rem; }
+  .specialty-chip { min-height: 3rem; }
+  .discovery-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+  .discovery-search > label:first-child { grid-column: 1 / -1; }
+  .discovery-search > label:nth-child(2) { border-top: 1px solid var(--border); }
+  .provider-strip { display: flex; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: .4rem; }
+  .provider-compact { width: 10.5rem; flex-shrink: 0; scroll-snap-align: start; }
+  .provider-portrait { min-height: 7.5rem; }
+  .care-container { padding-inline: 1rem; }
+}
+@media (max-width: 1023px) {
+  body:has(.mobile-care-nav) { padding-bottom: calc(5rem + env(safe-area-inset-bottom)); }
+  .mobile-care-nav { position: fixed; z-index: 40; bottom: 0; left: 0; right: 0; display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; gap: .25rem; min-height: 4.7rem; padding: .4rem .65rem calc(.4rem + env(safe-area-inset-bottom)); background: var(--card); border-top: 1px solid var(--border); box-shadow: 0 -5px 22px #244b8208; }
+  .mobile-care-link { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 3.5rem; gap: .3rem; font-size: .625rem; color: var(--muted-foreground); }
+  .mobile-care-link.is-active { color: var(--primary); font-weight: 600; }
+  .mobile-care-search { margin: 0 .1rem; border-radius: 1.5rem; color: white; background: linear-gradient(115deg, #127cff, #0866d9); }
+  .mobile-care-search.is-active { color: white; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition-duration: 0ms !important; } }

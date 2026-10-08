@@ -35,8 +35,8 @@ export function CareSearch({
     event.preventDefault()
     const params = new URLSearchParams()
     if (query) params.set('q', query)
-    if (locality) params.set('near', locality)
-    params.set('mode', tab)
+    if (locality) params.set('area', locality.split(',')[0].trim())
+    if(tab==='video')params.set('video','1')
     router.push(tab === 'labs' ? `/labs?${params}` : `/search?${params}`)
   }
 

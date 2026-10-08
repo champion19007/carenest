@@ -1,0 +1,11 @@
+'use server'
+import {requireUser,currentAdmin} from '@/lib/auth'
+import {revalidatePath} from 'next/cache'
+import {createSupportCase,updateSupportCase} from '@/lib/domain/support'
+import {DomainError} from '@/lib/domain/errors'
+import {consumeLimits} from '@/lib/domain/rate-limit'
+import {getDb,ensureSchema} from '@/lib/db/client'
+export type SupportState={error?:string;notice?:string}
+export async function reviewSupportCase(_prev:SupportState,form:FormData):Promise<SupportState>{const admin=await currentAdmin();if(!admin)return {error:'Administrator required.'};if(form.get('reviewed')!=='on')return {error:'Confirm you reviewed the case.'};try{await updateSupportCase(admin.id,String(form.get('caseId')??''),String(form.get('expected')??''),String(form.get('next')??''));revalidatePath('/admin/operations');revalidatePath('/contact');return {notice:'Case status saved. No external message was sent.'}}catch(error){if(error instanceof DomainError)return {error:error.message};throw error}}
+export async function submitSupport(_prev:SupportState,form:FormData):Promise<SupportState>{const user=await requireUser('/contact');try{const limit=await consumeLimits([{bucket:'support',key:user.id,limit:5,seconds:3600}]);if(!limit.allowed)return {error:'Review existing cases before creating more.'};const id=await createSupportCase(user.id,String(form.get('subject')??''),String(form.get('detail')??''));return {notice:'Support case recorded: '+id+'. This form does not guarantee a response time.'}}catch(error){if(error instanceof DomainError)return {error:error.message};throw error}}
+export async function retryWorkerEvent(_prev:SupportState,form:FormData):Promise<SupportState>{const admin=await currentAdmin();if(!admin)return {error:'Administrator required.'};const id=String(form.get('eventId')??'');if(!/^\d{1,20}$/.test(id))return {error:'Invalid event.'};await ensureSchema();await getDb().transaction(async tx=>{await tx.query("UPDATE domain_events SET status='PENDING',attempts=0,available_at=now(),locked_until=NULL,lease_token=NULL WHERE id=$1 AND status='FAILED'",[id]);await tx.query("INSERT INTO audit_log(actor_id,action,resource) VALUES($1,'worker:retry',$2)",[admin.id,id])});revalidatePath('/admin/operations');return {notice:'Replay scheduled. Ambiguous provider effects still require reconciliation.'}}
