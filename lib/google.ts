@@ -22,6 +22,7 @@ const ISSUERS = ['https://accounts.google.com', 'accounts.google.com']
 const jwks = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'))
 
 export const STATE_COOKIE = 'carenest_oauth_state'
+export const PKCE_COOKIE = 'carenest_oauth_verifier'
 
 export function googleIsConfigured() {
   return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)
@@ -34,7 +35,7 @@ export function redirectUri(origin: string) {
   return `${base}/api/auth/google/callback`
 }
 
-export function authorizeUrl(state: string, origin: string) {
+export function authorizeUrl(state: string, origin: string, challenge?:string) {
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID!,
     redirect_uri: redirectUri(origin),
@@ -45,6 +46,7 @@ export function authorizeUrl(state: string, origin: string) {
        Google session the browser happens to hold. */
     prompt: 'select_account',
   })
+  if(challenge){params.set('code_challenge',challenge);params.set('code_challenge_method','S256')}
   return `${AUTH_ENDPOINT}?${params.toString()}`
 }
 
@@ -55,7 +57,7 @@ export type GoogleIdentity = {
   emailVerified: boolean
 }
 
-export async function exchangeCode(code: string, origin: string): Promise<GoogleIdentity> {
+export async function exchangeCode(code: string, origin: string, verifier?:string): Promise<GoogleIdentity> {
   const response = await fetch(TOKEN_ENDPOINT, {
     method: 'POST',
     headers: { 'content-type': 'application/x-www-form-urlencoded' },
@@ -65,7 +67,9 @@ export async function exchangeCode(code: string, origin: string): Promise<Google
       client_secret: process.env.GOOGLE_CLIENT_SECRET!,
       redirect_uri: redirectUri(origin),
       grant_type: 'authorization_code',
+      ...(verifier?{code_verifier:verifier}:{}),
     }),
+    cache:'no-store',signal:AbortSignal.timeout(10000),
   })
 
   if (!response.ok) {
@@ -84,7 +88,7 @@ export async function exchangeCode(code: string, origin: string): Promise<Google
   if (!email) throw new Error('Google returned no email address')
 
   return {
-    sub: String(payload.sub),
+    sub: typeof payload.sub==='string'?payload.sub:'',
     email,
     name: typeof payload.name === 'string' ? payload.name : '',
     emailVerified: payload.email_verified === true,

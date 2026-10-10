@@ -189,7 +189,7 @@ export function BookingForm({
 
       <div className="mt-7 border-t border-border pt-6">
         <label className="mb-4 flex min-h-11 items-start gap-3 text-sm"><input type="checkbox" name="consent" required className="mt-1 size-5 shrink-0" /><span>I agree to share the necessary patient or pet details with this clinic for this appointment. <a className="text-primary underline" href="/policies/privacy">Privacy details</a></span></label>
-        {kind==='video'&&<label className="mb-4 flex min-h-11 items-start gap-3 text-sm"><input type="checkbox" name="videoConsent" required className="mt-1 size-5 shrink-0"/><span>I agree to join through the clinic’s connected Zoom or Google Meet account. That provider handles the call and its participant information.</span></label>}
+        {kind==='video'&&<label className="mb-4 flex min-h-11 items-start gap-3 text-sm"><input type="checkbox" name="videoConsent" required className="mt-1 size-5 shrink-0"/><span>I agree to use the clinic’s configured video service for this consultation. CareNest does not record the call.</span></label>}
         <p className="text-sm text-muted-foreground">
           {chosen ? (
             <>
@@ -217,7 +217,7 @@ function Submit({ disabled }: { disabled: boolean }) {
       disabled={disabled || status.pending}
       className="mt-4 min-h-13 w-full rounded-lg bg-cta font-semibold text-cta-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
     >
-      {status.pending ? 'Sending request…' : 'Request appointment'}
+      {status.pending ? 'Holding your time…' : 'Continue to payment'}
     </button>
   )
 }

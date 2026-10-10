@@ -1,3 +1,5 @@
+import {smsProviderName,smsOtpSetupError} from '@/lib/sms'
+import {fast2smsPairReady,fast2smsSelected} from '@/lib/fast2sms'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Check } from 'lucide-react'
@@ -5,6 +7,9 @@ import { Logo } from '@/components/logo'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { SignInForm } from '@/components/sign-in-form'
 import { currentUser } from '@/lib/auth'
+import {whatsappReady} from '@/lib/whatsapp'
+import {googleIsConfigured} from '@/lib/google'
+import {fast2smsQuickOtp} from '@/lib/fast2sms'
 
 export const metadata = { title: 'Create an account · CareNest' }
 
@@ -32,16 +37,16 @@ export default async function SignUpPage() {
         </div>
       </header>
 
-      <section className="mx-auto grid max-w-[1100px] gap-10 px-5 pb-20 pt-6 lg:grid-cols-[1fr_22rem] lg:px-8">
-        <div className="rounded-xl border border-border bg-card p-7 sm:p-9">
+      <section className="mx-auto grid max-w-[1100px] grid-cols-1 gap-10 px-5 pb-20 pt-6 lg:grid-cols-[1fr_22rem] lg:px-8">
+        <div className="min-w-0 rounded-xl border border-border bg-card p-7 sm:p-9">
           <p className="eyebrow">New account</p>
           <h1 className="mt-3 text-4xl">Create your CareNest account</h1>
           <p className="mt-3 max-w-md leading-8 text-muted-foreground">
-            You only need a mobile number. We text you a 6-digit code to confirm it — there is no
-            password to choose or forget, and we never ask for card details to sign up.
+            Enter your mobile number to receive a 6-digit verification code. No card details are needed to sign up.
           </p>
 
-          <SignInForm next="/dashboard/patient" />
+          <SignInForm next="/dashboard/patient" google={googleIsConfigured()} whatsapp={whatsappReady('OTP')} localDemo={smsProviderName()==='console'} dualOtp={smsProviderName()==='fast2sms'&&fast2smsSelected()&&fast2smsPairReady()} smsReady={smsProviderName()!=='disabled'} setupNotice={smsOtpSetupError()??undefined} />
+          {smsProviderName()==='fast2sms'&&fast2smsQuickOtp()&&<p className="mt-4 text-sm text-muted-foreground">SMS demo: Fast2SMS lists ₹5 per message. Limited to two OTP messages per day across this local app.</p>}
 
           <p className="mt-8 border-t border-border pt-5 text-sm leading-6 text-muted-foreground">
             By continuing you agree to our{' '}
@@ -64,8 +69,7 @@ export default async function SignUpPage() {
           </ul>
 
           <p className="mt-6 border-t border-border pt-5 text-sm leading-6 text-muted-foreground">
-            Free to join. There is no booking fee and no subscription — you pay the clinic, lab or
-            hospital directly for the care you receive.
+            Free to create an account. Review the consultation fee and payment details before confirming an appointment.
           </p>
         </aside>
       </section>

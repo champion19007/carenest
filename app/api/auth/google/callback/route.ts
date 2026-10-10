@@ -1,15 +1,14 @@
 import { timingSafeEqual } from 'node:crypto'
 import { cookies } from 'next/headers'
 import { NextResponse, type NextRequest } from 'next/server'
-import { STATE_COOKIE, exchangeCode, googleIsConfigured } from '@/lib/google'
+import { STATE_COOKIE, PKCE_COOKIE,exchangeCode, googleIsConfigured } from '@/lib/google'
 import { destinationForUser } from '@/lib/routes'
-import { newId, startSession } from '@/lib/auth'
+import { currentUser,newId, startSession } from '@/lib/auth'
+import {acceptGoogleIdentity} from '@/lib/domain/google-identity'
+import {DomainError} from '@/lib/domain/errors'
 import { ensureSelfMember } from '@/lib/db/family'
 import { logActivity } from '@/lib/db/docs'
 import {
-  createUser,
-  findUserByEmail,
-  findUserByGoogleSub,
   touchLogin,
 } from '@/lib/db/sql'
 
@@ -28,21 +27,24 @@ export async function GET(request: NextRequest) {
   if (!googleIsConfigured()) return fail(request, 'google-not-configured')
 
   const params = request.nextUrl.searchParams
-  if (params.get('error')) return fail(request, 'google-cancelled')
-
   const code = params.get('code')
   const state = params.get('state')
   const jar = await cookies()
   const expected = jar.get(STATE_COOKIE)?.value
+  const verifier=jar.get(PKCE_COOKIE)?.value
+  jar.delete(STATE_COOKIE);jar.delete(PKCE_COOKIE)
+  if (params.get('error')) return fail(request, 'google-cancelled')
 
-  if (!code || !state || !expected || !sameState(state, expected)) {
+  if (!code || code.length>4096 || !state || state.length>4096 || !expected || !verifier || !sameState(state, expected)) {
     return fail(request, 'google-state')
   }
-  jar.delete(STATE_COOKIE)
+  let intent:{next?:string;linkUserId?:string}
+  try{intent=JSON.parse(Buffer.from(expected,'base64url').toString('utf8'))}catch{return fail(request,'google-state')}
+  if(intent.linkUserId){const current=await currentUser();if(!current||current.id!==intent.linkUserId||current.status!=='ACTIVE')return fail(request,'account-link-required')}
 
   let identity
   try {
-    identity = await exchangeCode(code, request.nextUrl.origin)
+    identity = await exchangeCode(code, request.nextUrl.origin,verifier)
   } catch {
     return fail(request, 'google-exchange')
   }
@@ -51,27 +53,9 @@ export async function GET(request: NextRequest) {
      profile. Matching it to an existing account would be a takeover. */
   if (!identity.emailVerified) return fail(request, 'google-unverified')
 
-  let user = await findUserByGoogleSub(identity.sub)
-  // Contact email is not an authentication identity. Linking requires proof of both accounts.
-  if (!user) {
-    const byEmail = await findUserByEmail(identity.email)
-    if (byEmail?.email_verified_at) return fail(request,'account-link-required')
-  }
-
-  const isNew = !user
-  if (!user) {
-    user = await createUser({
-      id: newId('usr'),
-      email: identity.email,
-      googleSub: identity.sub,
-      name: identity.name,
-    })
-    await logActivity({
-      kind: 'user.created',
-      message: `New account via Google: ${identity.email}`,
-      userId: user.id,
-    })
-  }
+  let accepted
+  try{accepted=await acceptGoogleIdentity(identity,intent.linkUserId)}catch(error){return fail(request,error instanceof DomainError&&error.code==='GOOGLE_ACCOUNT'?'google-account':'account-link-required')}
+  const {user,isNew}=accepted
 
   await touchLogin(user.id)
   await startSession(user)
@@ -84,7 +68,7 @@ export async function GET(request: NextRequest) {
 
   /* Google usually supplies a name, but not always — an account with none
      still goes to the profile page to choose one. */
-  const next = state.split(':').slice(1).join(':')
+  const next = intent.linkUserId?'/account/notifications?google=linked':intent.next
   const target = destinationForUser(user, next || undefined)
   return NextResponse.redirect(new URL(target, request.url))
 }

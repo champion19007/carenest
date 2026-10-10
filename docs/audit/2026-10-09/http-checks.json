@@ -1,0 +1,127 @@
+{
+  "date": "2026-10-09",
+  "environment": "local production-mode website",
+  "notes": "Single sequential server response measurements; not Core Web Vitals or Internet latency.",
+  "results": [
+    {
+      "route": "/",
+      "status": 200,
+      "durationMs": 724,
+      "headers": {
+        "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "content-security-policy": null,
+        "permissions-policy": null,
+        "strict-transport-security": null,
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "same-origin",
+        "location": null
+      }
+    },
+    {
+      "route": "/search",
+      "status": 200,
+      "durationMs": 89,
+      "headers": {
+        "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "content-security-policy": null,
+        "permissions-policy": null,
+        "strict-transport-security": null,
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "same-origin",
+        "location": null
+      }
+    },
+    {
+      "route": "/search?page=1.01",
+      "status": 500,
+      "durationMs": 59,
+      "headers": {
+        "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "content-security-policy": null,
+        "permissions-policy": null,
+        "strict-transport-security": null,
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "same-origin",
+        "location": null
+      }
+    },
+    {
+      "route": "/pets",
+      "status": 200,
+      "durationMs": 174,
+      "headers": {
+        "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "content-security-policy": null,
+        "permissions-policy": null,
+        "strict-transport-security": null,
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "same-origin",
+        "location": null
+      }
+    },
+    {
+      "route": "/contact",
+      "status": 200,
+      "durationMs": 17,
+      "headers": {
+        "cache-control": "s-maxage=31536000",
+        "content-security-policy": null,
+        "permissions-policy": null,
+        "strict-transport-security": null,
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "same-origin",
+        "location": null
+      }
+    },
+    {
+      "route": "/policies/terms",
+      "status": 200,
+      "durationMs": 64,
+      "headers": {
+        "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "content-security-policy": null,
+        "permissions-policy": null,
+        "strict-transport-security": null,
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "same-origin",
+        "location": null
+      }
+    },
+    {
+      "route": "/robots.txt",
+      "status": 200,
+      "durationMs": 63,
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "content-security-policy": null,
+        "permissions-policy": null,
+        "strict-transport-security": null,
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "same-origin",
+        "location": null
+      }
+    },
+    {
+      "route": "/api/me",
+      "status": 200,
+      "durationMs": 10,
+      "headers": {
+        "cache-control": "private, no-store",
+        "content-security-policy": null,
+        "permissions-policy": null,
+        "strict-transport-security": null,
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "same-origin",
+        "location": null
+      }
+    }
+  ]
+}

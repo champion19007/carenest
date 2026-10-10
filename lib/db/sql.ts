@@ -27,6 +27,7 @@ export type User = {
   phone: string | null
   status: string
   email_verified_at: string | null
+  google_sub: string | null
   name: string
   email: string | null
   dob: string | null
@@ -727,9 +728,10 @@ export async function requestsForDoctor(doctorId: string) {
     seen_for: string | null
     seen_for_dob: string | null
     seen_for_relation: string | null
+    payment_required:boolean
     starts_at:string|null
   }>(
-    `SELECT b.id, b.kind, b.slot, b.fee, b.status, b.created_at,b.starts_at,
+    `SELECT b.id, b.kind, b.slot, b.fee, b.status, b.created_at,b.starts_at,b.payment_required,
             u.name AS patient_name, u.phone AS patient_phone,
             coalesce(p.name,f.name) AS seen_for,coalesce(p.dob,f.dob) AS seen_for_dob,CASE WHEN p.id IS NOT NULL THEN 'Pet' ELSE f.relation END AS seen_for_relation
      FROM patient.bookings b

@@ -8,13 +8,15 @@ import sharp from 'sharp'
 import {getDb,ensureSchema,type Db} from '@/lib/db/client'
 import {encryptSecret,decryptSecret,localMode} from '@/lib/secrets'
 import {boundedText,reject} from './errors'
-export type FileContext={encounterId?:string;applicationId?:string;labOrderId?:string}
+import {isKycEvidenceKind} from '@/lib/kyc'
+export type FileContext={encounterId?:string;applicationId?:string;labOrderId?:string;evidenceKind?:string}
 type FileRow={id:string;owner_id:string|null;clinic_owner_id:string|null;encounter_id:string|null;application_id:string|null;lab_order_id:string|null;storage_key:string;state:string;mime:string;original_name:string;bytes:string}
 const directory=()=>path.resolve(/* turbopackIgnore: true */ process.env.PRIVATE_FILE_ROOT??path.join(process.cwd(),'.data','files'))
 async function contextOwner(tx:Db,actorId:string,context:FileContext,upload=false) {
  const user=await tx.one<{role:string;kyc_level:string;status:string}>('SELECT role,kyc_level,status FROM patient.users WHERE id=$1 FOR SHARE',[actorId])
  if(!user||(user.status!=='ACTIVE'&&(upload||user.status!=='RESTRICTED')))reject('FORBIDDEN','Sign in required.',403)
- if(Object.values(context).filter(Boolean).length>1)reject('VALIDATION','Choose one file purpose.',400)
+ if([context.encounterId,context.applicationId,context.labOrderId].filter(Boolean).length>1)reject('VALIDATION','Choose one file purpose.',400)
+ if(context.evidenceKind&&(!context.applicationId||!isKycEvidenceKind(context.evidenceKind)))reject('VALIDATION','Choose a valid verification document type.',400)
  if(context.encounterId){
   const e=await tx.one<{patient_user_id:string|null;clinic_id:string;doctor_user:string;doctor_status:string;provider_verified:boolean;consent:boolean}>(`SELECT e.patient_user_id,d.clinic_id,d.user_id doctor_user,d.status doctor_status,(d.verified_at IS NOT NULL OR ($2::boolean AND d.is_demo)) provider_verified,
    CASE WHEN e.walk_in_id IS NULL THEN EXISTS(SELECT 1 FROM patient.consents c WHERE c.booking_id=e.booking_id AND c.purpose='appointment-sharing' AND c.revoked_at IS NULL)
@@ -25,7 +27,9 @@ async function contextOwner(tx:Db,actorId:string,context:FileContext,upload=fals
   return e.patient_user_id??'clinic:'+e.clinic_id
  }
  if(context.applicationId){
-  if(!await tx.one('SELECT id FROM provider.applications WHERE id=$1 AND user_id=$2',[context.applicationId,actorId]))reject('FORBIDDEN','That verification case is unavailable.',403)
+  const application=await tx.one<{status:string}>('SELECT status FROM provider.applications WHERE id=$1 AND user_id=$2 FOR SHARE',[context.applicationId,actorId])
+  if(!application)reject('FORBIDDEN','That verification case is unavailable.',403)
+  if(upload&&(!['DRAFT','NEEDS_CHANGES'].includes(application.status)||!isKycEvidenceKind(context.evidenceKind)))reject('KYC_STATE','Choose the document type and upload while your verification draft is editable.',409)
  }
  if(context.labOrderId){
   const order=await tx.one<{user_id:string;clinic_id:string}>(`SELECT o.user_id,p.clinic_id FROM patient.lab_orders o JOIN clinic.lab_packages p ON p.id=o.package_id WHERE o.id=$1`,[context.labOrderId])
@@ -67,8 +71,8 @@ export async function uploadPrivateFile(actorId:string,name:string,bytes:Uint8Ar
    else{await tx.query('INSERT INTO private_file_quota(owner_id) VALUES($1) ON CONFLICT DO NOTHING',[owner]);await tx.query('SELECT owner_id FROM private_file_quota WHERE owner_id=$1 FOR UPDATE',[owner])}
    const used=await tx.one<{bytes:string}>("SELECT coalesce(sum(bytes),0) bytes FROM private_files WHERE (owner_id=$1 OR clinic_owner_id=$2) AND state<>'PURGED'",[clinicOwner?null:owner,clinicOwner])
    if(Number(used?.bytes)+content.length>(clinicOwner?1073741824:104857600))reject('QUOTA','The private file allowance is full.',413)
-   await tx.query('INSERT INTO private_files(id,owner_id,clinic_owner_id,encounter_id,application_id,lab_order_id,original_name,mime,bytes,checksum,storage_key,state,uploaded_by) VALUES($1,$2,$13,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)',
-    [id,clinicOwner?null:owner,context.encounterId??null,context.applicationId??null,context.labOrderId??null,name,mime,String(content.length),createHash('sha256').update(content).digest('hex'),key,state,actorId,clinicOwner])
+   await tx.query('INSERT INTO private_files(id,owner_id,clinic_owner_id,encounter_id,application_id,lab_order_id,original_name,mime,bytes,checksum,storage_key,state,uploaded_by,evidence_kind) VALUES($1,$2,$13,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$14)',
+    [id,clinicOwner?null:owner,context.encounterId??null,context.applicationId??null,context.labOrderId??null,name,mime,String(content.length),createHash('sha256').update(content).digest('hex'),key,state,actorId,clinicOwner,context.evidenceKind??null])
    await tx.query("INSERT INTO audit_log(actor_id,action,resource) VALUES($1,'file:upload',$2)",[actorId,id])
   })
  }catch(error){await unlink(filename).catch(()=>{});throw error}

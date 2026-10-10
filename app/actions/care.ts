@@ -24,24 +24,24 @@ export async function bookAppointment(_prev:BookingState,form:FormData):Promise<
     if(!limited.allowed) return {error:`Please wait ${limited.retryAfterSeconds} seconds before another request.`}
     appointment=await requestAppointment({actorId:user.id,doctorId:doctor.id,slotId:String(form.get('slotId')??''),mode:String(form.get('kind')??'clinic'),
       familyId:String(form.get('patientFor')??'')||null,petId:String(form.get('petId')??'')||null,
-      idempotencyKey:String(form.get('requestKey')??''),consent:form.get('consent')==='on',videoConsent:form.get('videoConsent')==='on',addressId:String(form.get('addressId')??'')})
+      idempotencyKey:String(form.get('requestKey')??''),consent:form.get('consent')==='on',videoConsent:form.get('videoConsent')==='on',addressId:String(form.get('addressId')??''),paymentRequired:true})
   } catch(error) { if(error instanceof DomainError) return {error:error.message};throw error }
   revalidatePath('/account');revalidatePath('/practice/requests');revalidatePath('/dashboard/patient')
-  redirect(`/account?requested=${encodeURIComponent(appointment.id)}`)
+  redirect(`/account/checkout/${encodeURIComponent(appointment.id)}`)
 }
 export async function cancelBooking(_prev:BookingState,form:FormData):Promise<BookingState> {
   const user=await requireUser('/account')
   try { await cancelAppointment(user.id,String(form.get('bookingId')??''),Number(form.get('revision'))); }
   catch(error) {if(error instanceof DomainError) return {error:error.message};throw error}
   revalidatePath('/account');revalidatePath('/practice/requests')
-  return {notice:'Appointment cancelled.'}
+  revalidatePath('/account/billing');return {notice:'Appointment cancelled. Any captured payment enters refund review.'}
 }
 export async function rescheduleBooking(_prev:BookingState,form:FormData):Promise<BookingState> {
   const user=await requireUser('/account')
   try {await rescheduleAppointment(user.id,String(form.get('bookingId')??''),String(form.get('slotId')??''),Number(form.get('revision')))}
   catch(error) {if(error instanceof DomainError)return {error:error.message};throw error}
   revalidatePath('/account');revalidatePath('/practice/requests')
-  return {notice:'New time requested. Awaiting clinic confirmation.'}
+  return {notice:'Appointment time updated. Check its current confirmation status.'}
 }
 export async function checkInBooking(_prev:BookingState,form:FormData):Promise<BookingState> {
   const user=await requireUser('/account')

@@ -32,13 +32,14 @@ test('actual provider onboarding and immutable estimates commit required evidenc
   const id=await provider.saveProviderApplication('applicant',draft)
   await t.test('submission requires clean private evidence and explicit human verification',async()=>{
    await assert.rejects(provider.submitProviderApplication('applicant',id),e=>e.code==='EVIDENCE')
-   await db.query("INSERT INTO private_files(id,owner_id,application_id,uploaded_by,original_name,mime,bytes,checksum,storage_key,state) VALUES('proof','applicant',$1,'applicant','test.png','image/png',100,'test','not-a-download-object','CLEAN')",[id])
-   await provider.submitProviderApplication('applicant',id)
-   await assert.rejects(provider.reviewProviderApplication('admin',id,'APPROVED','Registration manually checked',false),e=>e.code==='VERIFICATION')
-   await provider.reviewProviderApplication('admin',id,'APPROVED','Test manual registration check',true)
+   for(const kind of ['IDENTITY','REGISTRATION','QUALIFICATION','CLINIC'])await db.query("INSERT INTO private_files(id,owner_id,application_id,uploaded_by,original_name,mime,bytes,checksum,storage_key,state,evidence_kind) VALUES($2,'applicant',$1,'applicant','test.png','image/png',100,'test',$2,'CLEAN',$3)",[id,'proof_'+kind,kind])
+   await provider.submitProviderApplication('applicant',id,true)
+   const revision=(await provider.providerApplication('applicant')).revision,checks={revision,identityMatched:true,registrationChecked:true,qualificationMatched:true,clinicMatched:true,sourceUrl:'https://nmr.nmc.org.in/search-doctor',sourceReference:'Synthetic isolated test review'}
+   await assert.rejects(provider.reviewProviderApplication('admin',id,'APPROVED','Registration manually checked',{...checks,registrationChecked:false}),e=>e.code==='VERIFICATION')
+   await provider.reviewProviderApplication('admin',id,'APPROVED','Test manual registration check',checks)
    assert.equal((await db.one("SELECT role FROM patient.users WHERE id='applicant'")).role,'doctor')
    assert.equal((await db.one('SELECT status FROM provider.applications WHERE id=$1',[id])).status,'APPROVED')
-   await assert.rejects(provider.reviewProviderApplication('admin',id,'APPROVED','Repeated registration check',true),e=>e.code==='STATE')
+   await assert.rejects(provider.reviewProviderApplication('admin',id,'APPROVED','Repeated registration check',checks),e=>e.code==='STATE')
   })
   await db.query("INSERT INTO clinic.surgery_leads(id,name,phone,procedure,city,status,user_id) VALUES('lead','Test person','9000000002','Test procedure','Mumbai','APPROVED','patient')")
   const input={id:'estimate-one',leadId:'lead',procedure:'Test procedure',hospital:'Test hospital',roomTier:'General ward',lineItems:[{label:'Recorded quote',amount:1000}],issuedBy:'admin'}
