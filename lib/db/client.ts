@@ -10,6 +10,7 @@ declare global {
 export function getDb(): Db {
   if (globalThis.__carenestDb) return globalThis.__carenestDb
   const ready = () => {
+    if(process.env.VERCEL==='1'&&process.env.CARENEST_LOCAL_MODE==='1')throw new Error('Embedded local storage cannot run on Vercel. Configure persistent PostgreSQL and disable CARENEST_LOCAL_MODE.')
     if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL && process.env.CARENEST_LOCAL_MODE !== '1') {
       throw new Error('Configure DATABASE_URL, or run npm run start:local for a single local embedded database.')
     }
