@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-10-10T10:52:51.343Z",
+  "hosting": "local",
+  "roomCreated": true,
+  "participants": 2,
+  "patientReceived": {
+    "audio": 3,
+    "video": 3
+  },
+  "doctorReceived": {
+    "audio": 3,
+    "video": 3
+  },
+  "syntheticBidirectionalMedia": true,
+  "roomRemoved": true,
+  "physicalCameraMicrophoneTest": false,
+  "recordingEnabled": false
+}

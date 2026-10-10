@@ -35,6 +35,7 @@ export async function generateMetadata({
 
   const title = `${doctor.name} — ${doctor.speciality} in ${doctor.locality}, ${doctor.city}`
   return {
+    ...(doctor.is_demo?{robots:{index:false,follow:false}}:{}),
     title: `${title} · CareNest`,
     description: `Book an appointment with ${doctor.name}, ${doctor.qualification}. ${doctor.experience} years experience. Consultation fee ₹${doctor.fee}. ${doctor.about}`,
     alternates: { canonical: `/doctor/${doctor.slug}` },
@@ -65,7 +66,7 @@ export default async function DoctorProfile({ params }: { params: Promise<{ slug
   /* Structured data so search engines can render a rich result. */
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'Physician',
+    '@type': doctor.kind==='vet'?'VeterinaryCare':'Physician',
     name: doctor.name,
     medicalSpecialty: doctor.speciality,
     description: doctor.about,
@@ -87,13 +88,13 @@ export default async function DoctorProfile({ params }: { params: Promise<{ slug
   return (
     <main className="min-h-screen bg-background">
       <SiteHeader />
-      <script
+      {!doctor.is_demo&&<script
         type="application/ld+json"
         // JSON.stringify does not escape "<", so a value containing
         // "</script>" would close this tag early. Doctors supply their own
         // names during onboarding, so escape before embedding.
         dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
-      />
+      />}
 
       <div className="mx-auto max-w-[1320px] px-5 py-8 lg:px-8">
         <nav aria-label="Breadcrumb" className="text-sm">
@@ -122,7 +123,7 @@ export default async function DoctorProfile({ params }: { params: Promise<{ slug
                 <div className="min-w-0">
                   <h1 className="flex flex-wrap items-center gap-2 text-3xl">
                     {doctor.name}
-                    {doctor.registration_no && <BadgeCheck className="size-6 text-primary" aria-label="Registration listed" />}
+                    {doctor.verified_at&&!doctor.is_demo&&<BadgeCheck className="size-6 text-primary" aria-label="Professional registration reviewed" />}
                   </h1>
                   <p className="mt-1 text-lg text-muted-foreground">{doctor.speciality}</p>
                   <p className="mt-1 text-muted-foreground">{doctor.qualification}</p>

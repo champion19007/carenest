@@ -1,4 +1,7 @@
 import 'server-only'
+import {fast2smsReady,sendFast2sms} from './fast2sms'
+import {DomainError} from './domain/errors'
+import {twilioVerifyConfigured} from './twilio-verify'
 
 /**
  * SMS delivery.
@@ -6,13 +9,13 @@ import 'server-only'
  * Three adapters, chosen by environment:
  *
  *   SMS_PROVIDER=msg91   → MSG91 (the usual choice for Indian OTP traffic)
- *   SMS_PROVIDER=twilio  → Twilio
- *   unset                → console adapter, for local development
+ *   SMS_PROVIDER=twilio  → Twilio Programmable Messaging
+ *   SMS_PROVIDER=twilio-verify → Provider-generated code, handled by auth actions
+ *   unset                → disabled
  *
  * The console adapter is the only one that returns the code to the caller.
- * As soon as a real provider is configured, `deliveredToDevice` is true and
- * the OTP never leaves the server — see `app/actions/auth.ts`, which only
- * echoes the code when this says it was not delivered.
+ * Gateway acceptance does not prove handset delivery. Real sign-in codes are
+ * never returned to the browser; Twilio Verify creates and checks its own.
  */
 
 export type SmsResult = {
@@ -23,8 +26,10 @@ export type SmsResult = {
   error?: string
 }
 
-export function smsProviderName(): 'msg91' | 'twilio' | 'console' | 'disabled' {
+export function smsProviderName(): 'twilio-verify' | 'fast2sms' | 'msg91' | 'twilio' | 'console' | 'disabled' {
   const provider = process.env.SMS_PROVIDER?.toLowerCase()
+  if(provider==='twilio-verify')return twilioVerifyConfigured()?'twilio-verify':'disabled'
+  if(provider==='fast2sms')return fast2smsReady('sms','OTP')?'fast2sms':'disabled'
   if (provider === 'msg91' && process.env.MSG91_AUTH_KEY && process.env.MSG91_TEMPLATE_ID) return 'msg91'
   if (provider === 'twilio' && process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM_NUMBER) return 'twilio'
   if (provider === 'console' && process.env.CARENEST_LOCAL_MODE === '1' && process.env.ALLOW_LOCAL_OTP === '1') return 'console'
@@ -33,11 +38,20 @@ export function smsProviderName(): 'msg91' | 'twilio' | 'console' | 'disabled' {
 
 /** True once a real gateway is wired up. */
 export function smsIsLive() {
-  return ['msg91','twilio'].includes(smsProviderName())
+  return ['fast2sms','msg91','twilio'].includes(smsProviderName())
 }
 
-export async function sendOtpSms(phone: string, code: string): Promise<SmsResult> {
+export function smsOtpSetupError(): string | null {
+  if (smsProviderName() !== 'disabled') return null
+  return 'SMS verification is not ready yet. No code was sent.'
+}
+
+export async function sendOtpSms(phone: string, code: string,challenge?:string): Promise<SmsResult> {
   switch (smsProviderName()) {
+    case 'twilio-verify':
+      return {deliveredToDevice:false,error:'Twilio Verify creates its own codes; use the Verify sign-in flow.'}
+    case 'fast2sms':
+      try{if(!challenge)throw new Error('Missing challenge');return {deliveredToDevice:true,id:await sendFast2sms(phone,'sms','OTP','otp:'+challenge,null,[code])}}catch(error){return {deliveredToDevice:false,error:error instanceof DomainError?error.message:'Fast2SMS did not accept the sign-in message.'}}
     case 'msg91':
       return sendViaMsg91(phone, code)
     case 'twilio':

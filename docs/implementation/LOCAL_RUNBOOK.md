@@ -21,9 +21,9 @@ npm start
 
 Open `http://127.0.0.1:3000`. A different local port is supported: `npm run dev -- --port 3001`. The runner forces the embedded PostgreSQL database and binds to the loopback interface. Even if a DATABASE_URL exists in another environment file, this runner does not use it. Do not start multiple instances against `.data/pg`; a process marker blocks the normal second startup. Stop with Ctrl+C before running migration, seed, administrator or backup commands. A stale marker is removed only after its recorded process is confirmed absent.
 
-Startup first applies ordered, checksummed migrations, then starts Next.js and a signed HTTP worker. The worker does not open another copy of the embedded database. It calls the application's internal worker endpoint every five seconds. The endpoint verifies timestamp, nonce and HMAC, rejects replays, expires old appointment holds, materializes calendars, emits due pet reminders and drains events. A local worker sends no external SMS, emails or AI requests.
+Startup first applies ordered, checksummed migrations, then starts Next.js and a signed HTTP worker. The worker does not open another copy of the embedded database. It calls the application's internal worker endpoint every five seconds. The endpoint verifies timestamp, nonce and HMAC, rejects replays, expires old appointment holds, materializes calendars, schedules ten-minute appointment reminders, emits due pet reminders and drains events. AI delivery stays disabled. Explicitly configured Fast2SMS and email senders can deliver messages under their recipient, preference and message-count limits.
 
-Local phone sign-in displays the temporary OTP in the browser. This is possible only when all three explicit local flags agree. The runner sets those flags; direct/non-local production operation without an actual SMS provider fails closed. Do not expose this local runner through a public tunnel or change it into a public deployment.
+Phone sign-in requires a configured SMS/WhatsApp provider. The runner defaults to `SMS_PROVIDER=disabled` and `ALLOW_LOCAL_OTP=0`; it no longer automatically displays a demo code. The current private settings explicitly select the user-authorized Fast2SMS Quick SMS demo, capped at two OTP attempts per rolling day; a Smart OTP ID is needed only when switching to the cheaper approved-template route. Gmail demo delivery separately requires the sender's app password. See [DEMO_SMS_WHATSAPP_GMAIL_GOOGLE_SETUP.md](DEMO_SMS_WHATSAPP_GMAIL_GOOGLE_SETUP.md). An operator can explicitly opt into fictional local demo login with `SMS_PROVIDER=console` and `ALLOW_LOCAL_OTP=1`, only under `CARENEST_LOCAL_MODE=1`. Such codes do not prove phone ownership and cannot be reused after switching to real phone delivery. Do not expose this local runner through a public tunnel or change it into a public deployment.
 
 ## Sample users and operator access
 
@@ -57,7 +57,7 @@ flowchart TD
   Worker[Local signed HTTP worker] --> Next
   Events --> Consumers[Idempotent consumers / in-app updates]
   Consumers --> Video[Local LiveKit / optional Google Calendar Meet adapters]
-  Next --> Payments[Optional Razorpay test adapters]
+  Next --> Payments[Optional Cashfree sandbox checkout]
   CLI[Stopped-app migration / seed / backup tools] --> DB
 ```
 

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "node scripts/local-start.mjs --dev",
     "build": "node scripts/local-build.mjs",
+    "build:vercel": "next build",
     "start": "node scripts/local-start.mjs",
     "seed": "tsx scripts/seed.mjs",
     "test": "tsx --test --test-concurrency=2 \"tests/*.test.mjs\"",
@@ -32,6 +33,7 @@
     "livekit-server-sdk": "^2.19.1",
     "lucide-react": "^1.16.0",
     "next": "16.3.8",
+    "nodemailer": "^10.1.0",
     "pg": "8.23.1",
     "react": "^19",
     "react-dom": "^19",
@@ -43,6 +45,7 @@
     "@livekit/rtc-node": "^1.1.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^24",
+    "@types/nodemailer": "^8.0.2",
     "@types/pg": "8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",

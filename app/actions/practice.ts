@@ -22,7 +22,7 @@ async function finish(form:FormData,outcome:'attended'|'no_show'):Promise<Practi
   const user=await requireRole('doctor','/practice/requests')
   try {await finishAppointment(user.id,String(form.get('bookingId')??''),outcome)}
   catch(error){if(error instanceof DomainError)return {error:error.message};throw error}
-  revalidatePath('/practice/requests');revalidatePath('/account');return {notice:outcome==='attended'?'Marked as attended.':'Marked as no-show.'}
+  revalidatePath('/practice/requests');revalidatePath('/account');revalidatePath('/account/history');return {notice:outcome==='attended'?'Marked as attended.':'Marked as no-show.'}
 }
 export async function beginConsultation(_prev:PracticeState,form:FormData):Promise<PracticeState> {
   const user=await requireRole('doctor','/practice/calendar')

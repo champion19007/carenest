@@ -1,0 +1,97 @@
+{
+  "date": "2026-10-09",
+  "assumptions": {
+    "currency": "INR",
+    "subscriptionNet": 2999,
+    "subscriptionTaxAssumption": 0.18,
+    "gatewayCashRate": 0.0236,
+    "clinicVariableCost": 600,
+    "consultationCollected": 700,
+    "transactionNetRevenueAssumption": 49,
+    "transactionVideoAllocation": 8,
+    "transactionCommunication": 4,
+    "transactionSupport": 12,
+    "transactionRecoveryReserve": 5,
+    "clinicAcquisitionCost": 8000,
+    "monthlyClinicChurnAssumption": 0.03,
+    "notes": [
+      "All values are hypotheses. No real sales, retention, acquisition or conversion data was supplied.",
+      "18% subscription tax and gateway GST cash cost are modelling assumptions; confirm actual classification, credits and contracts with the accountant.",
+      "Transaction scenario assumes INR49 net recognized technology revenue within INR700 collected. Provider pass-through is not platform revenue. Actual tax and settlement structure must be priced separately.",
+      "Subscription gateway cost is computed on the tax-inclusive amount. No input-tax-credit recovery is assumed.",
+      "A transaction charge is an optional, legally reviewed experiment, not an implemented or approved referral commission.",
+      "Fixed costs include staffing, sales and a hypothetical cloud allowance. They exclude one-time setup, financing and corporation income taxes."
+    ]
+  },
+  "subscriptionGateway": 83.51615199999999,
+  "clinicContribution": 2315.483848,
+  "transactionContribution": 3.480000000000004,
+  "clinicCACPaybackMonths": 3.455001427416565,
+  "simplifiedClinicLTV": 77182.79493333334,
+  "saasOnlyBreakEvenClinics": 91,
+  "breakEvenClinicsWith1500Transactions": 89,
+  "churnSensitivity": [
+    {
+      "churn": 0.01,
+      "simplifiedLTV": 231548.38479999997
+    },
+    {
+      "churn": 0.03,
+      "simplifiedLTV": 77182.79493333334
+    },
+    {
+      "churn": 0.06,
+      "simplifiedLTV": 38591.39746666667
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "pilot",
+      "clinics": 20,
+      "completedTransactions": 300,
+      "fixedCost": 100000,
+      "subscriptionRevenue": 59980,
+      "transactionRevenue": 14700,
+      "careGMV": 210000,
+      "subscriptionContribution": 46309.67696,
+      "transactionContribution": 1044.0000000000011,
+      "operatingResult": -52646.32304
+    },
+    {
+      "name": "base",
+      "clinics": 80,
+      "completedTransactions": 1500,
+      "fixedCost": 210000,
+      "subscriptionRevenue": 239920,
+      "transactionRevenue": 73500,
+      "careGMV": 1050000,
+      "subscriptionContribution": 185238.70784,
+      "transactionContribution": 5220.000000000006,
+      "operatingResult": -19541.29216000001
+    },
+    {
+      "name": "growth",
+      "clinics": 120,
+      "completedTransactions": 3000,
+      "fixedCost": 210000,
+      "subscriptionRevenue": 359880,
+      "transactionRevenue": 147000,
+      "careGMV": 2100000,
+      "subscriptionContribution": 277858.06175999995,
+      "transactionContribution": 10440.000000000013,
+      "operatingResult": 78298.06175999995
+    },
+    {
+      "name": "expanded",
+      "clinics": 200,
+      "completedTransactions": 7000,
+      "fixedCost": 300000,
+      "subscriptionRevenue": 599800,
+      "transactionRevenue": 343000,
+      "careGMV": 4900000,
+      "subscriptionContribution": 463096.7696,
+      "transactionContribution": 24360.00000000003,
+      "operatingResult": 187456.7696
+    }
+  ]
+}

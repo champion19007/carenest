@@ -11,15 +11,12 @@
  * k-nearest-neighbour pass over 14 points. The request path only ever reads
  * the resulting table; it never sees a coordinate.
  */
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
-import { splitStatements } from './split-sql.mjs'
-
 /* Local seed only: run with the app stopped because PGlite has one process owner. */
 import { createDatabase } from '../lib/db/adapters.ts'
 import { applyMigrations } from '../lib/db/migrations.ts'
 import { materializeSlots } from '../lib/db/schedule-materializer.ts'
 import { assertLocalStopped } from './local-lock.mjs'
+import {consolidateDemoCatalogue} from '../lib/db/demo-catalogue.ts'
 process.env.CARENEST_LOCAL_MODE = '1'
 await assertLocalStopped()
 const seedDb = await createDatabase()
@@ -124,7 +121,16 @@ const doctors = [
   ['lakshmi-raman','Dr. Lakshmi Raman','Avian & Exotic Pets','B.V.Sc & A.H.',8,'Feathers & Friends Clinic','400614',800,'VET/2017/3390','Maharashtra Veterinary Council',4.7,76,true,false,false,'Female','English,Tamil,Hindi','Today, 7:00 PM','vet','Birds, rabbits and fish. One of the few exotic-pet vets in the region.'],
 ]
 
-for (const d of doctors) {
+doctors.push(
+ ['demo-dentist','Dr. Demo Dentist','Dentist','Sample dental qualification',5,'Sample Dental Clinic','410210',400,'DEMO-DENTAL','Sample council — not verified',0,0,false,false,false,'Other','English,Hindi','','human','Fictional local demonstration; no real dental care is provided.'],
+ ['demo-ophthalmologist','Dr. Demo Eye Specialist','Ophthalmologist','Sample ophthalmology qualification',5,'Sample Eye Clinic','410210',550,'DEMO-EYE','Sample council — not verified',0,0,false,false,false,'Other','English,Hindi','','human','Fictional local demonstration; no real eye care is provided.'],
+ ['demo-vet-dermatology','Dr. Demo Veterinary Dermatologist','Veterinary Dermatology','Sample veterinary qualification',5,'Sample Pet Skin Clinic','410210',650,'DEMO-VET-SKIN','Sample veterinary council — not verified',0,0,false,false,false,'Other','English,Hindi','','vet','Fictional local demonstration; no real veterinary care is provided.'],
+ ['demo-livestock-vet','Dr. Demo Livestock Veterinarian','Livestock & Cattle','Sample veterinary qualification',5,'Sample Livestock Clinic','410210',600,'DEMO-VET-CATTLE','Sample veterinary council — not verified',0,0,false,false,false,'Other','English,Hindi','','vet','Fictional local demonstration; no real livestock care is provided.'],
+)
+const seenCategories=new Set()
+const sampleDoctors=doctors.filter(doctor=>{const key=doctor[18]+':'+doctor[2];if(seenCategories.has(key))return false;seenCategories.add(key);return true})
+
+for (const d of sampleDoctors) {
   const [slug,name,spec,qual,exp,clinic,pin,fee,reg,council,rating,reviews,video,cashless,home,gender,langs,slot,kind,about] = d
   const area = byPin.get(pin)
   await query(
@@ -143,10 +149,10 @@ for (const d of doctors) {
 console.log(`Doctors: ${(await query('SELECT COUNT(*) AS n FROM provider.doctors'))[0].n}`)
 
 // Only known fixture identities are marked as demonstrations; never reset provider suspension.
-for (const d of doctors) {
+for (const d of sampleDoctors) {
   const [slug,name] = d
   await query("UPDATE provider.doctors SET is_demo=true,cashless=false,next_slot='',rating=coalesce((SELECT avg((body->>'rating')::numeric) FROM documents WHERE collection='reviews' AND subject_id=$1),0),reviews_count=(SELECT count(*) FROM documents WHERE collection='reviews' AND subject_id=$1) WHERE id=$1 AND name=$2 AND verified_at IS NULL",[slug,name])
-  await query("UPDATE provider.doctors SET supported_species=$2 WHERE id=$1 AND is_demo=true",[slug,slug==='lakshmi-raman'?['bird','rabbit','other']:['dog','cat','rabbit']])
+  await query("UPDATE provider.doctors SET supported_species=$2 WHERE id=$1 AND is_demo=true",[slug,slug==='demo-livestock-vet'?['cattle']:slug==='lakshmi-raman'?['bird','rabbit','fish','other']:['dog','cat','rabbit']])
   const clinicId='demo_clinic_'+slug
   await query('INSERT INTO clinic.clinics(id,name,city) SELECT $2,clinic,city FROM provider.doctors WHERE id=$1 AND is_demo=true ON CONFLICT DO NOTHING',[slug,clinicId])
   await query('UPDATE provider.doctors SET clinic_id=$2 WHERE id=$1 AND is_demo=true AND clinic_id IS NULL',[slug,clinicId])
@@ -200,6 +206,8 @@ await query("INSERT INTO clinic.memberships(clinic_id,user_id,role) SELECT clini
 await query("INSERT INTO clinic.clinics(id,name,city,address) VALUES('demo_lab','Sample laboratory — local demonstration','Navi Mumbai','Sample location; no real collection service') ON CONFLICT DO NOTHING")
 await query("INSERT INTO clinic.memberships(clinic_id,user_id,role) SELECT 'demo_lab',id,'lab' FROM patient.users WHERE id='usr_demo_lab' ON CONFLICT DO NOTHING")
 await query("INSERT INTO clinic.lab_packages(id,clinic_id,name,description,fee_paise,status,is_demo) VALUES('demo_cbc','demo_lab','Sample complete blood count','Local workflow demonstration. No actual diagnostic test is performed.',35000,'ACTIVE',true) ON CONFLICT DO NOTHING")
+const catalogue=await consolidateDemoCatalogue(seedDb)
+console.log(`Active demo specialties: ${catalogue.kept.length}. Extra demos archived: ${catalogue.archived}; booking history retained.`)
 for(const row of await query("SELECT id FROM provider.doctors WHERE is_demo=true AND status='ACTIVE'"))await materializeSlots(seedDb,row.id,7)
 console.log('Sample veterinarian: 9000000002; sample lab operator: 9000000003. Sample calendars published for the next seven days.')
 

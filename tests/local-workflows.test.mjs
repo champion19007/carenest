@@ -65,7 +65,7 @@ test('actual local pet, lab, file, finance, profile, review and worker workflows
    assert.equal((await db.one('SELECT state FROM clinic.invoices WHERE id=$1',[invoiceId])).state,'PAID')
   })
   await t.test('duplicate captures and refund callbacks cannot double-post money',async()=>{
-   await db.query("INSERT INTO payment_orders(id,invoice_id,user_id,amount_paise,currency,gateway,idempotency_key,external_id,state) VALUES('payment', $1,'patient',35000,'INR','razorpay','payment-idempotency','order_test','CREATED')",[invoiceId])
+   await db.query("INSERT INTO payment_orders(id,invoice_id,user_id,amount_paise,currency,gateway,idempotency_key,external_id,state) VALUES('payment', $1,'patient',35000,'INR','cashfree','payment-idempotency','order_test','CREATED')",[invoiceId])
    await billing.settleCapturedPayment('event1','order_test','payment_test','35000','INR')
    await billing.settleCapturedPayment('event1','order_test','payment_test','35000','INR')
    await billing.settleCapturedPayment('event2','order_test','payment_test','35000','INR')
@@ -85,7 +85,7 @@ test('actual local pet, lab, file, finance, profile, review and worker workflows
    const invoice=(await db.one('SELECT id,state FROM clinic.invoices WHERE lab_order_id=$1',[id]))
    assert.equal(invoice.state,'VOID')
    await assert.rejects(billing.recordClinicPayment('lab-staff',invoice.id,'cash','35000'),e=>e.code==='STATE')
-   await db.query("INSERT INTO payment_orders(id,invoice_id,user_id,amount_paise,currency,gateway,idempotency_key,external_id,state) VALUES('late-payment',$1,'patient',35000,'INR','razorpay','late-payment-intent','late-order','CREATED')",[invoice.id])
+   await db.query("INSERT INTO payment_orders(id,invoice_id,user_id,amount_paise,currency,gateway,idempotency_key,external_id,state) VALUES('late-payment',$1,'patient',35000,'INR','cashfree','late-payment-intent','late-order','CREATED')",[invoice.id])
    await billing.settleCapturedPayment('late-event','late-order','late-capture','35000','INR')
    assert.equal((await db.one('SELECT state FROM clinic.invoices WHERE id=$1',[invoice.id])).state,'VOID')
    assert.equal((await db.one("SELECT state FROM payment_orders WHERE id='late-payment'")).state,'OVERPAYMENT')
@@ -141,16 +141,17 @@ test('actual local pet, lab, file, finance, profile, review and worker workflows
    assert.equal((await support.supportCases('other')).length,0)
   })
   await t.test('old ambiguous email delivery is held beyond the provider deduplication window',async()=>{
-   const oldFetch=globalThis.fetch;let calls=0
-   process.env.CARENEST_LOCAL_MODE='0';process.env.RESEND_API_KEY='fake-test-key';process.env.EMAIL_FROM='test@example.invalid'
+   const oldFetch=globalThis.fetch,oldAppUrl=process.env.APP_URL;let calls=0
+   process.env.CARENEST_LOCAL_MODE='0';process.env.APP_URL='https://carenest.example.invalid';process.env.EMAIL_ENABLED='1';process.env.EMAIL_PROVIDER='resend';process.env.RESEND_API_KEY='fake-test-key';process.env.EMAIL_FROM='test@example.invalid'
    try{
     await db.query("UPDATE patient.users SET email='patient@example.invalid',email_verified_at=now() WHERE id='patient'")
     await db.query("INSERT INTO patient.notification_preferences(user_id,email_enabled) VALUES('patient',true) ON CONFLICT(user_id) DO UPDATE SET email_enabled=true")
-    await db.query("INSERT INTO notification_delivery(effect_key,channel,state,updated_at) VALUES('event:old-email:external','email','SENDING',now()-interval '26 hours')")
+    const event=await db.one("INSERT INTO domain_events(kind,subject_id,payload,event_key) VALUES('account.update_requested','patient',$1::jsonb,'legacy-email-fixture') RETURNING id",[JSON.stringify({userId:'patient'})])
+    await db.query("INSERT INTO notification_delivery(effect_key,channel,state,updated_at) VALUES($1,'email','SENDING',now()-interval '26 hours')",['event:'+event.id+':external'])
     globalThis.fetch=async()=>{calls++;throw new Error('External requests forbidden in this test')}
-    await assert.rejects(load('lib/notifications.ts').sendExternalUpdate('patient','old-email'),e=>e.code==='DELIVERY_UNKNOWN')
+    await assert.rejects(load('lib/notifications.ts').sendExternalUpdate('patient',String(event.id)),e=>e.code==='DELIVERY_UNKNOWN')
     assert.equal(calls,0)
-   }finally{globalThis.fetch=oldFetch;process.env.CARENEST_LOCAL_MODE='1';delete process.env.RESEND_API_KEY;delete process.env.EMAIL_FROM}
+   }finally{globalThis.fetch=oldFetch;process.env.CARENEST_LOCAL_MODE='1';if(oldAppUrl===undefined)delete process.env.APP_URL;else process.env.APP_URL=oldAppUrl;delete process.env.EMAIL_ENABLED;delete process.env.EMAIL_PROVIDER;delete process.env.RESEND_API_KEY;delete process.env.EMAIL_FROM}
   })
   await t.test('private-object purge respects a new hold, removes the file and is idempotent',async()=>{
    const file=await db.one("SELECT id,storage_key FROM private_files WHERE mime='image/png' LIMIT 1")

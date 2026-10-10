@@ -1,0 +1,35 @@
+npm notice run my-project@0.1.0 npx
+npm notice run tsx --test tests/messaging-payments.test.mjs tests/migrations-service.test.mjs tests/local-workflows.test.mjs
+▶ actual local pet, lab, file, finance, profile, review and worker workflows
+  ✔ owned pet health persists; foreign access and mutation fail (474.5612ms)
+  ✔ lab intent is idempotent and foreign family ownership is enforced (81.9648ms)
+  ✔ result upload is staff scoped, PDFs quarantined and normalized images private (358.3899ms)
+  ✔ duplicate offline receipts produce one balanced integer ledger posting (116.2543ms)
+  ✔ duplicate captures and refund callbacks cannot double-post money (147.598ms)
+  ✔ cancelled lab invoices cannot collect payment and a late capture stays refundable (169.3612ms)
+  ✔ profile demographic synchronization and audit rollback are atomic (93.8105ms)
+  ✔ clinical attendance gates reviews and duplicate reviews do not corrupt aggregates (342.1771ms)
+  ✔ expired worker leases and unknown handlers fail closed (621.0726ms)
+  ✔ support review uses current admin access and an expected-state transition (54.1685ms)
+  ✔ old ambiguous email delivery is held beyond the provider deduplication window (96.745ms)
+  ✔ private-object purge respects a new hold, removes the file and is idempotent (58.4498ms)
+✔ actual local pet, lab, file, finance, profile, review and worker workflows (13169.5816ms)
+▶ Razorpay test checkout and actual WhatsApp sandbox contracts
+  ✔ test orders derive price on the server, reuse request keys and reject non-local/live configurations (81.1382ms)
+  ✔ signature, ownership, amount and capture status are checked before marking paid (15.1663ms)
+  ✔ capture is idempotent, emits one update and never mutates clinic invoices or ledger (29.9181ms)
+  ✔ WhatsApp OTP is restricted to the joined phone and codes are not stored in message history (34.7018ms)
+  ✔ updates need opt-in and retries do not send another WhatsApp message (40.8274ms)
+  ✔ authentic provider receipt advances delivery; forged and stale callbacks cannot falsify it (30.8648ms)
+  ✔ an ambiguous WhatsApp outcome is recorded and never blindly resent (40.0794ms)
+  ✔ the durable worker records the test-payment update even with WhatsApp opted out (7291.1498ms)
+✔ Razorpay test checkout and actual WhatsApp sandbox contracts (12526.2335ms)
+✔ real local adapter applies ordered migrations once and rolls back failed transactions (14080.5198ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 17511.1427

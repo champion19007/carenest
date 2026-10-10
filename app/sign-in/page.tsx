@@ -1,3 +1,6 @@
+import {smsProviderName,smsOtpSetupError} from '@/lib/sms'
+import {fast2smsPairReady,fast2smsSelected} from '@/lib/fast2sms'
+import {fast2smsQuickOtp} from '@/lib/fast2sms'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ShieldCheck } from 'lucide-react'
@@ -7,6 +10,7 @@ import { SignInForm } from '@/components/sign-in-form'
 import { destinationForUser } from '@/lib/routes'
 import { currentUser } from '@/lib/auth'
 import { googleIsConfigured } from '@/lib/google'
+import {whatsappReady} from '@/lib/whatsapp'
 
 export const metadata = { title: 'Log in · CareNest' }
 
@@ -17,6 +21,8 @@ export const metadata = { title: 'Log in · CareNest' }
  * the CSRF check failed and tells everyone else nothing at all.
  */
 const GOOGLE_ERRORS: Record<string, string> = {
+  'account-link-required':'Sign into your existing CareNest account first, then connect Google from Your updates.',
+  'google-account':'This account cannot sign in.',
   'google-not-configured': 'Google sign-in is not switched on for this site. Use your mobile number instead.',
   'google-cancelled': 'You cancelled the Google sign-in. Nothing was changed.',
   'google-state': 'That sign-in link expired or did not come from here. Please try again.',
@@ -45,13 +51,12 @@ export default async function SignInPage({
         </div>
       </header>
 
-      <section className="mx-auto grid max-w-[1100px] gap-10 px-5 pb-20 pt-6 lg:grid-cols-[1fr_22rem] lg:px-8">
-        <div className="rounded-xl border border-border bg-card p-7 sm:p-9">
+      <section className="mx-auto grid max-w-[1100px] grid-cols-1 gap-10 px-5 pb-20 pt-6 lg:grid-cols-[1fr_22rem] lg:px-8">
+        <div className="min-w-0 rounded-xl border border-border bg-card p-7 sm:p-9">
           <p className="eyebrow">Patient login</p>
           <h1 className="mt-3 text-4xl">Log in to CareNest</h1>
           <p className="mt-3 max-w-md leading-8 text-muted-foreground">
-            We send a 6-digit code to your mobile number. There is no password to remember — and
-            nobody can sign in without your phone.
+            {smsProviderName()==='console'?'Use a local demo code, or receive a real code through a configured WhatsApp channel.':'Receive a 6-digit sign-in code on your phone. There is no password to remember.'}
           </p>
 
           {error && (
@@ -63,7 +68,8 @@ export default async function SignInPage({
             </p>
           )}
 
-          <SignInForm next={next} google={googleIsConfigured()} />
+          <SignInForm next={next} google={googleIsConfigured()} whatsapp={whatsappReady('OTP')} localDemo={smsProviderName()==='console'} dualOtp={smsProviderName()==='fast2sms'&&fast2smsSelected()&&fast2smsPairReady()} smsReady={smsProviderName()!=='disabled'} setupNotice={smsOtpSetupError()??undefined} />
+          {smsProviderName()==='fast2sms'&&fast2smsQuickOtp()&&<p className="mt-4 text-sm text-muted-foreground">SMS demo: Fast2SMS lists ₹5 per message. Limited to two OTP messages per day across this local app.</p>}
         </div>
 
         <aside className="h-fit rounded-xl border border-border bg-background p-6">
@@ -71,8 +77,7 @@ export default async function SignInPage({
           <ul className="mt-4 space-y-4 text-[0.95rem] leading-7 text-muted-foreground">
             <li>
               <strong className="text-foreground">To hold your slot.</strong> A clinic calendar is
-              a real, limited resource. We only block a slot against a verified phone number so
-              people can&apos;t reserve appointments they never intend to keep.
+              a limited resource. Sign in before requesting an appointment. Local demo codes do not establish real phone ownership.
             </li>
             <li>
               <strong className="text-foreground">To keep your records together.</strong>{' '}

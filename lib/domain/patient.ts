@@ -2,7 +2,7 @@ import 'server-only'
 import {getDb,ensureSchema} from '@/lib/db/client'
 import {reject} from './errors'
 export type AppointmentView={id:string;doctor_id:string;doctor_slug:string;doctor_name:string;clinic:string;speciality:string;status:string;kind:string;fee:number;
- starts_at:string|null;ends_at:string|null;revision:number;subject_name:string;pet_id:string|null;slot_id:string|null;created_at:string;started_at:string|null}
+ starts_at:string|null;ends_at:string|null;revision:number;subject_name:string;pet_id:string|null;slot_id:string|null;created_at:string;started_at:string|null;payment_required:boolean}
 export async function patientAppointments(actorId:string,cursor?:string) {
  await ensureSchema()
  let before:string|null=null,id:string|null=null

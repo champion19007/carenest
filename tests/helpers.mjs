@@ -17,8 +17,14 @@ export function schemaStatements() {
   const extended = readFileSync(path.join(process.cwd(), 'lib', 'db', 'extended-schema.ts'), 'utf8')
   const maintenance = readFileSync(path.join(process.cwd(), 'lib', 'db', 'maintenance-schema.ts'), 'utf8')
   const livekit = readFileSync(path.join(process.cwd(), 'lib', 'db', 'livekit-schema.ts'), 'utf8')
-  return [...splitStatements(src.slice(src.indexOf('`') + 1, src.lastIndexOf('`'))),
-    ...splitStatements(foundation.slice(foundation.indexOf('`') + 1, foundation.lastIndexOf('`'))),...splitStatements(extended.slice(extended.indexOf('`')+1,extended.lastIndexOf('`'))),...splitStatements(maintenance.slice(maintenance.indexOf('`')+1,maintenance.lastIndexOf('`'))),...splitStatements(livekit.slice(livekit.indexOf('`')+1,livekit.lastIndexOf('`')))]
+  const messaging = readFileSync(path.join(process.cwd(), 'lib', 'db', 'messaging-demo-schema.ts'), 'utf8')
+  const cashfree = readFileSync(path.join(process.cwd(), 'lib', 'db', 'cashfree-schema.ts'), 'utf8')
+  const paidBooking = readFileSync(path.join(process.cwd(), 'lib', 'db', 'paid-booking-schema.ts'), 'utf8')
+  const fast2sms = readFileSync(path.join(process.cwd(), 'lib', 'db', 'fast2sms-schema.ts'), 'utf8')
+  const appointmentNotifications = readFileSync(path.join(process.cwd(), 'lib', 'db', 'appointment-notification-schema.ts'), 'utf8')
+  const providerKyc = readFileSync(path.join(process.cwd(), 'lib', 'db', 'provider-kyc-schema.ts'), 'utf8')
+  const verify = readFileSync(path.join(process.cwd(), 'lib', 'db', 'verify-schema.ts'), 'utf8')
+  return [src,foundation,extended,maintenance,livekit,messaging,cashfree,paidBooking,fast2sms,appointmentNotifications,providerKyc,verify].flatMap(source=>splitStatements(source.slice(source.indexOf('`')+1,source.lastIndexOf('`'))))
 }
 
 export async function freshDb() {
