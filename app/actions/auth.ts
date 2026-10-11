@@ -16,12 +16,11 @@ import {sendWhatsAppOtp,whatsappReady} from '@/lib/whatsapp'
 import {fast2smsPairReady,sendFast2smsOtpPair} from '@/lib/fast2sms'
 import {requestTwilioVerifyOtp,consumeTwilioVerifyOtp} from '@/lib/twilio-verify'
 import {DomainError} from '@/lib/domain/errors'
+import {networkFrom} from '@/lib/http'
 import {requestEmailCode,consumeEmailCode,normalizeEmail} from '@/lib/domain/email-auth'
 export type ActionState = { error?: string; notice?: string; otpHint?: string; phone?: string;email?:string;channel?:string;issuedAt?:number }
 async function clientIp() {
-  const h=await headers()
-  if(process.env.TRUST_PROXY!=='1') return 'untrusted-network'
-  return h.get('x-forwarded-for')?.split(',').at(-1)?.trim().slice(0,80) || 'unknown'
+  return networkFrom((await headers()).get('x-forwarded-for'))
 }
 export async function requestEmailOtp(_prev:ActionState,form:FormData):Promise<ActionState>{
  const email=normalizeEmail(String(form.get('email')??''));if(!email)return {error:'Enter a valid email address.'}

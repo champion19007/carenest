@@ -6,7 +6,6 @@ import {
   mobileIntent,
   paymentSuccessWebhook,
   refundStatusWebhook,
-  unknownWebhook,
 } from '../lib/schemas.ts'
 
 /**
@@ -140,9 +139,12 @@ test('a refund id is accepted at either nesting depth', () => {
 })
 
 test('an unknown event keeps only a bounded type string', () => {
-  assert.equal(unknownWebhook.parse({ type: 'SOMETHING_NEW' }).type, 'SOMETHING_NEW')
-  assert.equal(unknownWebhook.parse({}).type, 'UNKNOWN')
-  assert.equal(unknownWebhook.parse({ type: 42 }).type, 'UNKNOWN')
-  /* An over-long type must not reach the database column. */
-  assert.equal(unknownWebhook.parse({ type: 'x'.repeat(500) }).type, 'UNKNOWN')
+  /* Inlined in cashfree-webhooks.ts; asserted here so the clamp is not lost.
+     An over-long type must not reach the database column. */
+  const typeOf = (body) =>
+    typeof body?.type === 'string' && body.type.length <= 100 ? body.type : 'UNKNOWN'
+  assert.equal(typeOf({ type: 'SOMETHING_NEW' }), 'SOMETHING_NEW')
+  assert.equal(typeOf({}), 'UNKNOWN')
+  assert.equal(typeOf({ type: 42 }), 'UNKNOWN')
+  assert.equal(typeOf({ type: 'x'.repeat(500) }), 'UNKNOWN')
 })

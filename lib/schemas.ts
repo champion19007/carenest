@@ -71,7 +71,3 @@ export const refundStatusWebhook = z.object({
   }),
 })
 
-/** Anything else is recorded and ignored, so only the discriminator is read. */
-export const unknownWebhook = z.object({
-  type: z.string().max(100).catch('UNKNOWN'),
-})

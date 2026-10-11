@@ -5,7 +5,7 @@ import {verifyCashfreeWebhook,cashfreePayment,cashfreeRequest,cashfreeAmount} fr
 import {settleCapturedPayment,settleRefund} from './billing'
 import {settleDemoPayment} from './demo-payments'
 import {reject} from './errors'
-import {paymentSuccessWebhook,refundStatusWebhook,unknownWebhook} from '@/lib/schemas'
+import {paymentSuccessWebhook,refundStatusWebhook} from '@/lib/schemas'
 
 export async function acceptCashfreeWebhook(raw:Uint8Array,timestamp:string,signature:string){
  verifyCashfreeWebhook(raw,timestamp,signature)
@@ -35,6 +35,6 @@ export async function acceptCashfreeWebhook(raw:Uint8Array,timestamp:string,sign
  }else{
   // Failed attempts must not reverse a payment already verified as successful.
   const eventId=createHash('sha256').update(raw).digest('hex')
-  await getDb().query("INSERT INTO payment_inbox(gateway,event_id,payload,processed_at) VALUES('cashfree',$1,$2::jsonb,now()) ON CONFLICT DO NOTHING",[eventId,JSON.stringify({type:unknownWebhook.parse(body??{}).type})])
+  await getDb().query("INSERT INTO payment_inbox(gateway,event_id,payload,processed_at) VALUES('cashfree',$1,$2::jsonb,now()) ON CONFLICT DO NOTHING",[eventId,JSON.stringify({type:typeof body?.type==='string'&&body.type.length<=100?body.type:'UNKNOWN'})])
  }
 }

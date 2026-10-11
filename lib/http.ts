@@ -30,7 +30,11 @@ export async function boundedBody(request:Request,maximum:number) {
  * spoofable otherwise, letting one caller mint unlimited buckets.
  * Without it every caller shares one key, so pair this with a global backstop.
  */
-export function networkKey(request: Request) {
+export function networkFrom(forwardedFor: string | null) {
   if (process.env.TRUST_PROXY !== '1') return 'untrusted-network'
-  return request.headers.get('x-forwarded-for')?.split(',').at(-1)?.trim().slice(0, 80) || 'unknown'
+  return forwardedFor?.split(',').at(-1)?.trim().slice(0, 80) || 'unknown'
+}
+
+export function networkKey(request: Request) {
+  return networkFrom(request.headers.get('x-forwarded-for'))
 }
