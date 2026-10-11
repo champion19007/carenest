@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {mkdtemp,rm} from 'node:fs/promises'
+import {mkdir,mkdtemp,rm} from 'node:fs/promises'
 import path from 'node:path'
 import {execFile} from 'node:child_process'
 import {promisify} from 'node:util'
@@ -9,7 +9,7 @@ import {schemaStatements,addUser,addDoctor} from './helpers.mjs'
 import {loadServices} from './service-loader.mjs'
 const run=promisify(execFile)
 test('the actual key-rotation command rotates all workspace envelope contexts without losing readability',async()=>{
- const original={...process.env},root=process.cwd(),directory=await mkdtemp(path.join(root,'.data','rotation-workspace-test-'));let db
+ const original={...process.env},root=process.cwd();await mkdir(path.join(root,'.data'),{recursive:true});const directory=await mkdtemp(path.join(root,'.data','rotation-workspace-test-'));let db
  assert.ok(!path.relative(path.join(root,'.data'),directory).startsWith('..'))
  try{
   Object.assign(process.env,{CARENEST_LOCAL_MODE:'1',DATA_ENCRYPTION_KEY:'1'.repeat(64),AUTH_SECRET:'rotation-fixture-'.repeat(4)});delete process.env.DATA_ENCRYPTION_ACTIVE_ID;delete process.env.DATA_ENCRYPTION_KEYRING
