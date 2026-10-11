@@ -18,23 +18,34 @@ test('hosted configuration does not confuse a local build with a usable Vercel r
  assert.equal(deploymentIssue({NODE_ENV:'development'}),null)
 })
 
-test('missing hosted setup rewrites pages, refuses APIs/actions and keeps static help available',async()=>{
+test('an unconfigured deployment still serves the app, and stays out of search',async()=>{
  const env={...process.env};for(const key of ['DATABASE_URL','AUTH_SECRET','JWT_SECRET','DATA_ENCRYPTION_KEY','CARENEST_LOCAL_MODE'])delete process.env[key];Object.assign(process.env,{VERCEL:'1',NODE_ENV:'production'})
  const response=(kind,url)=>({kind,url,headers:new Headers()})
  const load=loadServices({}, {'next/server':{NextResponse:{next:()=>response('next'),rewrite:url=>response('rewrite',String(url)),json:(body,options)=>({...response('json'),body,status:options?.status??200})}}}),{proxy}=load('proxy.ts')
  const request=(path,method='GET')=>({url:'https://carenest.example'+path,nextUrl:new URL('https://carenest.example'+path),method})
  try{
-  for(const path of ['/','/search?area=400001','/pets','/sign-in','/account','/doctor/fixture']){
-   const result=proxy(request(path));assert.equal(result.kind,'rewrite');assert.equal(result.url,'https://carenest.example/deployment-unavailable');assert.match(result.headers.get('Cache-Control'),/no-store/);assert.equal(result.headers.get('X-Robots-Tag'),'noindex, nofollow')
+  // No holding page: a deployment being tested should fail where the missing
+  // piece is actually needed, not behind a rewrite that hides which piece.
+  for(const path of ['/','/search?area=400001','/pets','/sign-in','/account','/doctor/fixture','/api/me','/api/payments/orders']){
+   const result=proxy(request(path));assert.equal(result.kind,'next');assert.equal(result.status,undefined)
   }
-  for(const path of ['/api/me','/api/auth/google','/api/payments/orders','/api/payments/verify']){
-   const result=proxy(request(path));assert.equal(result.status,503);assert.equal(result.body.code,'SETUP_REQUIRED')
-  }
-  for(const path of ['/','/help','/help/privacy/how-we-use-data','/deployment-unavailable'])assert.equal(proxy(request(path,'POST')).status,503)
-  for(const path of ['/deployment-unavailable','/api/health','/help','/help/privacy/how-we-use-data','/robots.txt','/sitemap.xml','/sitemap/0.xml','/icon.svg'])assert.equal(proxy(request(path)).kind,'next')
+  for(const path of ['/','/help'])assert.equal(proxy(request(path,'POST')).kind,'next')
+
+  // Security headers are not part of the gate and must survive it.
+  const headers=proxy(request('/')).headers
+  assert.equal(headers.get('X-Content-Type-Options'),'nosniff')
+  assert.equal(headers.get('X-Frame-Options'),'DENY')
+  assert.equal(headers.get('Referrer-Policy'),'same-origin')
+
+  // Private paths are never cached, configured or not.
+  assert.equal(proxy(request('/account')).headers.get('Cache-Control'),'private, no-store')
+  assert.equal(proxy(request('/search?q=fever')).headers.get('Cache-Control'),'private, no-store')
+
+  // An incomplete deployment must still refuse to be indexed.
   assert.deepEqual(await load('app/robots.ts').default(),{rules:[{userAgent:'*',disallow:'/'}]})
   assert.deepEqual(await load('app/sitemap.ts').default({id:Promise.resolve('0')}),[])
-  Object.assign(process.env,complete);assert.equal(proxy(request('/')).kind,'next');assert.equal(proxy(request('/account')).headers.get('Cache-Control'),'private, no-store')
+
+  Object.assign(process.env,complete);assert.equal(proxy(request('/')).kind,'next')
  }finally{for(const key of Object.keys(process.env))if(!(key in env))delete process.env[key];Object.assign(process.env,env)}
 })
 
