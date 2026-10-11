@@ -13,12 +13,14 @@ export interface Db {
 
 export async function createDatabase(url?: string, directory = path.join(process.cwd(), '.data', 'pg')): Promise<Db> {
   if (url) {
+    const connection=new URL(url)
+    if(connection.hostname.endsWith('.neon.tech')){connection.searchParams.set('sslmode','verify-full');connection.searchParams.delete('uselibpqcompat')}
     const { Pool, types } = await import('pg')
     types.setTypeParser(1184, value => new Date(value).toISOString())
     types.setTypeParser(1082, value => value)
     const maximum = Number(process.env.DB_POOL_MAX ?? 4)
     if (!Number.isInteger(maximum) || maximum < 1 || maximum > 20) throw new Error('DB_POOL_MAX must be 1–20')
-    const pool = new Pool({ connectionString: url, max: maximum, connectionTimeoutMillis: 2000,
+    const pool = new Pool({ connectionString: connection.toString(), max: maximum, connectionTimeoutMillis: 10000,
       idleTimeoutMillis: 30_000, statement_timeout: 5000, application_name: 'carenest',
       ...(process.env.PG_SSL === 'require' ? { ssl: { rejectUnauthorized: true, ca: process.env.PG_CA_CERT } } : {}),
     })

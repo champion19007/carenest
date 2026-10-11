@@ -54,3 +54,9 @@ Record exact migration, seed, CI and deployment outcomes. Any absent database, d
 - Credentials were transferred in memory and supplied through the maintenance process environment. No production connection string or secret was saved to repository files or `.env.local`.
 
 Deployment and final live-route outcomes are recorded in the release PR and completion report after verification.
+
+## Database-independent hosted builds
+
+The first configured production build attempted a database read inside `generateSitemaps` while collecting build-time route data. Its two-second connection limit expired. `build:vercel` now runs `scripts/hosted-build.mjs`, which sets a build-only phase flag and skips database-dependent sitemap enumeration/content during compilation. That flag is not a Vercel runtime setting. Runtime sitemap and readiness requests still check the real database; an outage is not disguised as a healthy deployment.
+
+Runtime PostgreSQL connections now allow a bounded ten-second connection window while keeping the five-second statement limit. Neon connections explicitly use `sslmode=verify-full` and do not enable the weaker libpq compatibility option. A synthetic configured build with an unreachable database verifies that compilation no longer needs a working connection.
