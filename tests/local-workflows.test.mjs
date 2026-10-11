@@ -18,6 +18,7 @@ test('actual local pet, lab, file, finance, profile, review and worker workflows
   await db.query("INSERT INTO clinic.clinics(id,name) VALUES('clinic','Test clinic'),('lab','Test laboratory')")
   await addDoctor(db,'provider',{slug:'different-public-slug'})
   await db.query("UPDATE provider.doctors SET user_id='doctor',verified_at=now(),clinic_id='clinic'")
+  await db.query("INSERT INTO clinic.memberships(clinic_id,user_id,role) VALUES('clinic','doctor','clinician')")
   await db.query("INSERT INTO clinic.memberships(clinic_id,user_id,role) VALUES('lab','lab-staff','lab')")
   await db.query("INSERT INTO clinic.lab_packages(id,clinic_id,name,fee_paise,status,verified_at) VALUES('package','lab','Test package',35000,'ACTIVE',now())")
   let petId,labId,invoiceId,visit
