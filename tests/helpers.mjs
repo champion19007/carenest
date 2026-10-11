@@ -24,7 +24,8 @@ export function schemaStatements() {
   const appointmentNotifications = readFileSync(path.join(process.cwd(), 'lib', 'db', 'appointment-notification-schema.ts'), 'utf8')
   const providerKyc = readFileSync(path.join(process.cwd(), 'lib', 'db', 'provider-kyc-schema.ts'), 'utf8')
   const verify = readFileSync(path.join(process.cwd(), 'lib', 'db', 'verify-schema.ts'), 'utf8')
-  return [src,foundation,extended,maintenance,livekit,messaging,cashfree,paidBooking,fast2sms,appointmentNotifications,providerKyc,verify].flatMap(source=>splitStatements(source.slice(source.indexOf('`')+1,source.lastIndexOf('`'))))
+  const emailAuth = readFileSync(path.join(process.cwd(), 'lib', 'db', 'email-auth-schema.ts'), 'utf8')
+  return [src,foundation,extended,maintenance,livekit,messaging,cashfree,paidBooking,fast2sms,appointmentNotifications,providerKyc,verify,emailAuth].flatMap(source=>splitStatements(source.slice(source.indexOf('`')+1,source.lastIndexOf('`'))))
 }
 
 export async function freshDb() {

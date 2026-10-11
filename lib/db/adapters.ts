@@ -1,5 +1,6 @@
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
+import {reportError} from '@/lib/observability'
 export type Row = Record<string, unknown>
 export interface Db {
   query<T = Row>(text: string, params?: unknown[]): Promise<T[]>
@@ -21,7 +22,7 @@ export async function createDatabase(url?: string, directory = path.join(process
       idleTimeoutMillis: 30_000, statement_timeout: 5000, application_name: 'carenest',
       ...(process.env.PG_SSL === 'require' ? { ssl: { rejectUnauthorized: true, ca: process.env.PG_CA_CERT } } : {}),
     })
-    pool.on('error', () => console.error('[database] pooled connection error'))
+    pool.on('error', error => reportError(error,'database.pool_failed'))
     const root: Db = {
       backend: 'postgres',
       async query<T>(sql: string, values: unknown[] = []) { return (await pool.query(sql, values)).rows as T[] },

@@ -1,0 +1,12 @@
+'use client'
+import {useActionState,useEffect,useState} from 'react'
+import {useFormStatus} from 'react-dom'
+import {requestEmailOtp,verifyEmailOtp,type ActionState} from '@/app/actions/auth'
+function Submit({verify=false}:{verify?:boolean}){const {pending}=useFormStatus();return <button className="care-button w-full" disabled={pending}>{pending?'Please wait…':verify?'Verify email code':'Send email code'}</button>}
+export function EmailSignInForm({next}:{next?:string}){
+ const [requested,request]=useActionState(requestEmailOtp,{} as ActionState),[verified,verify]=useActionState(verifyEmailOtp,{} as ActionState),[cooldown,setCooldown]=useState(0)
+ useEffect(()=>{if(requested.email){setCooldown(60);const timer=setInterval(()=>setCooldown(value=>Math.max(0,value-1)),1000);return()=>clearInterval(timer)}},[requested.issuedAt,requested.email])
+ return <details className="mt-6 rounded-xl border border-border bg-background p-5"><summary className="cursor-pointer font-semibold">Sign in with an email code</summary><p className="mt-3 text-sm leading-6 text-muted-foreground">For an existing account whose email is already verified. New here? Use your mobile number or Google above.</p>
+  {requested.email&&requested.notice?<form action={verify} className="mt-4 space-y-4"><input type="hidden" name="email" value={requested.email}/><input type="hidden" name="next" value={next??''}/><p role="status" className="text-sm leading-6">{requested.notice}</p><label className="block font-semibold">Six-digit email code<input name="code" className="field mt-2 w-full text-center tracking-widest" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required/></label>{(requested.error||verified.error)&&<p role="alert" className="text-sm text-warning">{requested.error??verified.error}</p>}<Submit verify/><button className="min-h-11 w-full text-sm font-semibold text-primary disabled:opacity-50" formAction={request} formNoValidate disabled={cooldown>0}>{cooldown>0?`Resend email in ${cooldown}s`:'Resend email code'}</button></form>:<form action={request} className="mt-4 space-y-4"><label className="block font-semibold">Verified email<input className="field mt-2 w-full" name="email" type="email" autoComplete="email" maxLength={254} required/></label>{requested.error&&<p role="alert" className="text-sm text-warning">{requested.error}</p>}<Submit/></form>}
+ </details>
+}

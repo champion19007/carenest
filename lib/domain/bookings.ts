@@ -58,6 +58,13 @@ async function event(tx: Db, appointment: Appointment, actorId: string | null, f
   await tx.query('INSERT INTO domain_events(kind,subject_id,payload,event_key) VALUES($1,$2,$3::jsonb,$4) ON CONFLICT DO NOTHING',
     ['booking.' + appointment.status, appointment.id, JSON.stringify({ userId: appointment.user_id, revision: appointment.revision }),
       `booking:${appointment.id}:${appointment.revision}:${appointment.status}`])
+  if(appointment.status==='confirmed'){
+    await tx.query(`INSERT INTO domain_events(kind,subject_id,payload,event_key)
+      SELECT 'provider.booking_confirmed',$1,jsonb_build_object('userId',d.user_id,'revision',$2::int),$3
+      FROM provider.doctors d JOIN patient.users u ON u.id=d.user_id JOIN clinic.clinics c ON c.id=d.clinic_id
+      WHERE d.id=$4 AND d.status='ACTIVE' AND u.status='ACTIVE' AND u.role='doctor' AND u.kyc_level='verified' AND c.status='ACTIVE'
+      ON CONFLICT DO NOTHING`,[appointment.id,appointment.revision,`provider-booking:${appointment.id}:${appointment.revision}:confirmed`,appointment.doctor_id])
+  }
 }
 async function change(tx: Db, b: Appointment, actorId: string | null, to: string, reason = '') {
   const next = await tx.one<Appointment>(`UPDATE patient.bookings SET status=$2,revision=revision+1,

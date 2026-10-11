@@ -1,5 +1,6 @@
 import {DomainError} from './domain/errors'
 import {localMode} from './secrets'
+import {reportError} from './observability'
 export function sameOrigin(request:Request) {
  const origin=request.headers.get('origin')
  if(!origin)return false
@@ -13,6 +14,7 @@ export function sameOrigin(request:Request) {
  }catch{return false}
 }
 export function errorResponse(error:unknown) {
+ if(!(error instanceof DomainError))reportError(error,'api.operation_failed')
  return Response.json({error:error instanceof DomainError?error.message:'The operation could not be completed.'},
   {status:error instanceof DomainError?error.status:500,headers:{'Cache-Control':'private, no-store'}})
 }

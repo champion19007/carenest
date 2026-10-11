@@ -1,0 +1,38 @@
+name: CareNest checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: carenest-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Types
+        run: npm run typecheck
+      - name: Tests with coverage gates
+        run: npm run test:coverage
+      - name: Runtime dependency audit
+        run: npm audit --omit=dev --audit-level=high
+      - name: Build-tool dependency audit
+        run: npm audit --audit-level=critical
+      - name: Build without hosted credentials
+        run: npm run build:vercel
+      - name: Retain coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: carenest-coverage
+          path: .data/coverage/
+          if-no-files-found: ignore

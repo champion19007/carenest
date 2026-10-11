@@ -41,10 +41,10 @@ test('missing hosted setup rewrites pages, refuses APIs/actions and keeps static
 test('health checks refuse incomplete configuration before touching the database and report pending migrations privately',async()=>{
  const env={...process.env};for(const key of ['DATABASE_URL','AUTH_SECRET','JWT_SECRET','DATA_ENCRYPTION_KEY','CARENEST_LOCAL_MODE'])delete process.env[key];Object.assign(process.env,{VERCEL:'1',NODE_ENV:'production'})
  let calls=0,fail=false
- const load=loadServices({}, {'@/lib/db/client':{ensureSchema:async()=>{calls++;if(fail)throw new Error('Private database diagnostic')}},'next/server':{NextResponse:{json:(body,options)=>({body,status:options?.status??200,headers:options?.headers})}}}),{GET}=load('app/api/health/route.ts')
+ const load=loadServices({}, {'@/lib/db/client':{getDb:()=>({one:async()=>{calls++;if(fail)throw new Error('Private database diagnostic');return {version:'ready'}}})},'next/server':{NextResponse:{json:(body,options)=>({body,status:options?.status??200,headers:options?.headers})}}}),{GET}=load('app/api/health/route.ts')
  try{
   let result=await GET();assert.equal(result.status,503);assert.equal(calls,0);assert.equal(result.body.code,'SETUP_REQUIRED')
-  Object.assign(process.env,complete);result=await GET();assert.equal(result.status,200);assert.equal(result.body.status,'ready')
+  Object.assign(process.env,complete);result=await GET();assert.equal(result.status,200);assert.equal(result.body.status,'ready');assert.equal(result.body.database,'ok')
   fail=true;result=await GET();assert.equal(result.status,503);assert.equal(result.body.code,'DATABASE_NOT_READY');assert.equal(JSON.stringify(result).includes('Private database diagnostic'),false);assert.equal(result.headers['Cache-Control'],'no-store')
  }finally{for(const key of Object.keys(process.env))if(!(key in env))delete process.env[key];Object.assign(process.env,env)}
 })

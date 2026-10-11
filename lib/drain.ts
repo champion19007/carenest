@@ -12,6 +12,7 @@ import {sendExternalUpdate} from './notifications'
 import {decodeEnquiryNotes} from './db/leads'
 import {purgePrivateFile} from './domain/files'
 import {updateMessage} from './domain/appointment-notifications'
+import {reportError} from './observability'
 export type DrainResult={claimed:number;sent:number;failed:number}
 const bookingKinds=new Set(['booking.requested','booking.confirmed','booking.declined','booking.cancelled','booking.expired','booking.attended','booking.no_show'])
 async function notify(event:DomainEvent,userId:string,title:string,body:string){
@@ -25,7 +26,7 @@ async function notify(event:DomainEvent,userId:string,title:string,body:string){
 async function handle(event:DomainEvent){
  if(event.payload_version!==1)throw new DomainError('UNKNOWN_VERSION','Unsupported event payload version.',400)
  if(event.kind==='privacy.file_purge'){await purgePrivateFile(String(event.subject_id));return}
- if(event.kind==='booking.reminder_due'){
+ if(event.kind==='booking.reminder_due'||event.kind==='provider.booking_confirmed'){
   const userId=String(event.payload.userId??''),message=await updateMessage(userId,event.id)
   if(message)await notify(event,userId,message.title,message.text)
   return
@@ -75,7 +76,7 @@ export async function drainAll(limit=20,deadline=Date.now()+30000):Promise<Drain
  for(let index=0;index<Math.min(50,limit)&&Date.now()<deadline;index++){
   const events=await claimBatch(1);if(!events.length)break;const event=events[0];claimed++
   try{await handle(event);await markSent(event.id,event.lease_token??undefined);sent++}
-  catch(error){await markFailed(event.id,event.attempts,error instanceof DomainError?error.code:'HANDLER_FAILED',event.lease_token??undefined,error instanceof DomainError&&['UNKNOWN_HANDLER','UNKNOWN_VERSION','PAYLOAD','RECIPIENT'].includes(error.code));failed++}
+  catch(error){reportError(error,'worker.event_failed',{attempts:event.attempts,state:'FAILED'});await markFailed(event.id,event.attempts,error instanceof DomainError?error.code:'HANDLER_FAILED',event.lease_token??undefined,error instanceof DomainError&&['UNKNOWN_HANDLER','UNKNOWN_VERSION','PAYLOAD','RECIPIENT'].includes(error.code));failed++}
  }
  return {claimed,sent,failed}
 }

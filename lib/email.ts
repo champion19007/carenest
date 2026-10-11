@@ -12,6 +12,18 @@ export function emailConfigured(){
  if(process.env.EMAIL_PROVIDER==='gmail')return /^[^\s@]+@gmail\.com$/i.test(process.env.GMAIL_SENDER_EMAIL??'')&&/^[A-Za-z0-9]{16}$/.test((process.env.GMAIL_APP_PASSWORD??'').replace(/\s/g,''))
  return process.env.EMAIL_PROVIDER==='resend'&&Boolean(process.env.RESEND_API_KEY&&process.env.EMAIL_FROM)
 }
+export async function sendSignInEmail(to:string,code:string,intent:string){
+ if(!emailConfigured()||!/^\d{6}$/.test(code)||!/^\S+@\S+\.\S+$/.test(to))reject('EMAIL_SETUP','Email sign-in is not configured.',503)
+ const text=`Your CareNest sign-in code is ${code}. It expires in five minutes. Do not share it. If you did not request this code, ignore this email.`
+ if(process.env.EMAIL_PROVIDER==='gmail'){
+  const sender=process.env.GMAIL_SENDER_EMAIL!,transport=nodemailer.createTransport({host:'smtp.gmail.com',port:465,secure:true,auth:{user:sender,pass:process.env.GMAIL_APP_PASSWORD!.replace(/\s/g,'')},connectionTimeout:8000,greetingTimeout:8000,socketTimeout:10000,logger:false,debug:false})
+  try{const result=await transport.sendMail({from:{name:'CareNest',address:sender},to,subject:'Your CareNest sign-in code',text,messageId:`<${privateKey('email-auth-message',intent)}@gmail.com>`});if(!result.messageId||!result.accepted.some((recipient:unknown)=>String(recipient).toLowerCase()===to.toLowerCase()))reject('EMAIL_UNKNOWN','Email provider acceptance was not confirmed.',503)}finally{transport.close()}
+ }else{
+  const response=await fetch('https://api.resend.com/emails',{method:'POST',redirect:'error',headers:{Authorization:'Bearer '+process.env.RESEND_API_KEY,'Content-Type':'application/json','Idempotency-Key':'email-auth:'+intent},body:JSON.stringify({from:process.env.EMAIL_FROM,to:[to],subject:'Your CareNest sign-in code',text}),signal:AbortSignal.timeout(10000)})
+  if(!response.ok)reject('EMAIL_UNKNOWN','Email provider acceptance was not confirmed.',503)
+  const receipt=await response.json() as {id?:unknown};if(typeof receipt.id!=='string'||!receipt.id.trim())reject('EMAIL_UNKNOWN','Email provider acceptance was not confirmed.',503)
+ }
+}
 export async function sendEmailUpdate(userId:string,eventId:string){
  await ensureSchema()
  const prefs=await notificationPreferences(userId);if(!prefs.email_enabled)return

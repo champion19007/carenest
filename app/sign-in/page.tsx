@@ -11,6 +11,8 @@ import { destinationForUser } from '@/lib/routes'
 import { currentUser } from '@/lib/auth'
 import { googleIsConfigured } from '@/lib/google'
 import {whatsappReady} from '@/lib/whatsapp'
+import {emailCodeConfigured} from '@/lib/domain/email-auth'
+import {EmailSignInForm} from '@/components/email-sign-in-form'
 
 export const metadata = { title: 'Log in · CareNest' }
 
@@ -70,6 +72,7 @@ export default async function SignInPage({
 
           <SignInForm next={next} google={googleIsConfigured()} whatsapp={whatsappReady('OTP')} localDemo={smsProviderName()==='console'} dualOtp={smsProviderName()==='fast2sms'&&fast2smsSelected()&&fast2smsPairReady()} smsReady={smsProviderName()!=='disabled'} setupNotice={smsOtpSetupError()??undefined} />
           {smsProviderName()==='fast2sms'&&fast2smsQuickOtp()&&<p className="mt-4 text-sm text-muted-foreground">SMS demo: Fast2SMS lists ₹5 per message. Limited to two OTP messages per day across this local app.</p>}
+          {emailCodeConfigured()&&<EmailSignInForm next={next}/>}
         </div>
 
         <aside className="h-fit rounded-xl border border-border bg-background p-6">

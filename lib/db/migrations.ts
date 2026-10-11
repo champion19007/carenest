@@ -11,6 +11,7 @@ import {FAST2SMS_SCHEMA} from './fast2sms-schema'
 import {APPOINTMENT_NOTIFICATIONS} from './appointment-notification-schema'
 import {PROVIDER_KYC} from './provider-kyc-schema'
 import {VERIFY_SCHEMA} from './verify-schema'
+import {EMAIL_AUTH_SCHEMA} from './email-auth-schema'
 import type { Db } from './adapters'
 export const migrations = [
   { version: '0001-legacy', sql: SCHEMA },
@@ -25,6 +26,7 @@ export const migrations = [
   { version: '0010-appointment-notifications', sql: APPOINTMENT_NOTIFICATIONS },
   { version: '0011-provider-kyc', sql: PROVIDER_KYC },
   { version: '0012-twilio-verify', sql: VERIFY_SCHEMA },
+  { version: '0013-email-code-login', sql: EMAIL_AUTH_SCHEMA },
 ]
 export const LATEST_MIGRATION = migrations.at(-1)!.version
 export async function applyMigrations(db: Db) {

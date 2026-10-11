@@ -16,11 +16,27 @@ import {sendWhatsAppOtp,whatsappReady} from '@/lib/whatsapp'
 import {fast2smsPairReady,sendFast2smsOtpPair} from '@/lib/fast2sms'
 import {requestTwilioVerifyOtp,consumeTwilioVerifyOtp} from '@/lib/twilio-verify'
 import {DomainError} from '@/lib/domain/errors'
-export type ActionState = { error?: string; notice?: string; otpHint?: string; phone?: string;channel?:string;issuedAt?:number }
+import {requestEmailCode,consumeEmailCode,normalizeEmail} from '@/lib/domain/email-auth'
+export type ActionState = { error?: string; notice?: string; otpHint?: string; phone?: string;email?:string;channel?:string;issuedAt?:number }
 async function clientIp() {
   const h=await headers()
   if(process.env.TRUST_PROXY!=='1') return 'untrusted-network'
   return h.get('x-forwarded-for')?.split(',').at(-1)?.trim().slice(0,80) || 'unknown'
+}
+export async function requestEmailOtp(_prev:ActionState,form:FormData):Promise<ActionState>{
+ const email=normalizeEmail(String(form.get('email')??''));if(!email)return {error:'Enter a valid email address.'}
+ try{await requestEmailCode(email,await clientIp());return {email,issuedAt:Date.now(),notice:'If this is an active account with a verified email, a sign-in code has been requested. Check your inbox and Spam.'}}
+ catch(error){const failure={error:error instanceof DomainError?error.message:'Email sign-in could not start. Try again later.'};return _prev.email===email&&_prev.notice?{..._prev,...failure}:failure}
+}
+export async function verifyEmailOtp(_prev:ActionState,form:FormData):Promise<ActionState>{
+ const email=normalizeEmail(String(form.get('email')??'')),code=String(form.get('code')??'').trim();if(!email||!/^\d{6}$/.test(code))return {error:'Enter your email and six-digit code.'}
+ try{
+  const id=await consumeEmailCode(email,code,await clientIp()),user=id?await findUserById(id):undefined
+  if(!user||user.status!=='ACTIVE')return {email,error:'The code is incorrect, expired or unavailable. Request a new code.'}
+  await touchLogin(user.id);await startSession(user);if(user.name)await ensureSelfMember(user.id,user.name,newId('fam'))
+  await logActivity({kind:'user.login',message:'Account signed in with verified email',userId:user.id})
+  redirect(destinationForUser(user,String(form.get('next')??'')))
+ }catch(error){if(error instanceof DomainError)return {email,error:'Email verification could not complete. Request a new code.'};throw error}
 }
 export async function requestOtp(_prev:ActionState, form:FormData):Promise<ActionState> {
   const phone=normalizePhone(String(form.get('phone')??''))

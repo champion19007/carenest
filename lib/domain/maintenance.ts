@@ -17,6 +17,7 @@ export async function runLocalWork(batch=20){
  await getDb().query('DELETE FROM worker_runs WHERE expires_at<now()')
  await getDb().query('DELETE FROM mobile_pairings WHERE expires_at<now()')
  await getDb().query("DELETE FROM phone_verifications WHERE expires_at<now()-interval '1 day'")
+ await getDb().query("DELETE FROM email_auth_challenges WHERE expires_at<now()-interval '1 day'")
  await getDb().query("DELETE FROM mobile_sync_intents WHERE created_at<now()-interval '30 days'")
  const remindersScheduled=await scheduleAppointmentReminders()
  const drained=await drainAll(batch,deadline-18000);let videoFence='disabled'

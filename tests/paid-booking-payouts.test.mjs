@@ -133,6 +133,8 @@ test('prepaid appointment and completed-doctor payout lifecycle',async t=>{
    assert.equal(await db.one('SELECT id FROM doctor_payouts WHERE booking_id=$1',[noShow.b.id]),undefined)
    await db.query("UPDATE provider.doctors SET fee=0 WHERE id='provider'");const free=await reserve();await db.query("UPDATE provider.doctors SET fee=400 WHERE id='provider'")
    assert.equal(free.b.status,'confirmed');assert.equal(free.i.state,'WAIVED');assert.equal(Number((await db.one('SELECT count(*) n FROM payment_orders WHERE invoice_id=$1',[free.i.id])).n),0)
+   const confirmation=await db.one("SELECT id FROM domain_events WHERE subject_id=$1 AND kind='booking.confirmed' ORDER BY created_at DESC LIMIT 1",[free.b.id])
+   assert.ok(await load('lib/domain/appointment-notifications.ts').updateMessage('patient',String(confirmation.id)))
   })
   await t.test('IP rejection before transfer safely retries after setup and uses the current verified destination',async()=>{
    const waiting=await reserve();await pay(waiting);const queued=await complete(waiting),beforePosts=posts;denyBeneficiary=true
