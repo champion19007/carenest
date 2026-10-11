@@ -93,7 +93,7 @@ The PostgreSQL verification command uses a separate synthetic local Docker envir
 
 ## Owner setup before the MVP pilot
 
-1. Configure persistent PostgreSQL, authentication and encryption settings in Vercel, apply the ordered migrations and verify `/api/health`. A local PGlite database is not a hosted database. `DATABASE_URL` is set by you in the hosting provider; migrations cannot create it, and running them locally only affects `.data/pg`. A deployment missing any of these serves the application and fails at the request that needs the missing piece, so `/api/health` and the server logs are how you find out which one. Keep main deployment separate from PR #3 until checks and setup are complete.
+1. Configure persistent PostgreSQL, authentication and encryption settings in Vercel, apply the ordered migrations and verify `/api/health`. A local PGlite database is not a hosted database. `DATABASE_URL` is set by you in the hosting provider; migrations cannot create it, and running them locally only affects `.data/pg`. A deployment missing any of these serves the application and fails at the request that needs the missing piece, so `/api/health` and the server logs are how you find out which one. Review deployment changes in a pull request and verify the resulting live routes after release.
 2. Activate and validate Twilio phone verification, Gmail sender, Google OAuth redirect URLs, Meta booking/payment/reminder templates and Cashfree test checkout/payout beneficiaries. Sandbox success does not authorize live payments or transfers.
 3. Keep a worker running for queued deliveries, reminders and reconciliation. Confirm actual email and WhatsApp receipt using the intended test accounts; provider acceptance alone is insufficient.
 4. Onboard real doctors/vets with license evidence, consent, a human reviewer and verified payout details. Complete business information, support/grievance contact and the applicable operating policies before accepting real patients.
@@ -107,6 +107,7 @@ See the implementation reports for dated test results and outstanding provider c
 - [Local operation, architecture and data rules](docs/implementation/LOCAL_RUNBOOK.md)
 - [Avyora improvements, monitoring and remaining setup](docs/implementation/AVYORA_IMPROVEMENTS_APPLIED_TO_CARENEST.md)
 - [Vercel database setup and crash recovery](docs/implementation/VERCEL_DATABASE_SETUP_AND_CRASH_FIX.md)
+- [Hosted migration, demo catalogue and deployment acceptance](docs/implementation/HOSTED_DATABASE_EXECUTION.md)
 - [Implementation ledger](docs/implementation/LOCAL_IMPLEMENTATION_LEDGER.md)
 - [Remaining work and provider setup](docs/implementation/REMAINING_WORK_IMPLEMENTATION_AND_SETUP.md)
 - [LiveKit implementation and validation](docs/implementation/LIVEKIT_LOCAL_VIDEO_IMPLEMENTATION.md)

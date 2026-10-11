@@ -59,6 +59,7 @@ export type DoctorRow = {
   status: string
   verified_at: string | null
   is_demo: boolean
+  catalogue_only?: boolean
   clinic_id: string | null
   supported_species: string[]
   rating: number
@@ -345,6 +346,7 @@ export async function hitRateLimit(
 function normaliseDoctor(row: DoctorRow): DoctorRow {
   return {
     ...row,
+    catalogue_only: row.is_demo&&!localMode(),
     rating: Number(row.rating),
     reviews_count: Number(row.reviews_count),
     fee: Number(row.fee),
@@ -385,9 +387,10 @@ export async function searchDoctors(query: DoctorQuery = {}): Promise<DoctorRow[
     return `$${params.length}`
   }
 
-  where.push(`(verified_at IS NOT NULL OR (${p(localMode())}::boolean AND is_demo))`)
+  const showDemo=`(${p(localMode())}::boolean OR EXISTS(SELECT 1 FROM provider.demo_catalogue_settings WHERE id=1 AND enabled))`
+  where.push(`(verified_at IS NOT NULL OR (${showDemo} AND is_demo))`)
 
-  where.push(`((${p(localMode())}::boolean AND is_demo) OR EXISTS(SELECT 1 FROM patient.users u WHERE u.id=provider.doctors.user_id AND u.status='ACTIVE' AND u.role='doctor' AND u.kyc_level='verified'))`)
+  where.push(`((${showDemo} AND is_demo) OR EXISTS(SELECT 1 FROM patient.users u WHERE u.id=provider.doctors.user_id AND u.status='ACTIVE' AND u.role='doctor' AND u.kyc_level='verified'))`)
   where.push(`NOT EXISTS(SELECT 1 FROM clinic.clinics c WHERE c.id=provider.doctors.clinic_id AND c.status<>'ACTIVE')`)
   where.push(`kind = ${p(query.kind ?? 'human')}`)
 
@@ -436,7 +439,7 @@ export async function searchDoctors(query: DoctorQuery = {}): Promise<DoctorRow[
 
 export async function findDoctorBySlug(slug: string): Promise<DoctorRow | undefined> {
   const d = await db()
-  const row = await d.one<DoctorRow>("SELECT * FROM provider.doctors WHERE slug = $1 AND status='ACTIVE' AND (verified_at IS NOT NULL OR ($2::boolean AND is_demo)) AND (($2::boolean AND is_demo) OR EXISTS(SELECT 1 FROM patient.users u WHERE u.id=provider.doctors.user_id AND u.status='ACTIVE' AND u.role='doctor' AND u.kyc_level='verified')) AND NOT EXISTS(SELECT 1 FROM clinic.clinics c WHERE c.id=provider.doctors.clinic_id AND c.status<>'ACTIVE')", [slug,localMode()])
+  const row = await d.one<DoctorRow>("SELECT * FROM provider.doctors WHERE slug = $1 AND status='ACTIVE' AND (verified_at IS NOT NULL OR (($2::boolean OR EXISTS(SELECT 1 FROM provider.demo_catalogue_settings WHERE id=1 AND enabled)) AND is_demo)) AND ((($2::boolean OR EXISTS(SELECT 1 FROM provider.demo_catalogue_settings WHERE id=1 AND enabled)) AND is_demo) OR EXISTS(SELECT 1 FROM patient.users u WHERE u.id=provider.doctors.user_id AND u.status='ACTIVE' AND u.role='doctor' AND u.kyc_level='verified')) AND NOT EXISTS(SELECT 1 FROM clinic.clinics c WHERE c.id=provider.doctors.clinic_id AND c.status<>'ACTIVE')", [slug,localMode()])
   return row ? normaliseDoctor(row) : undefined
 }
 
