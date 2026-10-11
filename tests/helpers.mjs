@@ -44,7 +44,7 @@ export async function freshDb() {
   return wrap(pg)
 }
 
-/* ── fixtures ──────────────────────────────────────────────────────── */
+/* fixtures */
 
 export async function addArea(db, pin, name, city = 'Mumbai') {
   const row = await db.one(
@@ -96,7 +96,7 @@ export async function addUser(db, id, phone, role = 'patient') {
   await db.query('INSERT INTO patient.users (id, phone, role) VALUES ($1,$2,$3)', [id, phone, role])
 }
 
-/* ── ports of the production queries ───────────────────────────────── */
+/* ports of the production queries */
 
 export async function searchDoctors(db, query = {}) {
   const where = [`status = 'ACTIVE'`]

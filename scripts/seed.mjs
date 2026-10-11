@@ -23,7 +23,7 @@ const seedDb = await createDatabase()
 await applyMigrations(seedDb)
 const query = (sql, params = []) => seedDb.query(sql, params)
 const close = () => seedDb.close()
-/* ── areas ──────────────────────────────────────────────────────────── */
+/* areas */
 
 // Centroids are used once, here, to compute adjacency. They are never read at
 // request time and never rendered.
@@ -57,7 +57,7 @@ const localityRows = await query('SELECT locality_id, pin_code, name, lat, lng F
 const byPin = new Map(localityRows.map((r) => [r.pin_code, r]))
 console.log(`Areas: ${localityRows.length}`)
 
-/* ── offline adjacency build (the "map" cost, paid once) ────────────── */
+/* offline adjacency build (the "map" cost, paid once) */
 
 const R = 6371 // km
 const toRad = (d) => (d * Math.PI) / 180
@@ -101,7 +101,7 @@ for (const origin of seededAreas) {
 }
 console.log(`Adjacency edges: ${edges} (computed offline, k=${K}, max ${MAX_KM} km)`)
 
-/* ── doctors ────────────────────────────────────────────────────────── */
+/* doctors */
 
 const doctors = [
   ['ananya-deshmukh','Dr. Ananya Deshmukh','General Physician','MBBS, MD (Internal Medicine)',12,'Sunrise Multispeciality Clinic','410210',600,'2013/04/8821','Maharashtra Medical Council',4.8,238,true,true,true,'Female','English,Hindi,Marathi','Today, 6:30 PM','human','Treats fever, infections, diabetes and blood pressure. Known for explaining test results in plain language rather than jargon.'],
@@ -159,7 +159,7 @@ for (const d of sampleDoctors) {
   for(let weekday=0;weekday<7;weekday++) await query('INSERT INTO provider.schedule_rules(id,doctor_id,weekday,start_minute,end_minute,duration_minutes) SELECT $1,id,$3,540,1200,30 FROM provider.doctors WHERE id=$2 AND is_demo=true ON CONFLICT DO NOTHING',[`rule_${slug}_${weekday}`,slug,weekday])
 }
 
-/* ── demo clinic login ──────────────────────────────────────────────── */
+/* demo clinic login */
 
 const DEMO_PHONE = '9000000001'
 await query(
@@ -187,7 +187,7 @@ console.log(
     : 'WARNING: no provider row matched the demo doctor name',
 )
 
-/* ── coverage report ────────────────────────────────────────────────── */
+/* coverage report */
 
 const coverage = await query(`
   SELECT l.pin_code, l.name,

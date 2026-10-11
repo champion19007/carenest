@@ -20,7 +20,7 @@ export function nowIso() {
   return new Date().toISOString()
 }
 
-/* ─────────────────────────────────────────────────────────────── types */
+/* types */
 
 export type User = {
   id: string
@@ -119,7 +119,7 @@ export type AreaSuggestion = Locality & {
   distance_km?: number | string | null
 }
 
-/* ─────────────────────────────────────────────────────────────── users */
+/* users */
 
 export async function findUserByPhone(phone: string): Promise<User | undefined> {
   const d = await db()
@@ -232,7 +232,7 @@ export async function countUsers(): Promise<number> {
   return Number(row?.n ?? 0)
 }
 
-/* ─────────────────────────────────────────────────────────── sessions */
+/* sessions */
 
 export async function createSession(token: string, userId: string, days = 30) {
   const d = await db()
@@ -264,7 +264,7 @@ export async function countActiveSessions(): Promise<number> {
   return Number(row?.n ?? 0)
 }
 
-/* ──────────────────────────────────────────────────────────────── otps */
+/* otps */
 
 export async function putOtp(phone: string, code: string, minutes = 10) {
   const d = await db()
@@ -295,7 +295,7 @@ export async function clearOtp(phone: string) {
   await d.query('DELETE FROM otps WHERE phone = $1', [phone])
 }
 
-/* ─────────────────────────────────────────────────────── rate limiting */
+/* rate limiting */
 
 /**
  * Fixed-window counter. Done in a single statement so two concurrent requests
@@ -335,7 +335,7 @@ export async function hitRateLimit(
   return { allowed: false, remaining: 0, retryAfterSeconds: retry }
 }
 
-/* ────────────────────────────────────────────────────── doctor search */
+/* doctor search */
 
 /**
  * Postgres returns NUMERIC as a string — JS floats cannot safely represent
@@ -477,7 +477,7 @@ export async function updateDoctorRating(slug: string, rating: number, count: nu
   ])
 }
 
-/* ─────────────────────────────────────── provider status (append-only) */
+/* provider status (append-only) */
 
 /**
  * Status is never mutated without a history row — medical-board disputes need
@@ -530,7 +530,7 @@ export async function doctorStatusHistory(doctorId: string) {
   )
 }
 
-/* ─────────────────────────────────────────────────────────── documents */
+/* documents */
 
 export async function addProviderDocument(input: {
   id: string
@@ -565,7 +565,7 @@ export async function setDocumentStatus(id: string, status: string, notes?: stri
   ])
 }
 
-/* ──────────────────────────────────────────────────────────── admins */
+/* admins */
 
 export async function findAdmin(username: string): Promise<Admin | undefined> {
   const d = await db()
@@ -626,7 +626,7 @@ export async function deleteAdminSession(token: string) {
   await d.query('DELETE FROM admin_sessions WHERE token = $1', [tokenHash(token)])
 }
 
-/* ────────────────────────────────────────────────────────── bookings */
+/* bookings */
 
 export async function createBooking(input: {
   id: string
@@ -797,7 +797,7 @@ export async function countBookings(): Promise<number> {
 
 // Unscoped status mutation removed; domain transitions own reservation/history/outbox writes.
 
-/* ──────────────────────────────────────────────── areas (map-free) */
+/* areas (map-free) */
 
 /**
  * Resolves free text to a canonical area: PIN code, exact name, then prefix.
@@ -875,7 +875,7 @@ export async function countLocalities(): Promise<number> {
   return Number(row?.n ?? 0)
 }
 
-/* ───────────────────────────────────────────────────────── audit log */
+/* audit log */
 
 export type AuditEntry = {
   actorId?: string | null

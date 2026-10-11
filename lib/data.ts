@@ -71,7 +71,7 @@ export const labPackages = [
 
 export const hospitalGroups = ['Apollo Hospitals', 'Fortis Healthcare', 'Manipal Hospitals', 'Max Healthcare']
 
-/* ---------------------------------------------------------------- search */
+/* search */
 
 export const specialityFilters = [
   'General Physician',
@@ -86,7 +86,7 @@ export const experienceBands = ['0-5 years', '5-10 years', '10+ years', '15+ yea
 export const feeBands = ['Under ₹500', '₹500 - ₹800', '₹800 - ₹1200', '₹1200+']
 export const availabilityBands = ['Available today', 'Available tomorrow', 'Next 7 days']
 
-/* ------------------------------------------------------------------ help */
+/* help */
 
 export type HelpArticle = {
   slug: string
@@ -301,7 +301,7 @@ export const helpCollections: HelpCollection[] = [
   },
 ]
 
-/* ------------------------------------------------------------ pet care */
+/* pet care */
 
 export type Species = 'Dog' | 'Cat' | 'Bird' | 'Rabbit' | 'Cattle' | 'Fish'
 
@@ -392,7 +392,7 @@ export const petVaccineSchedule = [
   { age: 'Yearly', shots: 'Annual booster, anti-rabies, deworming' },
 ]
 
-/* ----------------------------------------------------------- surgeries */
+/* surgeries */
 
 /**
  * Elective procedures Indian patients most often search for, grouped the way
@@ -489,7 +489,7 @@ export const surgeryAssurances = [
   { title: 'Care buddy', body: 'One coordinator with you from consultation to discharge.' },
 ]
 
-/* ----------------------------------------------------------- medicines */
+/* medicines */
 
 export const medicineCategories = [
   { name: 'Diabetes care', emoji: '\u{1FA78}' },
@@ -518,7 +518,7 @@ export const offers = [
   },
 ]
 
-/* ------------------------------------------------- practice (clinic app) */
+/* practice (clinic app) */
 
 export const degrees = [
   'MBBS',

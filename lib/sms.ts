@@ -162,7 +162,7 @@ async function sendTextViaTwilio(phone: string, message: string): Promise<SmsRes
   }
 }
 
-/* --------------------------------------------------------------- adapters */
+/* adapters */
 
 async function sendViaConsole(phone: string, code: string): Promise<SmsResult> {
   return { deliveredToDevice: false }

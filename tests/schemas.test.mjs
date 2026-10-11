@@ -10,13 +10,8 @@ import {
 } from '../lib/schemas.ts'
 
 /**
- * Boundary parsers.
- *
- * The important property is not that zod validates — it is that replacing the
- * hand-written coercion did not change what the coercion produced. Mobile
- * intents are fingerprinted with `JSON.stringify([kind, canonical])`, so a
- * reordered key or a differently-coerced field would reject every booking a
- * phone retries after going offline, as if the details had changed.
+ * The property under test is that zod reproduces the old coercion exactly.
+ * Intents are fingerprinted by key order, so a reorder breaks every replay.
  */
 
 /** The coercion exactly as it was written before zod replaced it. */
@@ -82,7 +77,7 @@ test('only the two supported intent kinds are accepted', () => {
   assert.equal(mobileIntent.safeParse({}).success, false)
 })
 
-/* ── webhooks ────────────────────────────────────────────────────────── */
+/* webhooks */
 
 const PAYMENT = {
   type: 'PAYMENT_SUCCESS_WEBHOOK',

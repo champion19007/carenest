@@ -2,13 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 /**
- * The deterministic half of the AI features.
- *
- * A model's output cannot be asserted, so what is tested here is everything
- * around it: the JSON extraction that has to cope with a model wrapping its
- * answer in prose, and the validation that decides whether a reply is
- * trustworthy enough to store. Those are the parts that turn an unreliable
- * dependency into a safe one, and they are pure functions.
+ * A model's output cannot be asserted, so this covers what surrounds it:
+ * JSON extraction from prose, and whether a reply is trustworthy enough to store.
  */
 
 /* Mirrors extractJson in lib/ai.ts. */

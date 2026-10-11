@@ -26,15 +26,9 @@ export async function boundedBody(request:Request,maximum:number) {
 }
 
 /**
- * Rate-limit key for the caller's network.
- *
- * Only trusts x-forwarded-for behind a proxy we control, because the header is
- * attacker-supplied otherwise and a per-IP limit keyed on a spoofable value is
- * worse than none — it lets one caller mint unlimited buckets.
- *
- * Without TRUST_PROXY every caller shares one key, so a per-network limit is a
- * ceiling for everyone. Callers must therefore pair this with their own global
- * backstop rather than relying on it alone.
+ * Rate-limit key per network. Trusts x-forwarded-for only behind TRUST_PROXY;
+ * spoofable otherwise, letting one caller mint unlimited buckets.
+ * Without it every caller shares one key, so pair this with a global backstop.
  */
 export function networkKey(request: Request) {
   if (process.env.TRUST_PROXY !== '1') return 'untrusted-network'

@@ -1,30 +1,15 @@
 import {z} from 'zod'
 
 /**
- * Parsers for input that arrives from outside the application.
- *
- * Only two boundaries use these: provider webhooks and the mobile sync queue.
- * Both take JSON shaped by someone else — a payment provider's event, or a
- * phone replaying an intent recorded while it was offline — and both previously
- * walked optional chains by hand (`body.data?.order?.order_id`) with a regex
- * per field. The checks were correct; they were just spread far enough apart
- * that adding a field meant remembering every place that reads it.
- *
- * Deliberately not applied to the rest of the app. Server actions take FormData
- * through their own validation and are already tested; converting them would be
- * a large diff for no behaviour change.
+ * Parsers for JSON arriving from outside: provider webhooks and mobile sync.
+ * Server actions keep their own FormData validation.
  */
 
-/* ── mobile sync ─────────────────────────────────────────────────────── */
+/* mobile sync */
 
 /**
- * Key order here is load-bearing and must not be rearranged.
- *
- * `syncMobileIntent` hashes `JSON.stringify([kind, canonical])` as the
- * idempotency fingerprint, and `JSON.stringify` emits keys in insertion order.
- * Zod returns them in schema order, so reordering these lines would change the
- * hash of every replayed intent — a phone retrying a booking it made while
- * offline would be rejected as "different details" rather than recognised.
+ * Field order is the idempotency fingerprint: syncMobileIntent hashes
+ * JSON.stringify([kind, canonical]). Reorder these and every replay breaks.
  */
 export const bookIntent = z.object({
   doctorId: z.string().default(''),
@@ -50,17 +35,13 @@ export const mobileIntent = z.object({
   payload: z.looseObject({}),
 })
 
-/* ── Cashfree webhooks ───────────────────────────────────────────────── */
+/* Cashfree webhooks */
 
 /** Provider ids: conservative, and the same shapes the hand-written checks used. */
 const providerId = z.string().regex(/^[A-Za-z0-9_-]{3,45}$/)
 const numericId = z.string().regex(/^\d{1,40}$/)
 
-/**
- * Amounts arrive as a number from Cashfree and as a string from some replays.
- * Kept loose here on purpose — `cashfreeAmount` normalises to paise, and the
- * value is compared against the stored order either way.
- */
+/** Number or string across Cashfree replays; cashfreeAmount normalises to paise. */
 const amount = z.union([z.number(), z.string()])
 
 export const paymentSuccessWebhook = z.object({
