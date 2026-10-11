@@ -10,4 +10,3 @@ export function deploymentIssue(env:NodeJS.ProcessEnv=process.env):DeploymentIss
  if(!/^[a-f0-9]{64}$/i.test(env.DATA_ENCRYPTION_KEY??''))return 'ENCRYPTION_KEY_MISSING'
  return null
 }
-export function setupPageAllowed(path:string){return path==='/deployment-unavailable'||path==='/api/health'||path==='/help'||path.startsWith('/help/')||path==='/robots.txt'||path==='/sitemap.xml'||/^\/sitemap\/\d+\.xml$/.test(path)||['/icon.svg','/icon-light-32x32.png','/icon-dark-32x32.png','/apple-icon.png','/placeholder.svg','/placeholder.jpg','/placeholder-user.jpg','/placeholder-logo.svg','/placeholder-logo.png'].includes(path)}

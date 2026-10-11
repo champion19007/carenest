@@ -127,7 +127,7 @@ export default async function DoctorProfile({ params }: { params: Promise<{ slug
                   </h1>
                   <p className="mt-1 text-lg text-muted-foreground">{doctor.speciality}</p>
                   <p className="mt-1 text-muted-foreground">{doctor.qualification}</p>
-                  {doctor.is_demo&&<p className="mt-2 text-xs font-semibold text-primary">Sample profile · local demonstration</p>}
+                  {doctor.is_demo&&<p className="mt-2 text-xs font-semibold text-primary">Sample profile · demonstration only</p>}
                   <p className="mt-1 font-semibold">{doctor.experience} years experience</p>
 
                   <div className="mt-4 flex flex-wrap gap-2 text-sm">
@@ -154,7 +154,7 @@ export default async function DoctorProfile({ params }: { params: Promise<{ slug
               <nav aria-label="Doctor profile sections" className="mt-6 flex flex-wrap gap-2 rounded-2xl border border-border bg-card/80 p-1.5">{[['#availability', 'Availability'], ['#about', 'About'], ['#reviews', 'Reviews']].map(([href,label]) => <a key={href} href={href} className="inline-flex min-h-11 items-center rounded-xl px-5 text-xs font-semibold hover:bg-soft hover:text-primary">{label}</a>)}</nav>
             </section>
 
-            <AvailabilityPicker slug={doctor.slug} slots={slots.map(slot => ({ slotId: slot.slot_id, startsAt: slot.slot_start }))} />
+            {doctor.catalogue_only?<p id="availability" className="rounded-xl border border-border bg-card p-6 text-muted-foreground">This is a demonstration profile. It does not offer real appointments or medical care.</p>:<AvailabilityPicker slug={doctor.slug} slots={slots.map(slot => ({ slotId: slot.slot_id, startsAt: slot.slot_start }))} />}
 
             <section id="about" className="profile-anchor rounded-[1.5rem] border border-border bg-card p-6">
               <h2 className="text-2xl">About {doctor.name.replace(/^Dr\.?\s*/i, '')}</h2>
@@ -221,12 +221,12 @@ export default async function DoctorProfile({ params }: { params: Promise<{ slug
                           {item.experience} yrs · {item.locality} · ₹{item.fee}
                         </p>
                       </div>
-                      <Link
+                      {!item.catalogue_only&&<Link
                         href={`/book/${item.slug}`}
                         className="inline-flex min-h-10 items-center rounded-lg border border-border px-4 text-sm font-semibold hover:border-primary"
                       >
                         Book
-                      </Link>
+                      </Link>}
                     </li>
                   ))}
                 </ul>
@@ -248,15 +248,15 @@ export default async function DoctorProfile({ params }: { params: Promise<{ slug
                 <span className="text-sm text-muted-foreground">consultation</span>
               </p>
 
-              <Link
+              {!doctor.catalogue_only&&<Link
                 href={`/book/${doctor.slug}`}
                 className="mt-6 inline-flex min-h-13 w-full items-center justify-center rounded-lg bg-cta font-semibold text-cta-foreground transition-opacity hover:opacity-90"
               >
                 Book appointment
-              </Link>
+              </Link>}
 
               <p className="mt-4 text-center text-sm text-muted-foreground">
-                {user
+                {doctor.catalogue_only?'Sample consultation fee for demonstration only.':user
                   ? 'No booking fee. Pay the clinic directly.'
                   : 'You will be asked to sign in to confirm the slot.'}
               </p>

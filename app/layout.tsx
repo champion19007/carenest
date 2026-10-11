@@ -2,6 +2,7 @@ import { Inter, Plus_Jakarta_Sans } from 'next/font/google'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { MobileNavigation } from '@/components/mobile-navigation'
+import {siteOrigin} from '@/lib/site-origin'
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -17,6 +18,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
+  metadataBase:new URL(siteOrigin()),
   title: 'CareNest | Find doctors and care for your family',
   description:
     'Explore doctors, compare consultation fees, book appointments, and discover veterinary care for your pets.',

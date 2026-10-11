@@ -3,24 +3,28 @@
  *
  *   npm run seed
  *
- * Uses only the local PGlite instance under .data/pg, with the app stopped.
- * DATABASE_URL is deliberately ignored. Idempotent: re-running upserts rather than
- * duplicating.
+ * Defaults to the local PGlite instance under .data/pg, with the app stopped.
+ * Hosted execution requires --postgres --demo, a verified destination hostname
+ * and already applied CareNest migrations. Re-running upserts does not duplicate.
  *
  * The adjacency graph is built here, offline, from locality centroids — a
  * k-nearest-neighbour pass over 14 points. The request path only ever reads
  * the resulting table; it never sees a coordinate.
  */
-/* Local seed only: run with the app stopped because PGlite has one process owner. */
+/* The local seed requires a stopped app because PGlite has one process owner. */
 import { createDatabase } from '../lib/db/adapters.ts'
-import { applyMigrations } from '../lib/db/migrations.ts'
+import { applyMigrations,migrations } from '../lib/db/migrations.ts'
 import { materializeSlots } from '../lib/db/schedule-materializer.ts'
 import { assertLocalStopped } from './local-lock.mjs'
 import {consolidateDemoCatalogue} from '../lib/db/demo-catalogue.ts'
-process.env.CARENEST_LOCAL_MODE = '1'
-await assertLocalStopped()
-const seedDb = await createDatabase()
-await applyMigrations(seedDb)
+import {databaseTarget,inspectCareNestDatabase} from './database-target.mjs'
+const target=databaseTarget(process.argv.slice(2),process.env)
+if(!target.local&&!process.argv.includes('--demo'))throw new Error('Remote demo seed requires --postgres --demo')
+process.env.CARENEST_LOCAL_MODE = target.local?'1':'0'
+if(target.local)await assertLocalStopped()
+const seedDb = await createDatabase(target.url)
+if(target.local)await applyMigrations(seedDb)
+else{try{await inspectCareNestDatabase(seedDb,migrations,{seed:true})}catch(error){await seedDb.close();throw error}}
 const query = (sql, params = []) => seedDb.query(sql, params)
 const close = () => seedDb.close()
 /* areas */
@@ -211,4 +215,5 @@ console.log(`Active demo specialties: ${catalogue.kept.length}. Extra demos arch
 for(const row of await query("SELECT id FROM provider.doctors WHERE is_demo=true AND status='ACTIVE'"))await materializeSlots(seedDb,row.id,7)
 console.log('Sample veterinarian: 9000000002; sample lab operator: 9000000003. Sample calendars published for the next seven days.')
 
+if(!target.local)await query('INSERT INTO provider.demo_catalogue_settings(id,enabled) VALUES(1,true) ON CONFLICT(id) DO UPDATE SET enabled=true')
 await close()
