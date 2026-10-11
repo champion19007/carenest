@@ -1,14 +1,6 @@
 /**
- * Turning slot timestamps into something a patient recognises.
- *
- * Slots are stored as instants (TIMESTAMPTZ) and must be shown as Indian wall
- * time regardless of where the server or the reader happens to be. Formatting
- * with an explicit `Asia/Kolkata` timezone rather than the runtime default is
- * what makes a Vercel function in Washington and a phone in Pune agree on
- * which day "Today, 6:30 PM" refers to.
- *
- * No `server-only` import: the booking form is a client component and formats
- * the same values.
+ * Slots are instants; these format them as Indian wall time with an explicit
+ * timezone, so a server abroad and a phone in Pune agree on which day it is.
  */
 
 const IST = 'Asia/Kolkata'

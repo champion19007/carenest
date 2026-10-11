@@ -28,6 +28,7 @@ const nav = [
   { href: '/practice/patients', label: 'Patients', Icon: UsersRound },
   { href: '/practice/reports', label: 'Reports', Icon: BarChart3 },
   { href: '/practice/billing', label: 'Billing', Icon: Wallet },
+  { href: '/account/notifications', label: 'Updates', Icon: Inbox },
   { href: '/practice/integrations', label: 'Integrations', Icon: Plug },
   { href: '/practice/settings', label: 'Settings', Icon: Settings },
 ]

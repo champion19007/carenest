@@ -26,7 +26,7 @@ async function addLead(db, id, status = 'NEW') {
   )
 }
 
-/* ── family ──────────────────────────────────────────────────────────── */
+/* family */
 
 test('an account can hold only one "self" row', async () => {
   const db = await freshDb()
@@ -80,7 +80,7 @@ test('deleting an account takes its family with it', async () => {
   await db.close()
 })
 
-/* ── bookings across schemas ─────────────────────────────────────────── */
+/* bookings across schemas */
 
 test('a booking can reference a doctor in another schema', async () => {
   const db = await freshDb()
@@ -122,7 +122,7 @@ test('a booking cannot name a doctor that does not exist', async () => {
   await db.close()
 })
 
-/* ── surgery lead triage ─────────────────────────────────────────────── */
+/* surgery lead triage */
 
 test('a referral must name a clinician or a centre', async () => {
   const db = await freshDb()
@@ -185,7 +185,7 @@ test('referrals disappear with the lead they belong to', async () => {
   await db.close()
 })
 
-/* ── identity ────────────────────────────────────────────────────────── */
+/* identity */
 
 test('an account must be reachable by phone or email', async () => {
   const db = await freshDb()

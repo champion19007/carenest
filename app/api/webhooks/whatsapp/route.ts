@@ -1,0 +1,3 @@
+import {acceptWhatsAppCallback} from '@/lib/whatsapp'
+import {boundedBody,errorResponse} from '@/lib/http'
+export async function POST(request:Request){try{if(!request.headers.get('content-type')?.startsWith('application/x-www-form-urlencoded'))return new Response('Unsupported callback body',{status:415});const raw=await boundedBody(request,32000);await acceptWhatsAppCallback(request.url,new URLSearchParams(new TextDecoder().decode(raw)),request.headers.get('x-twilio-signature')??'');return Response.json({accepted:true},{headers:{'Cache-Control':'private, no-store'}})}catch(error){return errorResponse(error)}}

@@ -62,7 +62,7 @@ export default async function AdminPage() {
   ]
 
   return (
-    <main className="min-h-screen bg-surface"><nav aria-label="Admin operations" className="care-container flex flex-wrap gap-4 py-4 text-sm">{[["/admin/providers","Provider verification"],["/admin/partners","Partners & staff"],["/admin/operations","Worker & support"],["/admin/refunds","Refund operations"],["/admin/governance","Privacy & company"],["/admin/clinical","Clinical & pharmacy"],["/admin/setup","Integration setup"],["/admin/reconciliation","Legacy review"]].map(([href,label])=><Link key={href} href={href} className="min-h-11 text-primary">{label}</Link>)}</nav>
+    <main className="min-h-screen bg-surface"><nav aria-label="Admin operations" className="care-container flex flex-wrap gap-4 py-4 text-sm">{[["/admin/providers","Provider verification"],["/admin/partners","Partners & staff"],["/admin/operations","Worker & support"],["/admin/refunds","Refund operations"],["/admin/payouts","Doctor payouts"],["/admin/governance","Privacy & company"],["/admin/clinical","Clinical & pharmacy"],["/admin/setup","Integration setup"],["/admin/reconciliation","Legacy review"]].map(([href,label])=><Link key={href} href={href} className="min-h-11 text-primary">{label}</Link>)}</nav>
       <header className="border-b border-border bg-banner text-banner-foreground">
         <div className="mx-auto flex max-w-[1320px] flex-wrap items-center justify-between gap-4 px-5 py-4 lg:px-8">
           <div className="flex items-center gap-4">

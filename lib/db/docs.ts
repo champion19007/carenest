@@ -56,7 +56,7 @@ async function count(collection: string) {
   return Number(row?.n ?? 0)
 }
 
-/* ───────────────────────────────────────────────────────────── types */
+/* types */
 
 export type PrescribedDrug = {
   drug: string
@@ -106,7 +106,7 @@ export type ActivityDoc = {
   createdAt?: string
 }
 
-/* ────────────────────────────────────────────────────────── activity */
+/* activity */
 
 /** Append-only feed for the admin console. Never throws into a request. */
 export async function logActivity(entry: Omit<ActivityDoc, '_id' | 'createdAt'>) {
@@ -127,7 +127,7 @@ export async function recentActivity(limit = 50): Promise<ActivityDoc[]> {
   return rows.map((r) => ({ ...r.body, _id: r.id, createdAt: r.created_at }))
 }
 
-/* ─────────────────────────────────────────────────────────── reviews */
+/* reviews */
 
 export async function listReviews(doctorSlug: string, limit = 20): Promise<ReviewDoc[]> {
   return listBySubject<ReviewDoc>('reviews', doctorSlug, limit)
@@ -160,7 +160,7 @@ export async function ratingFor(doctorSlug: string): Promise<{ average: number; 
   return { average: Math.round(Number(row!.avg) * 10) / 10, count }
 }
 
-/* ──────────────────────────────────────────── prescriptions & notes */
+/* prescriptions & notes */
 
 export async function addPrescription(doc: Omit<PrescriptionDoc, '_id' | 'createdAt'>) {
   return insert('prescriptions', doc.patientId, doc)
@@ -178,7 +178,7 @@ export async function listChartNotes(patientId: string): Promise<ChartNoteDoc[]>
   return listBySubject<ChartNoteDoc>('chart_notes', patientId)
 }
 
-/* ───────────────────────────────────────────────────────── counters */
+/* counters */
 
 export const prescriptions = () => 'prescriptions'
 export const chartNotes = () => 'chart_notes'
@@ -189,7 +189,7 @@ export async function countDocs(collection: () => string): Promise<number> {
   return count(collection())
 }
 
-/* ────────────────────────────────────────────────────────── triage */
+/* triage */
 
 export type TriageDoc = {
   _id: string

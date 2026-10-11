@@ -4,12 +4,8 @@ import { createHash } from 'node:crypto'
 import { freshDb, addUser } from './helpers.mjs'
 
 /**
- * Estimate immutability.
- *
- * The promise made to the patient is not that the price cannot change — a
- * clinic may legitimately re-price after seeing a scan. It is that a change
- * cannot be made quietly. So these tests are about what happens when someone
- * tries to alter a number after it was agreed.
+ * The promise is not that a price cannot change, but that it cannot change
+ * quietly. These cover attempts to alter a number after it was agreed.
  */
 
 function hashEstimate({ procedure, hospital, roomTier, lineItems }) {

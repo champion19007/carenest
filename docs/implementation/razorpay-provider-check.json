@@ -1,0 +1,6 @@
+{
+  "provider": "Razorpay",
+  "mode": "test",
+  "credentialCheckStatus": 200,
+  "accepted": true
+}

@@ -1,4 +1,6 @@
 import 'server-only'
+import {isPetSpecies} from '@/lib/species'
+
 import {randomUUID,createHash} from 'node:crypto'
 import {getDb,ensureSchema,type Db} from '@/lib/db/client'
 import {encryptSecret,decryptSecret,localMode} from '@/lib/secrets'
@@ -17,7 +19,7 @@ async function pharmacyStaff(tx:Db,actorId:string,partnerId:string,roles:string[
 }
 export async function publishMedicine(adminId:string,raw:Record<string,unknown>){
  const name=boundedText(raw.name,120,2),strength=boundedText(raw.strength,120,1),form=boundedText(raw.form,80,2),species=Array.isArray(raw.species)?raw.species.map(String):[],restrictions=raw.restrictions??{}
- if(!species.length||species.some(s=>!['human','dog','cat','rabbit','bird','other'].includes(s))||!restrictions||typeof restrictions!=='object')reject('CATALOGUE','Provide explicit supported species and reviewed restrictions.',400)
+ if(!species.length||species.some(s=>s!=='human'&&!isPetSpecies(s))||!restrictions||typeof restrictions!=='object')reject('CATALOGUE','Provide explicit supported species and reviewed restrictions.',400)
  await ensureSchema();const policy=await getDb().one<{id:string}>("SELECT id FROM review_policies WHERE kind='PRESCRIBING' AND state='APPROVED' AND content->'species' @> $1::jsonb AND ($2::boolean OR coalesce((content->>'demo')::boolean,false)=false) ORDER BY version DESC LIMIT 1",[JSON.stringify(species),localMode()]);if(!policy)reject('POLICY','Approve an actual professionally reviewed prescribing policy covering every selected species first.')
  await ensureSchema();return getDb().transaction(async tx=>{await adminAccess(tx,adminId);const id='med_'+randomUUID();await tx.query("INSERT INTO clinical_catalogue(id,name,strength,form,species,policy_id,restrictions,status) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,'ACTIVE')",[id,name,strength,form,species,policy.id,JSON.stringify(restrictions)]);await tx.query("INSERT INTO audit_log(actor_id,action,resource) VALUES($1,'catalogue:publish',$2)",[adminId,id]);return id})
 }

@@ -5,7 +5,7 @@
  * the two never drift.
  */
 export const SCHEMA = `
--- ────────────────────────────────────────────────────────── namespaces
+-- namespaces
 --
 -- Three domain schemas, one database.
 --
@@ -28,7 +28,7 @@ CREATE SCHEMA IF NOT EXISTS patient;
 CREATE SCHEMA IF NOT EXISTS provider;
 CREATE SCHEMA IF NOT EXISTS clinic;
 
--- ─────────────────────────────────────────────────────────── identity
+-- identity
 CREATE TABLE IF NOT EXISTS patient.users (
   id             TEXT PRIMARY KEY,
   -- Nullable: an account created through Google arrives with an email and no
@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS rate_limits (
   PRIMARY KEY (bucket, key)
 );
 
--- ────────────────────────────────────────────────────── patient: family
+-- patient: family
 -- One account books for a household. In India that is the normal case, not an
 -- edge case: an adult books for a parent who does not use apps and for
 -- children who cannot consent, so the booking has to record *who the care is
@@ -126,7 +126,7 @@ CREATE INDEX IF NOT EXISTS idx_family_user ON patient.family_members(user_id, cr
 CREATE UNIQUE INDEX IF NOT EXISTS idx_family_one_self
   ON patient.family_members(user_id) WHERE is_self;
 
--- ──────────────────────────────────────────────── geography (map-free)
+-- geography (map-free)
 CREATE TABLE IF NOT EXISTS localities (
   locality_id SERIAL PRIMARY KEY,
   pin_code    TEXT NOT NULL UNIQUE,
@@ -150,7 +150,7 @@ CREATE TABLE IF NOT EXISTS locality_adjacency (
 );
 CREATE INDEX IF NOT EXISTS idx_adjacency_ring ON locality_adjacency(locality_id, ring);
 
--- ───────────────────────────────────────────────────────────── supply
+-- supply
 CREATE TABLE IF NOT EXISTS provider.doctors (
   id               TEXT PRIMARY KEY,
   user_id          TEXT REFERENCES patient.users(id) ON DELETE SET NULL,
@@ -223,7 +223,7 @@ CREATE TABLE IF NOT EXISTS provider.documents (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- ──────────────────────────────────────────────────── booking engine
+-- booking engine
 -- Slot state machine:
 --   AVAILABLE → LOCKED_PENDING_PAYMENT → BOOKED → COMPLETED | NO_SHOW
 --                        ↓ (TTL / failure)
@@ -275,7 +275,7 @@ ALTER TABLE patient.bookings DROP CONSTRAINT IF EXISTS bookings_doctor_fk;
 ALTER TABLE patient.bookings ADD CONSTRAINT bookings_doctor_fk
   FOREIGN KEY (doctor_id) REFERENCES provider.doctors(id) ON DELETE CASCADE;
 
--- ───────────────────────────────────────────────── clinic: surgery leads
+-- clinic: surgery leads
 -- A surgery enquiry is a callback request, not a booking. It carries no slot
 -- and no payment; what it needs is triage.
 --
@@ -382,7 +382,7 @@ CREATE TABLE IF NOT EXISTS clinic.referrals (
 CREATE INDEX IF NOT EXISTS idx_referrals_lead ON clinic.referrals(lead_id);
 CREATE INDEX IF NOT EXISTS idx_referrals_doctor ON clinic.referrals(doctor_id, created_at DESC);
 
--- ──────────────────────────────────────────── documents (was NoSQL)
+-- documents (was NoSQL)
 -- Variable-shape records. JSONB keeps the document model — a prescription's
 -- drug list is one value, not a join table — while staying in one database.
 CREATE TABLE IF NOT EXISTS documents (
@@ -396,11 +396,11 @@ CREATE INDEX IF NOT EXISTS idx_documents_collection ON documents(collection, cre
 CREATE INDEX IF NOT EXISTS idx_documents_subject ON documents(collection, subject_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_documents_body ON documents USING GIN (body);
 
--- ─────────────────────────────────────────────────────── audit trail
+-- audit trail
 -- Append-only by grant, not just convention. The migration revokes UPDATE and
 -- DELETE from the application role, which is the closest equivalent to S3
 -- Object Lock available inside Postgres.
--- ─────────────────────────────────────────────── transactional outbox
+-- transactional outbox
 --
 -- Notifications used to be sent inline: if the SMS gateway was down, the
 -- booking still committed, the patient was never told, and nothing retried.
@@ -469,7 +469,7 @@ CREATE TRIGGER audit_log_no_mutate
   BEFORE UPDATE OR DELETE ON audit_log
   FOR EACH ROW EXECUTE FUNCTION audit_log_is_append_only();
 
--- ───────────────────────────────────────────────── double-entry ledger
+-- double-entry ledger
 CREATE TABLE IF NOT EXISTS ledger_accounts (
   account_id   TEXT PRIMARY KEY,
   account_type TEXT NOT NULL,

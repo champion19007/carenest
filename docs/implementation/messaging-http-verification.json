@@ -1,0 +1,55 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "check": "sign-in page",
+      "status": 200,
+      "localCodeOption": true,
+      "whatsAppSetupRequired": true
+    },
+    {
+      "check": "local OTP issued through real server action",
+      "status": 200,
+      "codeDisplayed": true
+    },
+    {
+      "check": "local OTP accepted",
+      "status": 303,
+      "redirect": "/welcome",
+      "sessionCookiePresent": true
+    },
+    {
+      "check": "test checkout visible",
+      "status": 200,
+      "testPaymentButton": true
+    },
+    {
+      "check": "real Razorpay test order created",
+      "status": 200,
+      "serverAmountPaise": "10000",
+      "testKeyOnly": true,
+      "providerOrderReturned": true
+    },
+    {
+      "check": "forged payment signature rejected",
+      "status": 400
+    },
+    {
+      "check": "missing verification fields rejected",
+      "status": 400
+    },
+    {
+      "check": "foreign payment origin rejected",
+      "status": 403
+    },
+    {
+      "check": "WhatsApp opt-in and setup controls visible",
+      "status": 200,
+      "whatsAppControls": true,
+      "setupRequired": true
+    }
+  ],
+  "actualWhatsAppDelivery": false,
+  "actualRazorpayCapture": false,
+  "notes": "Legitimate local form-action OTP login; one real test order created. No card entered and no payment captured."
+}

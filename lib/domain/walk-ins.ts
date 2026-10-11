@@ -1,4 +1,6 @@
 import 'server-only'
+import {isPetSpecies} from '@/lib/species'
+
 import {randomUUID,randomBytes,createHash} from 'node:crypto'
 import {getDb,ensureSchema} from '@/lib/db/client'
 import {encryptSecret,decryptSecret,privateKey} from '@/lib/secrets'
@@ -13,7 +15,7 @@ export async function registerWalkIn(actorId:string,input:{clinicId:string;docto
  const dob=input.dob||null
  if(dob&&(!/^\d{4}-\d{2}-\d{2}$/.test(dob)||Number.isNaN(new Date(dob).getTime())||new Date(dob).toISOString().slice(0,10)!==dob||new Date(dob)>new Date()))reject('DATE','Check the birth date.',400)
  const identity:Identity={name,phone,dob,sex:boundedText(input.sex,30),species:boundedText(input.species??'',20),guardian:boundedText(input.guardian??'',80),reason}
- if(input.kind==='pet'&&(!['dog','cat','rabbit','bird','other'].includes(identity.species)||identity.guardian.length<2))reject('SPECIES','Record the pet species and guardian name.',400)
+ if(input.kind==='pet'&&(!isPetSpecies(identity.species)||identity.guardian.length<2))reject('SPECIES','Record the pet species and guardian name.',400)
  await ensureSchema();return getDb().transaction(async tx=>{
   await clinicAccess(tx,actorId,input.clinicId,['clinician','receptionist','administrator'])
   await tx.query('SELECT id FROM clinic.clinics WHERE id=$1 FOR UPDATE',[input.clinicId])

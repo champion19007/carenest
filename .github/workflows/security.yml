@@ -1,0 +1,81 @@
+name: Security Scan
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  # Required to publish findings.sarif to the Security tab.
+  security-events: write
+
+concurrency:
+  group: carenest-security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  strix-scan:
+    runs-on: ubuntu-latest
+    # Fork PRs cannot read secrets, so the scan would fail for a reason that has
+    # nothing to do with the contributor's code.
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    steps:
+      # The secrets context is not available in a job-level `if`, so the check
+      # is a step that every later step keys off. A scan that cannot run must
+      # skip, not fail: an unconfigured security job that blocks every PR gets
+      # switched off, and then nothing is scanned at all.
+      - name: Check scan is configured
+        id: config
+        env:
+          STRIX_LLM: ${{ secrets.STRIX_LLM }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+        run: |
+          if [ -n "$STRIX_LLM" ] && [ -n "$LLM_API_KEY" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Strix scan skipped::Set the STRIX_LLM and LLM_API_KEY repository secrets to enable PR security scanning."
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.config.outputs.ready == 'true'
+        with:
+          # Diff scoping needs the base branch present, not a shallow clone.
+          fetch-depth: 0
+
+      - name: Install Strix
+        if: steps.config.outputs.ready == 'true'
+        run: curl -sSL https://strix.ai/install | bash
+
+      - name: Run security scan
+        if: steps.config.outputs.ready == 'true'
+        env:
+          STRIX_LLM: ${{ secrets.STRIX_LLM }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+        run: strix -n -t ./ --scan-mode quick --max-budget 10
+
+      # Exit 0 means "nothing validated in what was analysed", which is not the
+      # same as "fully analysed". A run cut off at the hard budget still exits 0
+      # with status "stopped", so gate on completion as well as exit code.
+      - name: Fail unless the scan completed
+        if: ${{ always() && steps.config.outputs.ready == 'true' }}
+        run: |
+          run_json=$(ls -t strix_runs/*/run.json 2>/dev/null | head -1)
+          if [ -z "$run_json" ]; then
+            echo "No strix_runs/*/run.json — the scan never started." >&2
+            exit 1
+          fi
+          status=$(jq -r .status "$run_json")
+          cost=$(jq -r '.llm_usage.cost // 0' "$run_json")
+          echo "status=$status cost=\$$cost of \$10 budget"
+          if [ "$status" != "completed" ]; then
+            echo "Scan did not complete (status '$status'). Rate limits or an exhausted budget both land here; check the log and raise --max-budget if it ran to the cap." >&2
+            exit 1
+          fi
+
+      # Only upload when a SARIF file was actually produced; the action errors
+      # on a missing path, which turned a skipped scan into a second red check.
+      - name: Upload SARIF
+        if: ${{ always() && hashFiles('strix_runs/**/*.sarif') != '' }}
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: strix_runs

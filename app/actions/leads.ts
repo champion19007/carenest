@@ -40,7 +40,7 @@ export async function submitSurgeryLead(_prev:LeadState,form:FormData):Promise<L
  catch(error){if(error instanceof DomainError)return {error:error.message};throw error}
  revalidatePath('/account/enquiries');return {done:true,notice:'Enquiry recorded for coordinator review. Updates will appear in your account.'}
 }
-/* ─────────────────────────────────────────────────── admin decisions */
+/* admin decisions */
 
 async function requireAdmin() {
   const admin = await currentAdmin()
@@ -113,7 +113,7 @@ export async function routeLead(_prev: LeadState, formData: FormData): Promise<L
   return { notice: 'Sent on.' }
 }
 
-/* ── itemised estimates ─────────────────────────────────────────────── */
+/* itemised estimates */
 
 export type EstimateState = { error?: string; notice?: string }
 

@@ -7,19 +7,24 @@ import { requestOtp, verifyOtp, type ActionState } from '@/app/actions/auth'
 
 const empty: ActionState = {}
 
-export function SignInForm({ next, google }: { next?: string; google?: boolean }) {
+export function SignInForm({ next, google,whatsapp=false,localDemo=false,dualOtp=false,smsReady=true,setupNotice }: { next?: string; google?: boolean;whatsapp?:boolean;localDemo?:boolean;dualOtp?:boolean;smsReady?:boolean;setupNotice?:string }) {
+  const [channel,setChannel]=useState(dualOtp?'both':!smsReady&&whatsapp?'whatsapp':'sms')
   const [phoneState, requestAction] = useActionState(requestOtp, empty)
   const [verifyState, verifyAction] = useActionState(verifyOtp, empty)
 
   /* Once a code has been issued we swap to the verification step. */
-  const phone = verifyState.phone ?? phoneState.phone
-  const stage: 'phone' | 'code' = phoneState.phone && phoneState.notice && !phoneState.error ? 'code' : 'phone'
+  const phone = phoneState.phone
+  const stage: 'phone' | 'code' = phoneState.phone && phoneState.notice ? 'code' : 'phone'
 
   if (stage === 'code' && phone) {
     return (
       <VerifyStep
+        key={phoneState.issuedAt}
         action={verifyAction}
-        state={verifyState}
+        resendAction={requestAction}
+        state={{...verifyState,error:phoneState.error??(verifyState.phone&&verifyState.phone!==phone?undefined:verifyState.error)}}
+        channel={phoneState.channel??'sms'}
+        notice={phoneState.notice}
         phone={phone}
         otpHint={phoneState.otpHint}
         next={next}
@@ -29,6 +34,8 @@ export function SignInForm({ next, google }: { next?: string; google?: boolean }
 
   return (
     <form action={requestAction} className="mt-8 space-y-5">
+      {setupNotice&&!whatsapp&&<p role="status" className="rounded-lg bg-warning/10 px-4 py-3 text-sm font-medium text-warning">{setupNotice}</p>}
+      <fieldset className="min-w-0"><legend className="font-semibold">Receive your sign-in code</legend><div className="mt-3 flex flex-wrap gap-4">{dualOtp&&<label className="flex min-h-11 items-center gap-2"><input name="channel" type="radio" value="both" checked={channel==='both'} onChange={()=>setChannel('both')}/>SMS and WhatsApp</label>}<label className="flex min-h-11 items-center gap-2"><input name="channel" type="radio" value="sms" checked={channel==='sms'} onChange={()=>setChannel('sms')} disabled={!smsReady}/>{localDemo?'Local demo code':smsReady?'SMS':'SMS (setup required)'}</label><label className="flex min-h-11 items-center gap-2"><input name="channel" type="radio" value="whatsapp" checked={channel==='whatsapp'} onChange={()=>setChannel('whatsapp')} disabled={!whatsapp}/>WhatsApp{!whatsapp&&' (setup required)'}</label></div></fieldset>
       <div>
         <label htmlFor="phone" className="block font-semibold">
           Mobile number
@@ -45,7 +52,7 @@ export function SignInForm({ next, google }: { next?: string; google?: boolean }
             required
             maxLength={10}
             autoComplete="tel-national"
-            placeholder="98765 43210"
+            placeholder="9876543210"
             className="min-w-0 flex-1 bg-transparent px-4 text-lg outline-none"
           />
         </div>
@@ -60,7 +67,7 @@ export function SignInForm({ next, google }: { next?: string; google?: boolean }
         </p>
       )}
 
-      <Submit label="Send code" pending="Sending…" />
+      <Submit label="Send code" pending="Sending…" disabled={!smsReady&&!whatsapp} />
 
       {google && (
         <>
@@ -99,19 +106,27 @@ function GoogleMark() {
 
 function VerifyStep({
   action,
+  resendAction,
   state,
   phone,
   otpHint,
   next,
+  channel,
+  notice,
 }: {
   action: (formData: FormData) => void
+  resendAction:(formData:FormData)=>void
   state: ActionState
   phone: string
   otpHint?: string
   next?: string
+  channel:string
+  notice?:string
 }) {
   const [code, setCode] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const [cooldown,setCooldown]=useState(60)
+  useEffect(()=>{const timer=setInterval(()=>setCooldown(value=>Math.max(0,value-1)),1000);return()=>clearInterval(timer)},[])
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -121,13 +136,14 @@ function VerifyStep({
     <form action={action} className="mt-8 space-y-5">
       <input type="hidden" name="phone" value={phone} />
       <input type="hidden" name="next" value={next ?? ''} />
+      <input type="hidden" name="channel" value={channel}/>
 
       <div>
         <label htmlFor="code" className="block font-semibold">
           Enter the 6-digit code
         </label>
         <p className="mt-1 text-sm text-muted-foreground">
-          Sent to +91 {phone.slice(0, 5)} {phone.slice(5)}
+          {otpHint?'Local code for':channel==='whatsapp'?'WhatsApp code requested for':'Code requested for'} +91 {phone.slice(0, 5)} {phone.slice(5)}
         </p>
         <input
           id="code"
@@ -147,11 +163,12 @@ function VerifyStep({
         <p className="flex items-start gap-2 rounded-lg bg-soft px-4 py-3 text-sm leading-6 text-primary">
           <Info className="mt-0.5 size-4 shrink-0" />
           <span>
-            No SMS gateway is connected in this build, so your code is shown here:{' '}
+            Local demonstration only. No phone message was sent. Your code is:{' '}
             <strong className="font-mono text-base">{otpHint}</strong>
           </span>
         </p>
       )}
+      {!otpHint&&notice&&<p role="status" className="text-sm text-muted-foreground">{notice}</p>}
 
       {state.error && (
         <p role="alert" className="rounded-lg bg-warning/10 px-4 py-3 text-sm font-medium text-warning">
@@ -160,6 +177,7 @@ function VerifyStep({
       )}
 
       <Submit label="Verify and continue" pending="Verifying…" />
+      <button type="submit" formAction={resendAction} formNoValidate disabled={cooldown>0} className="min-h-11 w-full text-sm font-semibold text-primary disabled:opacity-50">{cooldown>0?`Resend code in ${cooldown}s`:'Resend code'}</button>
 
       <button
         type="button"
@@ -172,12 +190,12 @@ function VerifyStep({
   )
 }
 
-function Submit({ label, pending }: { label: string; pending: string }) {
+function Submit({ label, pending, disabled=false }: { label: string; pending: string; disabled?:boolean }) {
   const status = useFormStatus()
   return (
     <button
       type="submit"
-      disabled={status.pending}
+      disabled={status.pending||disabled}
       className="min-h-14 w-full rounded-lg bg-cta font-semibold text-cta-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
     >
       {status.pending ? pending : label}

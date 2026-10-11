@@ -12,7 +12,7 @@ import {ownAddresses} from '@/lib/domain/home-visits'
 import { requireUser, newId } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Request your appointment · CareNest', robots: { index: false } }
+export const metadata = { title: 'Book your appointment · CareNest', robots: { index: false } }
 
 export default async function BookPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { slug } = await params
@@ -45,9 +45,9 @@ export default async function BookPage({ params, searchParams }: { params: Promi
           ← Back to {doctor.name}
         </Link>
 
-        <h1 className="mt-5 text-3xl sm:text-4xl">Request your appointment</h1>
+        <h1 className="mt-5 text-3xl sm:text-4xl">Book your appointment</h1>
         <p className="mt-3 max-w-2xl leading-8 text-muted-foreground">
-          Choose a time and send your appointment request. Track the clinic’s response in your account.
+          Choose a date and time, then pay in Cashfree sandbox. Your appointment is scheduled after payment is verified. No real money moves during this MVP test.
         </p>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_18rem]">
@@ -89,8 +89,7 @@ export default async function BookPage({ params, searchParams }: { params: Promi
 
             <p className="mt-4 flex items-start gap-2 text-sm leading-6 text-muted-foreground">
               <ShieldCheck className="mt-0.5 size-4 shrink-0 text-success" />
-              Pay the clinic directly by UPI, card or cash. CareNest takes no booking fee and does
-              not hold your card details.
+              Your chosen time is held for up to 10 minutes while you pay. Cashfree handles payment details; CareNest confirms the appointment only after checking payment with Cashfree.
             </p>
           </aside>
         </div>

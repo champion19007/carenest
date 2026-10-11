@@ -1,0 +1,17 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {inspectEnvironment} from '../scripts/check-env.mjs'
+test('hosted preflight rejects laptop URLs and private settings without exposing their values',()=>{
+ const env={DATABASE_URL:'postgresql://private-user:private-pass@localhost/carenest',AUTH_SECRET:'private-secret',DATA_ENCRYPTION_KEY:'private-key',APP_URL:'http://localhost:3000',APP_ORIGIN:'http://localhost:3000',CARENEST_LOCAL_MODE:'1'}
+ const report=inspectEnvironment(env,{production:true});assert.equal(report.passed,false)
+ for(const value of ['private-user','private-pass','private-secret','private-key'])assert.equal(JSON.stringify(report).includes(value),false)
+ assert.ok(report.problems.some(p=>p.name==='DATABASE_URL'));assert.ok(report.problems.some(p=>p.name==='CARENEST_LOCAL_MODE'))
+})
+test('valid core settings pass without requiring optional providers, and selected provider mistakes fail',()=>{
+ const env={DATABASE_URL:'postgresql://fixture:fixture@database.example.test/carenest?sslmode=require',AUTH_SECRET:'a'.repeat(48),DATA_ENCRYPTION_KEY:'b'.repeat(64),APP_URL:'https://carenest.example',APP_ORIGIN:'https://carenest.example'}
+ assert.equal(inspectEnvironment(env,{production:true}).passed,true)
+ const selected=inspectEnvironment({...env,SMS_PROVIDER:'twilio-verify',EMAIL_ENABLED:'1',EMAIL_PROVIDER:'gmail',GMAIL_APP_PASSWORD:'invalid'},{production:true});assert.equal(selected.passed,false);assert.ok(selected.problems.some(p=>p.name==='TWILIO_VERIFY_SERVICE_SID'))
+ const dsn='https://'+'a'.repeat(32)+'@o123.ingest.de.sentry.io/456'
+ assert.equal(inspectEnvironment({...env,SENTRY_DSN:dsn,NEXT_PUBLIC_SENTRY_DSN:dsn},{production:true}).passed,true)
+ for(const invalid of [dsn.replace('/456','/not-a-project'),dsn.replace('sentry.io','sentry.io:8443'),dsn.replace('a'.repeat(32),'not-a-public-key')])assert.equal(inspectEnvironment({...env,SENTRY_DSN:invalid,NEXT_PUBLIC_SENTRY_DSN:invalid},{production:true}).passed,false)
+})

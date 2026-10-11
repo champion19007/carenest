@@ -133,7 +133,7 @@ export default async function RequestsPage() {
                       </p>
                     </div>
 
-                    <RequestActions bookingId={request.id} />
+                    {request.payment_required?<p className="text-sm text-muted-foreground">Awaiting payment · schedules automatically after Cashfree confirms</p>:<RequestActions bookingId={request.id} />}
                   </div>
                 </li>
               ))}

@@ -42,7 +42,7 @@ Stop with Ctrl+C before seeding, direct migrations, backups or administrator pro
 | Clinic and partner operations | `/staff/*` | Assigned role and organization scope |
 | Administration | `/admin/*` | Individually provisioned account, password and authenticator code |
 
-The seed contains fictional local sample identities: doctor `9000000001`, veterinarian `9000000002`, and lab operator `9000000003`. These are demo identities, not professionally verified providers. The local runner enables the explicit demo OTP flags; non-local delivery needs a configured provider.
+The seed contains fictional local sample identities: doctor `9000000001`, veterinarian `9000000002`, and lab operator `9000000003`. These are demo identities, not professionally verified providers. Demo phone codes require explicitly enabling the local OTP setting; the launcher does not silently enable it. Real SMS verification needs the configured provider. Keep test contacts and provider credentials private.
 
 Create an administrator with the application stopped:
 
@@ -60,27 +60,46 @@ Read enrollment details privately under `.data/secrets`, enroll the authenticato
 - Persisted workflows cover household and pet appointments, vaccination records, walk-in clinic visits, home dispatch, lab orders, receipts, refunds, surgery enquiries, support and licensed pharmacy partner operations.
 - LiveKit is the default video provider, with short-lived room-scoped tokens, appointment join windows, cancellation cleanup and room reconciliation. `/consult/[bookingId]` hosts the call interface. Zoom integration is retired.
 - Optional Google sign-in and Google Calendar-created Meet links require private OAuth configuration and clinician consent. Neither is needed to run the local website or LiveKit.
+- Optional email-code sign-in serves existing active accounts whose email is already verified. Google sign-in can create a verified account; email sign-in does not create an account or merge identities. Gmail demo delivery requires a private app password and `EMAIL_OTP_ENABLED=1`.
+- Cashfree sandbox checkout confirms a held appointment after verified payment. Doctor completion creates a payout workflow that checks eligibility, beneficiary and payment state; an uncertain transfer requires reconciliation. Clinic-owned bookings can waive the CareNest fee while marketplace bookings retain it.
+- Patient booking/payment updates, ten-minute reminders and minimal clinic appointment alerts use a durable outbox. Email and WhatsApp need separate provider setup, verified destinations and approved templates. The background worker must stay running for scheduled delivery.
+- Doctor and veterinarian onboarding freezes the submitted evidence revision for manual review, consent, clean-document checks and approval. Fictional seed profiles remain clearly marked as demo providers.
 - The responsive website includes mobile navigation and patient workspaces. `apps/mobile` is a separate Expo prototype with device pairing and encrypted offline intents; it is not ready for release.
 
 External SMS, email, payments, AI and partner services require real account setup and activation. ABDM, insurance and finance intake do not establish certification or partnerships. AWS and Google Cloud documents describe future migration options; this local implementation does not deploy cloud infrastructure.
 
-## Verification and remaining limits
+## Checks and operations
 
-The latest recorded full regression run passed **201 tests**, and the production website build passed. Final targeted LiveKit checks cover late cancellation, future-room cleanup and local origin validation. Synthetic PostgreSQL concurrency/restore checks and two-participant LiveKit connection and room-deletion checks are also recorded.
-
-Real camera, microphone and phone call testing remains outstanding. Google authentication reached account selection, but the completed callback, application session and live Meet creation have not been verified. The website dependency audit recorded no known vulnerabilities at that check; the separate mobile prototype still has unresolved high-severity dependency findings.
+GitHub checks run types, the regression suite with native coverage, dependency audits and a hosted build without private credentials. Coverage artifacts describe the instrumented executed services and do not prove that every external integration works. Local provider acceptance, actual recipient delivery and physical-device checks are separate evidence.
 
 ```powershell
 npm test
 npm run typecheck
+npm run test:coverage
+npm run check:env
 npm run verify:postgres
 ```
 
-The PostgreSQL verification command uses a separate synthetic local Docker environment. Consult the evidence and limitations in the documentation rather than treating successful local checks as production certification.
+The PostgreSQL verification command uses a separate synthetic local Docker environment. `check:env` reports setting names and configuration status, never secret values. Use `node scripts/check-env.mjs --production` against actual deployment environment variables; it deliberately does not import local secrets. It checks configuration shape, not provider activation, template approval or connectivity.
+
+`/api/health` performs a fresh read of the required migration and returns 503 for missing setup, missing migrations or an unavailable database. Sentry is optional and disabled until valid CareNest DSNs are configured. Error export discards request data, raw messages, patient identities, breadcrumbs and source text; replay and tracing remain disabled. Create a separate CareNest project and verify a synthetic event before relying on it.
+
+## Owner setup before the MVP pilot
+
+1. Configure persistent PostgreSQL, authentication and encryption settings in Vercel, apply the ordered migrations and verify `/api/health`. A local PGlite database is not a hosted database. Keep main deployment separate from PR #3 until checks and setup are complete.
+2. Activate and validate Twilio phone verification, Gmail sender, Google OAuth redirect URLs, Meta booking/payment/reminder templates and Cashfree test checkout/payout beneficiaries. Sandbox success does not authorize live payments or transfers.
+3. Keep a worker running for queued deliveries, reminders and reconciliation. Confirm actual email and WhatsApp receipt using the intended test accounts; provider acceptance alone is insufficient.
+4. Onboard real doctors/vets with license evidence, consent, a human reviewer and verified payout details. Complete business information, support/grievance contact and the applicable operating policies before accepting real patients.
+5. Test phone and desktop sign-in, failed/cancelled checkout, rescheduling, refunds, a completed consultation and a reconciled doctor payout. Complete a LiveKit call using two real devices with camera/microphone permissions and confirm private records remain scoped to their owners.
+6. Set up CareNest monitoring, encrypted backups and a restore exercise. The separate Expo prototype requires its own dependency and device validation before any mobile release.
+
+See the implementation reports for dated test results and outstanding provider checks; successful local checks are not production certification.
 
 ## Documentation
 
 - [Local operation, architecture and data rules](docs/implementation/LOCAL_RUNBOOK.md)
+- [Avyora improvements, monitoring and remaining setup](docs/implementation/AVYORA_IMPROVEMENTS_APPLIED_TO_CARENEST.md)
+- [Vercel database setup and crash recovery](docs/implementation/VERCEL_DATABASE_SETUP_AND_CRASH_FIX.md)
 - [Implementation ledger](docs/implementation/LOCAL_IMPLEMENTATION_LEDGER.md)
 - [Remaining work and provider setup](docs/implementation/REMAINING_WORK_IMPLEMENTATION_AND_SETUP.md)
 - [LiveKit implementation and validation](docs/implementation/LIVEKIT_LOCAL_VIDEO_IMPLEMENTATION.md)

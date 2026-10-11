@@ -1,16 +1,6 @@
 /**
- * Split a SQL script into individual statements.
- *
- * Needed because both the seed and the test harness apply the schema one
- * statement at a time, and two constructs in it defeat a naive `split(';')`:
- *
- *   -- a comment; with a semicolon in it
- *   AS $$ BEGIN … ; … END; $$
- *
- * Once inside a `$$ … $$` body the text is opaque: it is appended verbatim and
- * never re-examined. Only the newly-arrived chunk is ever split — re-splitting
- * the accumulated buffer would find the semicolons inside a body that had
- * already been protected.
+ * Split SQL on `;`, except inside comments and `$$ … $$` bodies.
+ * Only the new chunk is split; re-splitting the buffer would cut a protected body.
  */
 export function splitStatements(sql) {
   const cleaned = sql.replace(/^\s*--.*$/gm, '')

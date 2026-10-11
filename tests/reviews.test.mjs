@@ -3,12 +3,8 @@ import assert from 'node:assert/strict'
 import { freshDb, addDoctor, addUser } from './helpers.mjs'
 
 /**
- * Review integrity.
- *
- * The trust page promises that reviews come only from completed visits. These
- * tests exist because that promise was false for a while: the action checked
- * that the reviewer was signed in and had not already reviewed, which reads
- * like a gate but permits any account to rate any doctor.
+ * Reviews require a visit the clinician confirmed. This was false for a while:
+ * the signed-in + not-already-reviewed check reads like a gate but is not one.
  */
 
 async function book(db, { id, userId, doctorId, status = 'requested' }) {

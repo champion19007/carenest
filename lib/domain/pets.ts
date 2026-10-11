@@ -1,9 +1,11 @@
 import 'server-only'
+import {isPetSpecies} from '@/lib/species'
+
 import { randomUUID } from 'node:crypto'
 import { getDb,ensureSchema,type Db } from '@/lib/db/client'
 import { boundedText,reject } from './errors'
 export type Pet={id:string;name:string;species:string;breed:string;dob:string|null;sex:string;microchip:string|null}
-const species=['dog','cat','rabbit','bird','other'], sexes=['male','female','unknown']
+const sexes=['male','female','unknown']
 function calendarDate(value:unknown,optional=false) {
   const text=String(value??'')
   if(!text&&optional)return null
@@ -20,7 +22,7 @@ export async function ownedPets(actorId:string):Promise<Pet[]> {
 }
 export async function savePet(actorId:string,input:{id?:string;name:unknown;species:unknown;breed:unknown;dob?:unknown;sex:unknown;microchip?:unknown}) {
   const name=boundedText(input.name,80,1),kind=boundedText(input.species,20,1),sex=boundedText(input.sex,20,1),breed=boundedText(input.breed,80),dob=calendarDate(input.dob,true),microchip=boundedText(input.microchip??'',40)
-  if(!species.includes(kind)||!sexes.includes(sex))reject('VALIDATION','Choose a species and sex from the list.',400)
+  if(!isPetSpecies(kind)||!sexes.includes(sex))reject('VALIDATION','Choose a species and sex from the list.',400)
   await ensureSchema()
   return getDb().transaction(async tx=>{
     await owner(tx,actorId,input.id)

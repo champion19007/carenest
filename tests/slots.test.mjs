@@ -3,15 +3,8 @@ import assert from 'node:assert/strict'
 import { freshDb, addDoctor, addUser } from './helpers.mjs'
 
 /**
- * Slot concurrency.
- *
- * A caveat worth stating: PGlite runs one connection, so two "simultaneous"
- * calls here are serialised rather than genuinely parallel. That does not
- * weaken these tests, because the mutual exclusion is not implemented in
- * JavaScript — it is a single conditional UPDATE, and Postgres re-evaluates
- * the predicate under a row lock at write time. What these tests verify is
- * that the predicate is the right one. Had the code read the row and then
- * written it, no test on a single connection could have caught the race.
+ * PGlite is single-connection, so these calls serialise. They verify the
+ * predicate, not the race; Postgres enforces exclusion in the conditional UPDATE.
  */
 
 const HOLD = 120

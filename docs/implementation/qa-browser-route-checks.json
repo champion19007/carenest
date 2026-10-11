@@ -1,0 +1,84 @@
+{
+  "date": "2026-10-09",
+  "viewport": {
+    "desktop": [
+      1365,
+      900
+    ],
+    "mobile": [
+      390,
+      844
+    ]
+  },
+  "pages": [
+    {
+      "path": "/",
+      "status": 200
+    },
+    {
+      "path": "/search",
+      "status": 200
+    },
+    {
+      "path": "/account",
+      "status": 200
+    },
+    {
+      "path": "/account/profile",
+      "status": 200
+    },
+    {
+      "path": "/account/pets",
+      "status": 200
+    },
+    {
+      "path": "/account/records",
+      "status": 200
+    },
+    {
+      "path": "/account/history",
+      "status": 200
+    },
+    {
+      "path": "/account/labs",
+      "status": 200
+    },
+    {
+      "path": "/account/billing",
+      "status": 200
+    },
+    {
+      "path": "/account/notifications",
+      "status": 200
+    },
+    {
+      "path": "/account/privacy",
+      "status": 200
+    },
+    {
+      "path": "/account/pharmacy",
+      "status": 200
+    },
+    {
+      "path": "/account/mobile",
+      "status": 200
+    },
+    {
+      "path": "/help",
+      "status": 200
+    },
+    {
+      "path": "/policies/privacy",
+      "status": 200
+    },
+    {
+      "path": "/admin/payouts",
+      "status": 307
+    },
+    {
+      "path": "/practice/billing",
+      "status": 307
+    }
+  ],
+  "pageErrors": []
+}

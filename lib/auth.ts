@@ -41,7 +41,7 @@ export function newOtp() {
   return String(randomInt(100_000, 1_000_000))
 }
 
-/* ------------------------------------------------------------- passwords */
+/* passwords */
 
 /**
  * scrypt with a per-user salt. Deliberately slow, so a leaked database is
@@ -59,7 +59,7 @@ export async function verifyPassword(password: string, salt: string, expected: s
   return timingSafeEqual(derived, expectedBuf)
 }
 
-/* -------------------------------------------------------- patient session */
+/* patient session */
 
 /**
  * Opens a session and issues the matching signed claims.
@@ -170,7 +170,7 @@ export async function requireRole(role: string, next: string): Promise<User> {
   return user
 }
 
-/* ---------------------------------------------------------- admin session */
+/* admin session */
 
 /**
  * Admin sessions reuse the sessions table, keyed to an admin row rather than

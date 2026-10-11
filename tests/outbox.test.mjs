@@ -3,11 +3,8 @@ import assert from 'node:assert/strict'
 import { freshDb, addDoctor, addUser } from './helpers.mjs'
 
 /**
- * Transactional outbox, and the cascade audit that came with it.
- *
- * The property being protected is that a promise to notify somebody survives
- * everything that can go wrong after the booking commits — a gateway outage,
- * a killed function, two workers racing.
+ * A promise to notify must survive a gateway outage, a killed worker, or two
+ * workers racing. Also covers the cascade audit.
  */
 
 const CLAIM_MINUTES = 5
@@ -178,7 +175,7 @@ test('an event survives deletion of what it refers to', async () => {
   await db.close()
 })
 
-/* ── the cascade audit ──────────────────────────────────────────────── */
+/* the cascade audit */
 
 test('the audit log survives erasure of the account it names', async () => {
   const db = await freshDb()

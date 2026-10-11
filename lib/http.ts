@@ -1,5 +1,6 @@
 import {DomainError} from './domain/errors'
 import {localMode} from './secrets'
+import {reportError} from './observability'
 export function sameOrigin(request:Request) {
  const origin=request.headers.get('origin')
  if(!origin)return false
@@ -13,6 +14,7 @@ export function sameOrigin(request:Request) {
  }catch{return false}
 }
 export function errorResponse(error:unknown) {
+ if(!(error instanceof DomainError))reportError(error,'api.operation_failed')
  return Response.json({error:error instanceof DomainError?error.message:'The operation could not be completed.'},
   {status:error instanceof DomainError?error.status:500,headers:{'Cache-Control':'private, no-store'}})
 }
@@ -21,4 +23,18 @@ export async function boundedBody(request:Request,maximum:number) {
  const chunks:Uint8Array[]=[];let count=0
  try{while(true){const {value,done}=await reader.read();if(done)break;count+=value.length;if(count>maximum){await reader.cancel();throw new DomainError('SIZE','Request too large.',413)}chunks.push(value)}}finally{reader.releaseLock()}
  const result=new Uint8Array(count);let offset=0;for(const chunk of chunks){result.set(chunk,offset);offset+=chunk.length}return result
+}
+
+/**
+ * Rate-limit key per network. Trusts x-forwarded-for only behind TRUST_PROXY;
+ * spoofable otherwise, letting one caller mint unlimited buckets.
+ * Without it every caller shares one key, so pair this with a global backstop.
+ */
+export function networkFrom(forwardedFor: string | null) {
+  if (process.env.TRUST_PROXY !== '1') return 'untrusted-network'
+  return forwardedFor?.split(',').at(-1)?.trim().slice(0, 80) || 'unknown'
+}
+
+export function networkKey(request: Request) {
+  return networkFrom(request.headers.get('x-forwarded-for'))
 }
