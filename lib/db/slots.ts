@@ -12,6 +12,8 @@ export async function openSlots(doctorId:string,days=7):Promise<Slot[]> {
     WHERE s.doctor_id=$1 AND d.status='ACTIVE' AND s.slot_start>now() AND s.slot_start<now()+($2||' days')::interval
     AND (s.status='AVAILABLE' OR (s.status='HELD' AND s.locked_until<now()))
     AND NOT EXISTS(SELECT 1 FROM provider.schedule_exceptions e WHERE e.doctor_id=s.doctor_id AND e.day=(s.slot_start AT TIME ZONE 'Asia/Kolkata')::date AND e.closed)
+    AND NOT EXISTS(SELECT 1 FROM clinic.scheduled_visits v WHERE v.doctor_id=s.doctor_id AND v.state='SCHEDULED' AND v.starts_at<s.slot_end AND v.ends_at>s.slot_start)
+    AND NOT EXISTS(SELECT 1 FROM clinic.calendar_blocks b WHERE b.doctor_id=s.doctor_id AND b.status='ACTIVE' AND b.starts_at<s.slot_end AND b.ends_at>s.slot_start)
     ORDER BY s.slot_start`,[doctorId,String(Math.min(14,Math.max(1,days)))])
 }
 export async function findSlot(id:string){return (await db()).one<Slot>('SELECT * FROM provider.appointment_slots WHERE slot_id=$1',[id])}

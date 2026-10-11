@@ -1,0 +1,7 @@
+import type {ReactNode} from 'react'
+import {Inbox} from 'lucide-react'
+export function WorkspaceTitle({title,description,actions}:{title:string;description?:string;actions?:ReactNode}){return <header className="workspace-title"><div><h1>{title}</h1>{description&&<p>{description}</p>}</div><div className="flex flex-wrap items-center gap-2">{actions}</div></header>}
+export function WorkspaceEmpty({title,detail,action}:{title:string;detail:string;action?:ReactNode}){return <div className="workspace-empty" role="status"><Inbox className="size-7 text-muted-foreground" aria-hidden="true"/><h2>{title}</h2><p>{detail}</p>{action}</div>}
+export function WorkspaceBadge({state}:{state:string}){const value=state.toLowerCase().replaceAll('_',' '),tone=['paid','attended','approved','captured','done'].includes(state.toLowerCase())?'positive':['waiting','requested','pending','submitted','unknown'].includes(state.toLowerCase())?'pending':['cancelled','no show','void','archived','rejected'].includes(value)?'quiet':'normal';return <span className={`workspace-badge workspace-badge-${tone}`}>{value}</span>}
+export function WorkspaceMetric({label,value,hint}:{label:string;value:ReactNode;hint?:string}){return <div className="workspace-metric"><p>{label}</p><strong>{value}</strong>{hint&&<span>{hint}</span>}</div>}
+export function WorkspacePanel({title,children,action}:{title:string;children:ReactNode;action?:ReactNode}){return <section className="workspace-panel"><div className="workspace-panel-title"><h2>{title}</h2>{action}</div>{children}</section>}

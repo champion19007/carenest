@@ -9,6 +9,7 @@ import {fast2smsSelected,sendFast2smsUpdates} from './fast2sms'
 import {sendEmailUpdate} from './email'
 import {updateMessage} from './domain/appointment-notifications'
 import {metaWhatsAppSelected,sendMetaWhatsAppUpdate} from './meta-whatsapp'
+import {clinicChannelAllowed} from './domain/workspace-communications'
 
 async function legacySmsUpdate(userId:string,eventId:string){
  if(localMode()||!smsIsLive()||!(await notificationPreferences(userId)).sms_enabled)return
@@ -26,6 +27,8 @@ export async function sendExternalUpdate(userId:string,eventId:string){
  if(event?.kind==='account.email_test_requested'){await sendEmailUpdate(userId,eventId);return}
  // A WhatsApp failure cannot suppress an opted-in booking email, or vice versa.
  const meta=metaWhatsAppSelected(),fast=!meta&&fast2smsSelected()
- const results=await Promise.allSettled([meta?sendMetaWhatsAppUpdate(userId,eventId):fast?sendFast2smsUpdates(userId,eventId):sendWhatsAppUpdate(userId,eventId),sendEmailUpdate(userId,eventId),...(fast||meta?[]:[legacySmsUpdate(userId,eventId)])])
+ const [whatsappAllowed,emailAllowed,smsAllowed]=await Promise.all([clinicChannelAllowed(eventId,'whatsapp'),clinicChannelAllowed(eventId,'email'),clinicChannelAllowed(eventId,'sms')])
+ // Fast2SMS can fan out over two channels, so let it apply channel policy internally.
+ const results=await Promise.allSettled([fast?sendFast2smsUpdates(userId,eventId):whatsappAllowed?(meta?sendMetaWhatsAppUpdate(userId,eventId):sendWhatsAppUpdate(userId,eventId)):Promise.resolve(),emailAllowed?sendEmailUpdate(userId,eventId):Promise.resolve(),...(fast||meta?[]:[smsAllowed?legacySmsUpdate(userId,eventId):Promise.resolve()])])
  const failure=results.find(r=>r.status==='rejected');if(failure?.status==='rejected')throw failure.reason
 }

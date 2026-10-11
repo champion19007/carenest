@@ -1,3 +1,4 @@
+import {clinicEmailFooter} from './domain/workspace-communications'
 import 'server-only'
 import nodemailer from 'nodemailer'
 import {ensureSchema,getDb} from './db/client'
@@ -30,6 +31,7 @@ export async function sendEmailUpdate(userId:string,eventId:string){
  const user=await getDb().one<{email:string|null;email_verified_at:string|null}>("SELECT email,email_verified_at FROM patient.users WHERE id=$1 AND status='ACTIVE'",[userId])
  if(!user?.email||!user.email_verified_at)return
  const message=await updateMessage(userId,eventId);if(!message)return
+ const footer=await clinicEmailFooter(eventId),messageText=message.text+(footer?"\n\n"+footer:"")
  if(!emailConfigured())reject('EMAIL_SETUP','Booking email sending needs a configured sender.',503)
  const provider=process.env.EMAIL_PROVIDER!,key='event:'+eventId+':email',recipient=privateKey('email-recipient',user.email.toLowerCase())
  const claim=await getDb().transaction(async tx=>{
@@ -59,12 +61,12 @@ export async function sendEmailUpdate(userId:string,eventId:string){
   if(provider==='gmail'){
    const sender=process.env.GMAIL_SENDER_EMAIL!,transport=nodemailer.createTransport({host:'smtp.gmail.com',port:465,secure:true,auth:{user:sender,pass:process.env.GMAIL_APP_PASSWORD!.replace(/\s/g,'')},connectionTimeout:8000,greetingTimeout:8000,socketTimeout:10000,logger:false,debug:false})
    try{
-    const result=await transport.sendMail({from:{name:'CareNest',address:sender},to:user.email,subject:'CareNest: '+message.title,text:message.text,messageId:`<${privateKey('email-message-id',key)}@gmail.com>`})
+    const result=await transport.sendMail({from:{name:'CareNest',address:sender},to:user.email,subject:'CareNest: '+message.title,text:messageText,messageId:`<${privateKey('email-message-id',key)}@gmail.com>`})
     if(!result.messageId||!result.accepted.some((address:unknown)=>String(address).toLowerCase()===user.email!.toLowerCase()))reject('DELIVERY_UNKNOWN','Gmail accepted no matching recipient receipt.',503)
     reference=result.messageId
    }finally{transport.close()}
   }else{
-   const response=await fetch('https://api.resend.com/emails',{method:'POST',cache:'no-store',headers:{Authorization:'Bearer '+process.env.RESEND_API_KEY,'Content-Type':'application/json','Idempotency-Key':key},body:JSON.stringify({from:process.env.EMAIL_FROM,to:[user.email],subject:'CareNest: '+message.title,text:message.text}),signal:AbortSignal.timeout(10000)})
+   const response=await fetch('https://api.resend.com/emails',{method:'POST',cache:'no-store',headers:{Authorization:'Bearer '+process.env.RESEND_API_KEY,'Content-Type':'application/json','Idempotency-Key':key},body:JSON.stringify({from:process.env.EMAIL_FROM,to:[user.email],subject:'CareNest: '+message.title,text:messageText}),signal:AbortSignal.timeout(10000)})
    if(!response.ok)reject('DELIVERY_REJECTED','Email provider rejected the request.',503)
    const body=await response.json() as {id?:string};if(!body.id)reject('DELIVERY_UNKNOWN','Email receipt missing.',503);reference=body.id
   }

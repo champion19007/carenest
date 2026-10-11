@@ -4,7 +4,7 @@ import {useRouter} from 'next/navigation'
 type Checkout={checkout:(options:{paymentSessionId:string;redirectTarget:'_modal'})=>Promise<{error?:{message?:string};redirect?:boolean;paymentDetails?:unknown}>}
 declare global {interface Window {Cashfree?:(options:{mode:'sandbox'})=>Checkout}}
 let loading:Promise<void>|undefined
-async function loadCheckout(){
+export async function loadCheckout(){
  if(window.Cashfree)return
  loading??=new Promise<void>((resolve,reject)=>{const script=document.createElement('script');script.src='https://sdk.cashfree.com/js/v3/cashfree.js';script.onload=()=>resolve();script.onerror=()=>{script.remove();loading=undefined;reject(new Error('Cashfree checkout could not load. Try again.'))};document.head.appendChild(script)})
  await loading;if(!window.Cashfree){loading=undefined;throw new Error('Cashfree checkout is unavailable.')}

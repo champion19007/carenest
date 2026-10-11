@@ -47,7 +47,7 @@ test('prepaid appointment and completed-doctor payout lifecycle',async t=>{
   await addUser(db,'patient','9000000001');await addUser(db,'other','9000000002');await addUser(db,'doctor','9000000003','doctor')
   await db.query("UPDATE patient.users SET kyc_level='verified' WHERE id='doctor'")
   await db.query("INSERT INTO clinic.clinics(id,name) VALUES('clinic','QA clinic')")
-  await addDoctor(db,'provider',{fee:400});await db.query("UPDATE provider.doctors SET user_id='doctor',clinic_id='clinic',verified_at=now() WHERE id='provider'")
+  await addDoctor(db,'provider',{fee:400});await db.query("UPDATE provider.doctors SET user_id='doctor',clinic_id='clinic',verified_at=now() WHERE id='provider'");await db.query("INSERT INTO clinic.memberships(clinic_id,user_id,role) VALUES('clinic','doctor','clinician')")
   await db.query("INSERT INTO admins(id,username,password_hash,salt,totp_secret) VALUES('admin','qa-admin','fixture','fixture','fixture')")
   let v,p,d
   await t.test('slot is held, invoice is trusted, failed payment never schedules and another patient cannot claim it',async()=>{

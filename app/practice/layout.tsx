@@ -9,5 +9,5 @@ import {findDoctorByUserId} from '@/lib/db/sql'
  */
 export default async function PracticeLayout({ children }: { children: React.ReactNode }) {
   const user=await requireRole('doctor', '/practice/patients'),doctor=await findDoctorByUserId(user.id)
-  return <PracticeShell clinicianName={user.name} clinicLabel={doctor?[doctor.clinic,doctor.locality].filter(Boolean).join(' · '):'Your practice'}>{children}</PracticeShell>
+  return <PracticeShell clinicianName={user.name} clinicLabel={doctor?[doctor.clinic,doctor.locality].filter(Boolean).join(' · '):'Your practice'} demo={doctor?.is_demo}>{children}</PracticeShell>
 }

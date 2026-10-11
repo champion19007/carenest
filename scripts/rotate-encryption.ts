@@ -32,6 +32,14 @@ const specs:Spec[]=[
  {table:'pharmacy.fulfilments',column:'encrypted_receipt',key:'order_id',context:r=>'pharmacy-receipt:'+r.order_id},
  {table:'integration_cases',column:'encrypted_payload',context:r=>'integration:'+r.id},
  {table:'data_reconciliation_cases',column:'encrypted_reason',context:r=>'reconcile:'+r.id},
+ {table:'clinic.scheduled_visits',column:'encrypted_details',context:r=>'visit:'+r.id},
+ {table:'clinic.calendar_blocks',column:'encrypted_reason',context:r=>'block:'+r.id},
+ {table:'clinic.workspace_reminders',column:'encrypted_body',context:r=>'reminder:'+r.id},
+ {table:'clinic.workspace_preferences',column:'encrypted_body',key:'doctor_id',context:r=>'workspace:'+r.doctor_id},
+ {table:'clinic.workspace_catalogue',column:'encrypted_body',context:r=>'catalogue:'+r.id},
+ {table:'clinic.workspace_expenses',column:'encrypted_body',context:r=>'expense:'+r.id},
+ {table:'clinic.staff_requests',column:'encrypted_body',context:r=>'staff-request:'+r.id},
+ {table:'clinic.campaign_funding_orders',column:'payment_session_encrypted',context:r=>'funding:'+r.id},
 ]
 try{
  const plan=[] as {spec:Spec;row:Record<string,unknown>;encrypted:string;plain:string}[]

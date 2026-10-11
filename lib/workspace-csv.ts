@@ -1,0 +1,1 @@
+export function workspaceCsv(rows:(string|number|null|undefined)[][]){return '﻿'+rows.map(row=>row.map(raw=>{let value=String(raw??'');if(/^[\s]*[=+\-@]/.test(value))value="'"+value;return '"'+value.replaceAll('"','""')+'"'}).join(',')).join('\r\n')}

@@ -6,6 +6,7 @@ import {homeAddressSnapshot} from './home-visits'
 import {livekitConfigured} from './livekit'
 import { boundedText, reject } from './errors'
 import {cashfreeConfigured} from '@/lib/cashfree'
+import {workspaceWindowFree} from './workspace-conflicts'
 
 export const REQUEST_HOLD_MINUTES = 30
 export const PAYMENT_HOLD_MINUTES = 10
@@ -43,6 +44,7 @@ async function practitioner(tx: Db, actorId: string, doctorId: string) {
   if (doctor.user_id !== actorId || user.role !== 'doctor' || user.kyc_level !== 'verified') {
     reject('FORBIDDEN', 'An active verified practitioner is required.', 403)
   }
+  if(doctor.clinic_id&&!await tx.one("SELECT user_id FROM clinic.memberships WHERE clinic_id=$1 AND user_id=$2 AND status='ACTIVE' AND role IN ('clinician','administrator') FOR SHARE",[doctor.clinic_id,actorId]))reject('FORBIDDEN','Current clinic membership is required.',403)
   return doctor
 }
 async function lockSlot(tx: Db, id: string) {
@@ -134,6 +136,7 @@ export async function requestAppointment(input: {
     if (slot.doctor_id !== d.id) reject('SLOT_UNAVAILABLE', 'Choose a time on this provider’s calendar.')
     await future(tx, slot); await expireSlot(tx, slot)
     if (slot.status !== 'AVAILABLE') reject('SLOT_UNAVAILABLE', 'Someone else took that time. Please choose another.')
+    await workspaceWindowFree(tx,d.id,slot.slot_start,slot.slot_end)
     if(await tx.one(`SELECT b.id FROM patient.bookings b JOIN provider.appointment_slots s ON s.reserved_booking_id=b.id
       WHERE b.doctor_id=$1 AND b.status IN ('requested','confirmed') AND s.slot_start<$3::timestamptz AND s.slot_end>$2::timestamptz
       AND (s.status='BOOKED' OR (s.status='HELD' AND s.locked_until>clock_timestamp())) LIMIT 1`,[d.id,slot.slot_start,slot.slot_end]))reject('OVERLAP','This clinician already has an overlapping appointment.')
@@ -253,6 +256,7 @@ export async function rescheduleAppointment(actorId: string, bookingId: string, 
     if (nextSlot.doctor_id !== b.doctor_id) reject('SLOT_UNAVAILABLE','Choose a time with the same provider.')
     await future(tx,nextSlot); await expireSlot(tx,nextSlot)
     if (nextSlot.status !== 'AVAILABLE') reject('SLOT_UNAVAILABLE','That replacement time is already taken. Your original appointment is unchanged.')
+    await workspaceWindowFree(tx,b.doctor_id,nextSlot.slot_start,nextSlot.slot_end)
     if(await tx.one("SELECT day FROM provider.schedule_exceptions WHERE doctor_id=$1 AND day=($2::timestamptz AT TIME ZONE 'Asia/Kolkata')::date AND closed=true",[b.doctor_id,nextSlot.slot_start]))reject('SLOT_UNAVAILABLE','The clinic is closed on that date.')
     if(await tx.one(`SELECT b.id FROM patient.bookings b JOIN provider.appointment_slots s ON s.reserved_booking_id=b.id WHERE b.doctor_id=$1 AND b.id<>$4 AND b.status IN ('requested','confirmed') AND s.slot_start<$3::timestamptz AND s.slot_end>$2::timestamptz AND (s.status='BOOKED' OR (s.status='HELD' AND s.locked_until>clock_timestamp())) LIMIT 1`,[b.doctor_id,nextSlot.slot_start,nextSlot.slot_end,b.id]))reject('OVERLAP','The replacement time overlaps another consultation.')
     await tx.query("UPDATE provider.appointment_slots SET status='AVAILABLE',reserved_booking_id=NULL,locked_by=NULL,locked_until=NULL,version=version+1 WHERE slot_id=$1 AND reserved_booking_id=$2", [oldSlot.slot_id,b.id])

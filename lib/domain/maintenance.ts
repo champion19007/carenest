@@ -7,6 +7,7 @@ import {reconcileLivekit} from './livekit'
 import {runDoctorPayouts} from './doctor-payouts'
 import {reconcileAppointmentPayment} from './billing'
 import {scheduleAppointmentReminders} from './appointment-notifications'
+import {reconcileCampaignFunding} from './workspace-marketing'
 export async function runLocalWork(batch=20){
  const deadline=Date.now()+45000
  await ensureSchema();const paymentsReconciled=await reconcileAppointmentPayment(),expired=await sweepAppointmentHolds(100)
@@ -19,9 +20,10 @@ export async function runLocalWork(batch=20){
  await getDb().query("DELETE FROM phone_verifications WHERE expires_at<now()-interval '1 day'")
  await getDb().query("DELETE FROM email_auth_challenges WHERE expires_at<now()-interval '1 day'")
  await getDb().query("DELETE FROM mobile_sync_intents WHERE created_at<now()-interval '30 days'")
+ const campaignFundsReconciled=Date.now()<deadline-30000?await reconcileCampaignFunding(1):0
  const remindersScheduled=await scheduleAppointmentReminders()
  const drained=await drainAll(batch,deadline-18000);let videoFence='disabled'
  try{const result=await reconcileLivekit();videoFence='checked '+result.checked}catch{videoFence='retry required';await getDb().transaction(async tx=>{const log=await tx.one("INSERT INTO maintenance_state(name,last_run) VALUES('livekit-fence-error',now()) ON CONFLICT(name) DO UPDATE SET last_run=now() WHERE maintenance_state.last_run<now()-interval '1 minute' RETURNING name");if(log)await tx.query("INSERT INTO audit_log(action,resource) VALUES('livekit:fence_failed','local-worker')")})}
  const payouts=await runDoctorPayouts(Date.now()<deadline-17000?1:0)
- return {expired,...drained,videoFence,payouts,paymentsReconciled,remindersScheduled}
+ return {expired,...drained,videoFence,payouts,paymentsReconciled,remindersScheduled,campaignFundsReconciled}
 }

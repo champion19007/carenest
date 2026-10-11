@@ -1,0 +1,10 @@
+import Link from 'next/link'
+import {currentAdmin} from '@/lib/auth'
+import {AdminGate} from '@/components/admin-gate'
+import {adminStaffRequests} from '@/lib/domain/workspace-staff'
+import {adminCampaigns} from '@/lib/domain/workspace-marketing'
+import {WorkspaceReview} from '@/components/workspace/admin-review'
+import {WorkspacePanel,WorkspaceBadge} from '@/components/workspace/ui'
+import {formatPaise} from '@/lib/money'
+export const dynamic='force-dynamic'
+export default async function WorkspaceReviewPage(){const admin=await currentAdmin();if(!admin)return <AdminGate firstRun={false}/>;const [staff,campaigns]=await Promise.all([adminStaffRequests(admin.id),adminCampaigns(admin.id)]);return <main className="care-container py-8 space-y-6"><Link className="care-button-secondary" href="/admin">Back to administrator console</Link><h1 className="text-3xl">Clinic workspace reviews</h1><h2 className="text-xl">Staff access</h2>{staff.map(r=><WorkspacePanel key={r.id} title={r.body.name+' · '+r.clinic_name} action={<WorkspaceBadge state={r.state}/>}><p>{r.body.email} · {r.requested_role}</p><p className="my-4 whitespace-pre-wrap">{r.body.note}</p>{r.state==='PENDING'&&<WorkspaceReview kind="staff" id={r.id} revision={r.revision}/>}</WorkspacePanel>)}{!staff.length&&<p>No staff requests.</p>}<h2 className="text-xl">Sponsored discovery · sandbox</h2>{campaigns.map(c=><WorkspacePanel key={c.id} title={c.doctor_name+' · '+c.title}><h3 className="font-semibold">{c.body.headline}</h3><p className="my-3">{c.body.description}</p><p className="workspace-help mb-4">{c.starts_on} to {c.ends_on} · {formatPaise(c.budget_paise)} · {c.funded?'Matching funding verified':'Funding missing'}</p><WorkspaceReview kind="campaign" id={c.id} revision={c.revision}/></WorkspacePanel>)}{!campaigns.length&&<p>No campaigns awaiting review.</p>}</main>}

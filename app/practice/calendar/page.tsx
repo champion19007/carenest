@@ -1,7 +1,12 @@
-import Link from 'next/link'
 import {requireRole} from '@/lib/auth'
-import {practiceData} from '@/lib/domain/practice'
-import {slotDay,slotTime} from '@/lib/slot-format'
-import {ClinicVisitActions} from '@/components/clinic-visit-actions'
+import {workspaceCalendar} from '@/lib/domain/workspace-calendar'
+import {workspaceSettings} from '@/lib/domain/workspace-settings'
+import {clinicContacts} from '@/lib/domain/workspace-patients'
+import {CalendarWorkspace} from '@/components/workspace/calendar-view'
 export const dynamic='force-dynamic'
-export default async function CalendarPage(){const user=await requireRole('doctor','/practice/calendar'),data=await practiceData(user.id);return <div className="space-y-5"><h1 className="text-3xl">Clinic calendar</h1><p className="text-sm text-muted-foreground">Real appointment times in IST. Arrival and consultation events drive the waiting queue.</p><Link href="/practice/settings" className="care-button">Publish clinic hours</Link><div className="grid gap-5 lg:grid-cols-2">{data.appointments.map(b=><article key={b.id} className="rounded-2xl border border-border bg-card p-5"><h2 className="text-lg">{b.subject_name}</h2><p className="mt-2 text-sm">{b.starts_at?`${slotDay(b.starts_at)}, ${slotTime(b.starts_at)}`:'Time needs review'} · {b.kind} · {b.status}</p>{b.checked_in_at&&<p className="mt-2 text-xs text-success">Checked in {slotTime(b.checked_in_at)}</p>}{b.started_at&&<p className="mt-2 text-xs">Consultation began {slotTime(b.started_at)}</p>}{b.status==='confirmed'&&<><ClinicVisitActions id={b.id}/>{b.kind==='video'&&<Link href={`/consult/${encodeURIComponent(b.id)}`} target="_blank" rel="noopener noreferrer" className="care-button mt-4">Join as clinician</Link>}</>}</article>)}</div>{!data.appointments.length&&<p className="rounded-2xl border border-dashed border-border p-6 text-sm">No recorded appointments yet.</p>}</div>}
+export default async function CalendarPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
+ const user=await requireRole('doctor','/practice/calendar'),params=await searchParams
+ const [settings,contacts]=await Promise.all([workspaceSettings(user.id),clinicContacts(user.id)])
+ const data=await workspaceCalendar(user.id,typeof params.day==='string'?params.day:undefined,typeof params.view==='string'?params.view:settings.preferences.calendar.defaultView)
+ return <CalendarWorkspace {...data} contacts={contacts} display={settings.preferences.calendar}/>
+}

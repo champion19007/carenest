@@ -1,0 +1,6 @@
+'use client'
+import {addPracticeExpense,voidPracticeExpense} from '@/app/actions/workspace'
+import {WorkspaceForm,Field,Check,FormDialog} from './forms'
+import {istDate} from '@/lib/practice-calendar'
+export function ExpenseForm(){return <FormDialog title="Record expense">{close=><WorkspaceForm action={addPracticeExpense} label="Save expense" onSuccess={close}><div className="workspace-fields"><Field name="date" label="Expense date" type="date" defaultValue={istDate()} required/><Field name="category" label="Category" options={['Rent','Staff','Supplies','Equipment','Software','Utilities','Other'].map(value=>({value,label:value}))}/><Field name="amount" label="Amount (₹)" required type="number" min={0.01}/><Field name="payee" label="Payee" required maxLength={120}/><Field name="reference" label="Receipt reference" maxLength={120}/></div><Field name="note" label="Private note" type="textarea" maxLength={2000}/><Check name="attested" required label="This is an actual clinic expense; I checked the receipt."/></WorkspaceForm>}</FormDialog>}
+export function VoidExpense({id,revision}:{id:string;revision:number}){return <WorkspaceForm action={voidPracticeExpense} label="Void expense"><input type="hidden" name="id" value={id}/><input type="hidden" name="revision" value={revision}/></WorkspaceForm>}
