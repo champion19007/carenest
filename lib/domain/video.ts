@@ -89,9 +89,9 @@ type Room={id:string;booking_id:string;revision:number;provider:VideoVendor;stat
 export async function provisionVideo(id:string){
  await ensureSchema();const b=await booking(id)
  if(!b||b.kind!=='video'||b.status!=='confirmed')return
- await providerIdentity(b.doctor_user)
- const existing=await getDb().one<{provider:string}>('SELECT provider FROM video_sessions WHERE booking_id=$1 AND revision=$2',[id,b.revision]),preference=await getDb().one<{video_provider:string}>('SELECT video_provider FROM provider.doctors WHERE user_id=$1',[b.doctor_user])
+ const existing=await getDb().one<{provider:string}>('SELECT provider FROM video_sessions WHERE booking_id=$1 AND revision=$2',[id,b.revision]),preference=await getDb().one<{video_provider:string}>('SELECT video_provider FROM provider.doctors WHERE id=(SELECT doctor_id FROM patient.bookings WHERE id=$1)',[id])
  if((existing?.provider??preference?.video_provider)==='livekit'){await provisionLivekit(id);return}
+ await providerIdentity(b.doctor_user)
  if(existing?.provider==='zoom')reject('RETIRED','Zoom API integration has been retired. Rebook using LiveKit.',410)
  const connection=await getDb().one<{provider:VideoVendor}>("SELECT provider FROM provider.connections WHERE user_id=$1 AND provider='google' AND revoked_at IS NULL",[b.doctor_user])
  if(!connection)reject('CONNECTION','Connect a meeting account before providing video consultations.',503)

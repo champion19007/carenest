@@ -36,6 +36,10 @@ export function inspectEnvironment(env,{production=false}={}){
  }
  if(env.ENABLE_PAYMENTS==='1'&&(!env.CASHFREE_CLIENT_ID||!env.CASHFREE_CLIENT_SECRET||env.CASHFREE_ENV!=='sandbox'))fail('Cashfree','The MVP requires sandbox credentials and sandbox mode.')
  if(env.CARENEST_DEMO_BOOKING==='1'&&(env.ENABLE_PAYMENTS!=='1'||env.CASHFREE_ENV!=='sandbox'||!env.CASHFREE_CLIENT_ID||!env.CASHFREE_CLIENT_SECRET))fail('CARENEST_DEMO_BOOKING','Hosted sample booking requires configured Cashfree sandbox checkout.')
+ if(env.CARENEST_DEMO_VIDEO==='1'){
+  let url;try{url=new URL(env.LIVEKIT_URL)}catch{}
+  if(env.CARENEST_DEMO_BOOKING!=='1'||!url||url.protocol!=='wss:'||url.username||url.password||url.search||url.hash||url.pathname!=='/'||['localhost','127.0.0.1','[::1]'].includes(url.hostname)||!env.LIVEKIT_API_KEY||(env.LIVEKIT_API_SECRET??'').length<32||!/^[A-Za-z0-9_-]{1,128}$/.test(env.CARENEST_DEMO_VIDEO_HOST_ID??''))fail('CARENEST_DEMO_VIDEO','Hosted sample video requires sandbox booking, a designated account and secure LiveKit credentials.')
+ }
  if(env.SENTRY_DSN||env.NEXT_PUBLIC_SENTRY_DSN){for(const name of ['SENTRY_DSN','NEXT_PUBLIC_SENTRY_DSN'])try{const url=new URL(env[name]);if(url.protocol!=='https:'||!url.hostname.endsWith('.sentry.io')||!/^[a-f0-9]+$/i.test(url.username)||url.password||url.port||!/^\/\d+$/.test(url.pathname)||url.search||url.hash)throw new Error();pass(name)}catch{fail(name,'Use the DSN from a separate CareNest Sentry project.')}}else warn('Sentry','Error monitoring is not connected to a project yet.')
  return {production,ok,problems,warnings,passed:problems.length===0}
 }

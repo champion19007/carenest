@@ -57,7 +57,7 @@ export default async function BookPage({ params, searchParams }: { params: Promi
           <BookingForm
             slug={doctor.slug}
             doctorName={doctor.name}
-            offersVideo={doctor.video&&(!doctor.is_demo||localMode())}
+            offersVideo={doctor.video}
             offersHomeVisit={doctor.home_visit&&(!doctor.is_demo||localMode())}
             addresses={doctor.home_visit?await ownAddresses(user.id):[]}
             patientName={user.name || `+91 ${user.phone}`}

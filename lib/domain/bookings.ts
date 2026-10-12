@@ -6,7 +6,8 @@ import {homeAddressSnapshot} from './home-visits'
 import {livekitConfigured} from './livekit'
 import { boundedText, reject } from './errors'
 import {cashfreeConfigured} from '@/lib/cashfree'
-import {hostedDemoBookingEnabled} from '@/lib/demo-booking'
+import {hostedDemoBookingEnabled,hostedDemoVideoHostId} from '@/lib/demo-booking'
+import {demoVideoHost,assertDemoVideoWindow} from './demo-video'
 import {workspaceWindowFree} from './workspace-conflicts'
 
 export const REQUEST_HOLD_MINUTES = 30
@@ -116,13 +117,20 @@ export async function requestAppointment(input: {
       return existing
     }
     const d = await provider(tx, input.doctorId)
-    if(d.is_demo&&!localMode()&&(!input.paymentRequired||input.mode!=='clinic'))reject('DEMO_MODE','Hosted sample appointments use Cashfree sandbox checkout for a demo clinic visit.',400)
+    const hostedSample=d.is_demo&&!localMode()
+    if(hostedSample&&(!input.paymentRequired||!['clinic','video'].includes(input.mode)))reject('DEMO_MODE','Sample appointments require sandbox checkout for a demo clinic or video visit.',400)
+    const demoHost=hostedSample&&input.mode==='video'?await demoVideoHost(tx):null
+    if(hostedSample&&input.mode==='video'){
+      if(!demoHost)reject('DEMO_MODE','A signed-in demo video host must be configured first.',400)
+      if(demoHost===input.actorId)reject('DEMO_HOST','Use a separate patient account to book; this account hosts the demo calls.',400)
+      if(d.video_provider!=='livekit')reject('DEMO_MODE','Hosted demo calls use LiveKit.',400)
+    }
     if(input.paymentRequired&&!d.clinic_id)reject('CLINIC','This provider needs a registered clinic before collecting payment.')
     const home=input.mode==='home_visit'?await homeAddressSnapshot(tx,input.actorId,input.addressId??''):null
     if(home&&!d.clinic_id)reject('CLINIC','A registered dispatch clinic is required for this home visit.')
     if(!Number.isInteger(Number(d.fee)) || Number(d.fee)<0 || Number(d.fee)>1000000) reject('FEE','The clinic needs to correct its consultation fee.')
     if ((input.mode === 'video' && !d.video) || (input.mode === 'home_visit' && !d.home_visit)) reject('MODE', 'This provider does not offer that consultation mode.', 400)
-    if(input.mode==='video'&&(!d.user_id||!await tx.one("SELECT id FROM patient.users WHERE id=$1 AND role='doctor' AND kyc_level='verified' AND status='ACTIVE'",[d.user_id])))reject('CONNECTION','A current verified clinician account is required for a video appointment.')
+    if(input.mode==='video'&&!demoHost&&(!d.user_id||!await tx.one("SELECT id FROM patient.users WHERE id=$1 AND role='doctor' AND kyc_level='verified' AND status='ACTIVE'",[d.user_id])))reject('CONNECTION','A current verified clinician account is required for a video appointment.')
     if(input.mode==='video'&&(d.video_provider==='livekit'?!livekitConfigured():!await tx.one("SELECT id FROM provider.connections WHERE user_id=$1 AND provider='google' AND revoked_at IS NULL",[d.user_id])))reject('CONNECTION','The selected video service must be configured before accepting video requests.')
     if (input.familyId && input.petId) reject('SUBJECT', 'Choose one patient or pet.', 400)
     if (d.kind === 'vet') {
@@ -140,6 +148,7 @@ export async function requestAppointment(input: {
     if (slot.doctor_id !== d.id) reject('SLOT_UNAVAILABLE', 'Choose a time on this provider’s calendar.')
     await future(tx, slot); await expireSlot(tx, slot)
     if (slot.status !== 'AVAILABLE') reject('SLOT_UNAVAILABLE', 'Someone else took that time. Please choose another.')
+    if(demoHost)await assertDemoVideoWindow(tx,demoHost,slot.slot_start,slot.slot_end)
     await workspaceWindowFree(tx,d.id,slot.slot_start,slot.slot_end)
     if(await tx.one(`SELECT b.id FROM patient.bookings b JOIN provider.appointment_slots s ON s.reserved_booking_id=b.id
       WHERE b.doctor_id=$1 AND b.status IN ('requested','confirmed') AND s.slot_start<$3::timestamptz AND s.slot_end>$2::timestamptz
@@ -186,12 +195,12 @@ export async function confirmPaidAppointment(tx:Db,b:Appointment){
     WHERE b.id=$1 AND b.status='requested' AND s.reserved_booking_id=b.id AND s.status='HELD'
     AND s.locked_until>clock_timestamp() AND s.slot_start>clock_timestamp() AND c.status='ACTIVE' AND u.status='ACTIVE'
     AND d.status='ACTIVE' AND (d.verified_at IS NOT NULL OR ($2::boolean AND d.is_demo))
-    AND (NOT d.is_demo OR $2::boolean) AND (NOT d.is_demo OR $3::boolean OR b.kind='clinic')
+    AND (NOT d.is_demo OR $2::boolean) AND (NOT d.is_demo OR $3::boolean OR b.kind='clinic' OR (b.kind='video' AND d.video_provider='livekit' AND EXISTS(SELECT 1 FROM patient.users h WHERE h.id=$4 AND h.status='ACTIVE' AND h.id<>b.user_id)))
     AND (($2::boolean AND d.is_demo) OR (du.status='ACTIVE' AND du.role='doctor' AND du.kyc_level='verified'))
     AND EXISTS(SELECT 1 FROM patient.consents WHERE booking_id=b.id AND purpose='appointment-sharing' AND revoked_at IS NULL)
     AND (b.kind<>'video' OR EXISTS(SELECT 1 FROM patient.consents WHERE booking_id=b.id AND purpose='video-provider' AND revoked_at IS NULL))
     AND (b.patient_for IS NULL OR EXISTS(SELECT 1 FROM patient.family_members f WHERE f.id=b.patient_for AND f.user_id=b.user_id AND f.archived_at IS NULL))
-    AND (b.pet_id IS NULL OR EXISTS(SELECT 1 FROM patient.pets p WHERE p.id=b.pet_id AND p.owner_id=b.user_id AND p.archived_at IS NULL AND p.species=ANY(d.supported_species)))`,[b.id,localMode()||hostedDemoBookingEnabled(),localMode()])
+    AND (b.pet_id IS NULL OR EXISTS(SELECT 1 FROM patient.pets p WHERE p.id=b.pet_id AND p.owner_id=b.user_id AND p.archived_at IS NULL AND p.species=ANY(d.supported_species)))`,[b.id,localMode()||hostedDemoBookingEnabled(),localMode(),hostedDemoVideoHostId()])
   if(!valid)return false
   await tx.query("UPDATE provider.appointment_slots SET status='BOOKED',locked_until=NULL,version=version+1 WHERE slot_id=$1 AND reserved_booking_id=$2",[b.slot_id,b.id])
   await tx.query('INSERT INTO clinic.encounters(id,booking_id,doctor_id,patient_user_id,family_id,pet_id) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(booking_id) DO NOTHING',['enc_'+randomUUID(),b.id,b.doctor_id,b.user_id,b.patient_for,b.pet_id])
@@ -251,7 +260,7 @@ export async function rescheduleAppointment(actorId: string, bookingId: string, 
     await actor(tx,actorId)
     const initial = await tx.one<Appointment>('SELECT * FROM patient.bookings WHERE id=$1', [bookingId])
     if (!initial || initial.user_id !== actorId) reject('FORBIDDEN','That appointment is unavailable.',403)
-    await provider(tx,initial.doctor_id)
+    const d=await provider(tx,initial.doctor_id)
     for (const id of [...new Set([initial.slot_id,newSlotId])].sort()) await lockSlot(tx,id)
     const { b,slot:oldSlot } = await lockedAppointment(tx,bookingId)
     const nextSlot = await lockSlot(tx,newSlotId)
@@ -261,6 +270,10 @@ export async function rescheduleAppointment(actorId: string, bookingId: string, 
     if (nextSlot.doctor_id !== b.doctor_id) reject('SLOT_UNAVAILABLE','Choose a time with the same provider.')
     await future(tx,nextSlot); await expireSlot(tx,nextSlot)
     if (nextSlot.status !== 'AVAILABLE') reject('SLOT_UNAVAILABLE','That replacement time is already taken. Your original appointment is unchanged.')
+    if(d.is_demo&&!localMode()&&b.kind==='video'){
+      const host=await demoVideoHost(tx);if(!host)reject('DEMO_MODE','Demo video hosting is unavailable.')
+      await assertDemoVideoWindow(tx,host,nextSlot.slot_start,nextSlot.slot_end,b.id)
+    }
     await workspaceWindowFree(tx,b.doctor_id,nextSlot.slot_start,nextSlot.slot_end)
     if(await tx.one("SELECT day FROM provider.schedule_exceptions WHERE doctor_id=$1 AND day=($2::timestamptz AT TIME ZONE 'Asia/Kolkata')::date AND closed=true",[b.doctor_id,nextSlot.slot_start]))reject('SLOT_UNAVAILABLE','The clinic is closed on that date.')
     if(await tx.one(`SELECT b.id FROM patient.bookings b JOIN provider.appointment_slots s ON s.reserved_booking_id=b.id WHERE b.doctor_id=$1 AND b.id<>$4 AND b.status IN ('requested','confirmed') AND s.slot_start<$3::timestamptz AND s.slot_end>$2::timestamptz AND (s.status='BOOKED' OR (s.status='HELD' AND s.locked_until>clock_timestamp())) LIMIT 1`,[b.doctor_id,nextSlot.slot_start,nextSlot.slot_end,b.id]))reject('OVERLAP','The replacement time overlaps another consultation.')
