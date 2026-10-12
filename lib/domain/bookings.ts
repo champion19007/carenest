@@ -186,11 +186,12 @@ export async function confirmPaidAppointment(tx:Db,b:Appointment){
     WHERE b.id=$1 AND b.status='requested' AND s.reserved_booking_id=b.id AND s.status='HELD'
     AND s.locked_until>clock_timestamp() AND s.slot_start>clock_timestamp() AND c.status='ACTIVE' AND u.status='ACTIVE'
     AND d.status='ACTIVE' AND (d.verified_at IS NOT NULL OR ($2::boolean AND d.is_demo))
+    AND (NOT d.is_demo OR $2::boolean) AND (NOT d.is_demo OR $3::boolean OR b.kind='clinic')
     AND (($2::boolean AND d.is_demo) OR (du.status='ACTIVE' AND du.role='doctor' AND du.kyc_level='verified'))
     AND EXISTS(SELECT 1 FROM patient.consents WHERE booking_id=b.id AND purpose='appointment-sharing' AND revoked_at IS NULL)
     AND (b.kind<>'video' OR EXISTS(SELECT 1 FROM patient.consents WHERE booking_id=b.id AND purpose='video-provider' AND revoked_at IS NULL))
     AND (b.patient_for IS NULL OR EXISTS(SELECT 1 FROM patient.family_members f WHERE f.id=b.patient_for AND f.user_id=b.user_id AND f.archived_at IS NULL))
-    AND (b.pet_id IS NULL OR EXISTS(SELECT 1 FROM patient.pets p WHERE p.id=b.pet_id AND p.owner_id=b.user_id AND p.archived_at IS NULL AND p.species=ANY(d.supported_species)))`,[b.id,localMode()||hostedDemoBookingEnabled()])
+    AND (b.pet_id IS NULL OR EXISTS(SELECT 1 FROM patient.pets p WHERE p.id=b.pet_id AND p.owner_id=b.user_id AND p.archived_at IS NULL AND p.species=ANY(d.supported_species)))`,[b.id,localMode()||hostedDemoBookingEnabled(),localMode()])
   if(!valid)return false
   await tx.query("UPDATE provider.appointment_slots SET status='BOOKED',locked_until=NULL,version=version+1 WHERE slot_id=$1 AND reserved_booking_id=$2",[b.slot_id,b.id])
   await tx.query('INSERT INTO clinic.encounters(id,booking_id,doctor_id,patient_user_id,family_id,pet_id) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(booking_id) DO NOTHING',['enc_'+randomUUID(),b.id,b.doctor_id,b.user_id,b.patient_for,b.pet_id])
