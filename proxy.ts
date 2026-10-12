@@ -10,7 +10,7 @@ export function proxy(request:NextRequest) {
   const response=NextResponse.next()
   response.headers.set('X-Content-Type-Options','nosniff')
   response.headers.set('Referrer-Policy','same-origin')
-  response.headers.set('X-Frame-Options','DENY')
+  if(!path.startsWith('/api/public/clinic-widget/'))response.headers.set('X-Frame-Options','DENY')
   if(privatePaths.some(prefix=>path===prefix||path.startsWith(prefix+'/')) || (path==='/search'&&request.nextUrl.searchParams.has('q'))) response.headers.set('Cache-Control','private, no-store')
   // Every protected page/action checks current database permissions and revocation.
   return response

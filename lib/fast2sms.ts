@@ -7,6 +7,7 @@ import {consumeLimits} from './domain/rate-limit'
 import {notificationPreferences} from './domain/notification-preferences'
 import {DomainError,reject} from './domain/errors'
 import {updateMessage} from './domain/appointment-notifications'
+import {clinicChannelAllowed} from './domain/workspace-communications'
 
 type Channel='sms'|'whatsapp'
 type Purpose='OTP'|'UPDATE'
@@ -97,7 +98,7 @@ export async function sendFast2smsUpdates(userId:string,eventId:string){
  const user=await getDb().one<{phone:string|null}>("SELECT phone FROM patient.users WHERE id=$1 AND status='ACTIVE'",[userId]);if(!user?.phone)return
  const event=await getDb().one<{kind:string;subject_id:string|null;payload:Record<string,unknown>}>('SELECT kind,subject_id,payload FROM domain_events WHERE id=$1',[eventId]);if(!event||event.payload.userId!==userId)reject('RECIPIENT','Notification ownership does not match.',403)
  const message=await updateMessage(userId,eventId);if(!message)return
- const channels:Channel[]=[];if(prefs.sms_enabled)channels.push('sms');if(prefs.whatsapp_enabled)channels.push('whatsapp')
+ const channels:Channel[]=[];if(prefs.sms_enabled&&await clinicChannelAllowed(eventId,'sms'))channels.push('sms');if(prefs.whatsapp_enabled&&await clinicChannelAllowed(eventId,'whatsapp'))channels.push('whatsapp')
  const appointmentTemplate=message.appointment&&(event.kind==='booking.confirmed'||message.reminder)?message.reminder?'REMINDER':'BOOKING':undefined
  const result=await Promise.allSettled(channels.map(channel=>{
   const a=message.appointment

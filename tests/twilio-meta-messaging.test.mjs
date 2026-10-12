@@ -70,6 +70,12 @@ test('Twilio Verify uses provider approval, durable intent binding and bounded s
    await verify.requestTwilioVerifyOtp('9000000009');const before=calls.length
    await assert.rejects(verify.requestTwilioVerifyOtp('9000000010'),e=>e.code==='BUDGET');assert.equal(calls.length,before)
   })
+  await t.test('the same two-request budget protects hosted sandbox sign-in',async()=>{
+   Object.assign(process.env,{CARENEST_LOCAL_MODE:'0',CARENEST_DEMO_BOOKING:'1',ENABLE_PAYMENTS:'1',CASHFREE_ENV:'sandbox',CASHFREE_CLIENT_ID:'TEST_fixture',CASHFREE_CLIENT_SECRET:'fixture-secret'})
+   await db.query("DELETE FROM rate_limits WHERE bucket='twilio-verify-demo'")
+   await verify.requestTwilioVerifyOtp('9000000012');await verify.requestTwilioVerifyOtp('9000000013')
+   const before=calls.length;await assert.rejects(verify.requestTwilioVerifyOtp('9000000014'),e=>e.code==='BUDGET');assert.equal(calls.length,before)
+  })
  }finally{globalThis.fetch=originalFetch;await db.close();restore(env)}
 })
 

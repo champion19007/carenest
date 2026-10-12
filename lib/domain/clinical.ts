@@ -28,6 +28,7 @@ export async function encounter(tx:Db,actorId:string,id:string,write=false) {
     && Boolean(row.verified_at || (row.is_demo && localMode()))
   if((write&&!clinician)||(!write&&!patient&&!clinician)) reject('FORBIDDEN','That care record is unavailable.',403)
   if(clinician) {
+    if(await tx.one("SELECT d.id FROM provider.doctors d WHERE d.id=$1 AND d.clinic_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM clinic.memberships m WHERE m.clinic_id=d.clinic_id AND m.user_id=$2 AND m.status='ACTIVE' AND m.role IN ('clinician','administrator'))",[row.doctor_id,actorId]))reject('FORBIDDEN','Current clinic membership is required.',403)
     if(await tx.one("SELECT c.id FROM clinic.clinics c JOIN provider.doctors d ON d.clinic_id=c.id WHERE d.id=$1 AND c.status<>'ACTIVE'",[row.doctor_id]))reject('FORBIDDEN','This clinic is not currently active.',403)
     const consent=row.walk_in_id?await tx.one(`SELECT p.id FROM clinic.people p WHERE p.id=$1 AND p.consent_attested_at IS NOT NULL AND (p.owner_id IS NULL OR EXISTS(SELECT 1 FROM patient.consents c WHERE c.subject_id=p.id AND c.actor_id=p.owner_id AND c.purpose='walk-in-sharing' AND c.revoked_at IS NULL))`,[row.clinic_person_id]):await tx.one("SELECT id FROM patient.consents WHERE booking_id=$1 AND purpose='appointment-sharing' AND revoked_at IS NULL FOR SHARE",[row.booking_id])
     if(!consent) reject('CONSENT','The patient has not granted current record access.',403)
@@ -57,7 +58,10 @@ export async function writeClinicalRecord(input:{actorId:string;encounterId:stri
   let content:Record<string,unknown>
   if(input.kind==='chart_notes') {
     content={complaints:boundedText(b.complaints??'',2000),observations:boundedText(b.observations??'',4000),diagnosis:boundedText(b.diagnosis??'',2000)}
-    if(!Object.values(content).some(Boolean)) reject('VALIDATION','Enter a clinical note before saving.',400)
+    for(const [section,fields] of [['history',['conditions','allergies','surgeries','medicines','family','social']],['vitals',['weight','height','bloodPressure','pulse','temperature','respiratoryRate','oxygen']]] as const){
+      if(b[section]!==undefined){const raw=b[section];if(!raw||typeof raw!=='object'||Array.isArray(raw))reject('VALIDATION','Check the structured clinical record fields.',400);const values=Object.fromEntries(fields.map(field=>[field,boundedText((raw as Record<string,unknown>)[field]??'',section==='history'?2000:60)]));if(Object.values(values).some(Boolean))content[section]=values}
+    }
+    if(!Object.values(content).some(Boolean)) reject('VALIDATION','Enter a clinical note, history or measured vitals before saving.',400)
   } else {
     if(!Array.isArray(b.drugs)||b.drugs.length<1||b.drugs.length>20) reject('VALIDATION','Enter between 1 and 20 prescribed medicines.',400)
     const drugs=b.drugs.map(value=>{
@@ -109,8 +113,11 @@ export async function clinicEncounters(actorId:string) {
     const user=await requireActor(tx,actorId)
     const doctor=await tx.one<{id:string;status:string;verified_at:string|null;is_demo:boolean}>('SELECT id,status,verified_at,is_demo FROM provider.doctors WHERE user_id=$1',[actorId])
     if(user.status!=='ACTIVE'||user.role!=='doctor'||user.kyc_level!=='verified'||doctor?.status!=='ACTIVE'||(!doctor.verified_at&&!(doctor.is_demo&&localMode()))) reject('FORBIDDEN','Current verified clinical access is required.',403)
-    const rows=await tx.query<{id:string;booking_id:string;patient_name:string;status:string;starts_at:string;subject_kind:string}>(
-      `SELECT e.id,e.booking_id,e.clinic_person_id,cp.encrypted_identity person_identity,coalesce(p.name,f.name,u.name,'Clinic patient') patient_name,coalesce(b.status,lower(w.state)) status,coalesce(b.starts_at,w.checked_in_at) starts_at,
+    const rows=await tx.query<{id:string;booking_id:string|null;walk_in_id:string|null;clinic_person_id:string|null;patient_name:string;status:string;starts_at:string;subject_kind:string;subject_id:string;phone:string|null;email:string|null;dob:string|null;sex:string|null;guardian:string|null;started:boolean;started_at:string|null;checked_in_at:string|null;revision:number}>(
+      `SELECT e.id,e.booking_id,e.walk_in_id,e.clinic_person_id,cp.encrypted_identity person_identity,coalesce(p.name,f.name,u.name,'Clinic patient') patient_name,coalesce(b.status,lower(w.state)) status,coalesce(b.starts_at,w.checked_in_at) starts_at,
+       CASE WHEN e.clinic_person_id IS NOT NULL THEN 'person:'||e.clinic_person_id WHEN e.pet_id IS NOT NULL THEN 'pet:'||e.pet_id WHEN e.family_id IS NOT NULL THEN 'family:'||e.family_id ELSE 'user:'||e.patient_user_id END subject_id,
+       u.phone,u.email,coalesce(p.dob,f.dob,u.dob) dob,coalesce(p.sex,f.gender,u.gender) sex,CASE WHEN e.family_id IS NOT NULL OR e.pet_id IS NOT NULL THEN u.name ELSE NULL END guardian,
+       (coalesce(b.started_at,w.started_at) IS NOT NULL) started,coalesce(b.started_at,w.started_at) started_at,coalesce(b.checked_in_at,w.checked_in_at) checked_in_at,coalesce(b.revision,w.revision) revision,
        coalesce(cp.kind,CASE WHEN e.pet_id IS NOT NULL THEN 'pet' ELSE 'human' END) subject_kind
        FROM clinic.encounters e LEFT JOIN patient.bookings b ON b.id=e.booking_id LEFT JOIN clinic.walk_ins w ON w.id=e.walk_in_id LEFT JOIN clinic.people cp ON cp.id=e.clinic_person_id LEFT JOIN patient.users u ON u.id=e.patient_user_id
        LEFT JOIN patient.family_members f ON f.id=e.family_id LEFT JOIN patient.pets p ON p.id=e.pet_id
@@ -120,7 +127,7 @@ export async function clinicEncounters(actorId:string) {
        OR (e.walk_in_id IS NOT NULL AND cp.consent_attested_at IS NOT NULL AND (cp.owner_id IS NULL OR EXISTS(SELECT 1 FROM patient.consents c WHERE c.actor_id=cp.owner_id AND c.subject_id=cp.id AND c.purpose='walk-in-sharing' AND c.revoked_at IS NULL))))
        ORDER BY coalesce(b.starts_at,w.checked_in_at) DESC LIMIT 200`,[doctor.id])
     await audit(tx,actorId,doctor.id,'clinical:read-panel')
-    return rows.map(r=>{const person=r as typeof r&{clinic_person_id?:string;person_identity?:string};if(person.clinic_person_id&&person.person_identity)return {...r,patient_name:String(JSON.parse(decryptSecret(person.person_identity,'person:'+person.clinic_person_id)).name),person_identity:undefined};return r})
+    return rows.map(r=>{const person=r as typeof r&{person_identity?:string};if(person.clinic_person_id&&person.person_identity){const identity=JSON.parse(decryptSecret(person.person_identity,'person:'+person.clinic_person_id));return {...r,patient_name:String(identity.name),phone:identity.phone??null,email:identity.email??null,dob:identity.dob??null,sex:identity.sex??null,guardian:identity.guardian??null,person_identity:undefined}}return r})
   })
 }
 export function decodeRecord(id:string,body:Record<string,unknown>):Record<string,unknown> {

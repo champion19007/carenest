@@ -13,6 +13,7 @@ import {decodeEnquiryNotes} from './db/leads'
 import {purgePrivateFile} from './domain/files'
 import {updateMessage} from './domain/appointment-notifications'
 import {reportError} from './observability'
+import {deliverPracticeReminder} from './domain/workspace-notifications'
 export type DrainResult={claimed:number;sent:number;failed:number}
 const bookingKinds=new Set(['booking.requested','booking.confirmed','booking.declined','booking.cancelled','booking.expired','booking.attended','booking.no_show'])
 async function notify(event:DomainEvent,userId:string,title:string,body:string){
@@ -25,6 +26,7 @@ async function notify(event:DomainEvent,userId:string,title:string,body:string){
 }
 async function handle(event:DomainEvent){
  if(event.payload_version!==1)throw new DomainError('UNKNOWN_VERSION','Unsupported event payload version.',400)
+ if(event.kind==='practice.reminder_due'||event.kind==='practice.visit_reminder'){await deliverPracticeReminder(event);return}
  if(event.kind==='privacy.file_purge'){await purgePrivateFile(String(event.subject_id));return}
  if(event.kind==='booking.reminder_due'||event.kind==='provider.booking_confirmed'){
   const userId=String(event.payload.userId??''),message=await updateMessage(userId,event.id)
@@ -65,7 +67,7 @@ async function handle(event:DomainEvent){
   if(!lead?.user_id)throw new DomainError('RECIPIENT','No authenticated estimate recipient.',400)
   await notify(event,lead.user_id,'Estimate available','A versioned estimate is ready in your enquiry history.');return
  }
- if(['lab.requested','lab.updated','payment.recorded','payment.refunded','demo.payment_completed','doctor.payout_paid','doctor.payout_reversed','account.update_requested','account.email_test_requested','pet.vaccine_due','support.updated','pharmacy.updated'].includes(event.kind)){
+ if(['campaign.funding_captured','lab.requested','lab.updated','payment.recorded','payment.refunded','demo.payment_completed','doctor.payout_paid','doctor.payout_reversed','account.update_requested','account.email_test_requested','pet.vaccine_due','support.updated','pharmacy.updated'].includes(event.kind)){
   const userId=String(event.payload.userId??'');if(event.kind==='payment.recorded'&&!userId)return;if(!userId)throw new DomainError('PAYLOAD','Missing recipient.',400)
   await notify(event,userId,event.kind==='pet.vaccine_due'?'Pet reminder':event.kind==='demo.payment_completed'?'Sandbox test payment completed':'Care update',event.kind==='demo.payment_completed'?'Your ₹100 test payment was verified by the payment provider. No real money was collected and no clinic invoice was changed.':'An update is available in your account.');return
  }

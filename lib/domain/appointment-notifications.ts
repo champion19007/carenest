@@ -31,8 +31,13 @@ export async function updateMessage(userId:string,eventId:string):Promise<Update
  const event=await getDb().one<{kind:string;subject_id:string|null;event_key:string|null;payload:Record<string,unknown>}>('SELECT kind,subject_id,payload,event_key FROM domain_events WHERE id=$1',[eventId])
  if(!event||event.payload.userId!==userId)reject('RECIPIENT','Notification ownership does not match.',403)
  const titles:Record<string,string>={'booking.requested':'Appointment awaiting confirmation','booking.confirmed':'Appointment confirmed','booking.reminder_due':'Appointment reminder','booking.cancelled':'Appointment cancelled','booking.declined':'Appointment declined','booking.expired':'Appointment expired','booking.attended':'Consultation completed','booking.no_show':'Appointment not attended','payment.recorded':'Payment status updated','payment.refunded':'Refund completed','demo.payment_completed':'Sandbox payment verified','doctor.payout_paid':'Doctor payout completed','doctor.payout_reversed':'Doctor payout reversed','account.update_requested':'Test account update','pet.vaccine_due':'Pet reminder','lab.requested':'Lab request received','lab.updated':'Lab request updated','support.updated':'Support request updated','pharmacy.updated':'Pharmacy request updated','estimate.issued':'Estimate available'}
- const title=event.kind==='provider.booking_confirmed'?'New clinic appointment confirmed':event.kind==='account.email_test_requested'?'Test booking email':titles[event.kind];if(!title)return null
+ const title=event.kind==='campaign.funding_captured'?'Campaign sandbox funding confirmed':event.kind==='provider.booking_confirmed'?'New clinic appointment confirmed':event.kind==='account.email_test_requested'?'Test booking email':titles[event.kind];if(!title)return null
  const reference=clean(String(event.subject_id??eventId)),reminder=event.kind==='booking.reminder_due'
+ if(event.kind==='campaign.funding_captured'){
+  const row=await getDb().one<{amount_paise:string}>("SELECT o.amount_paise FROM clinic.campaign_funding_orders o JOIN provider.doctors d ON d.id=o.doctor_id WHERE o.id=$1 AND d.user_id=$2 AND o.state='CAPTURED'",[event.subject_id,userId]);if(!row)return null
+  const transaction={status:title,amount:decimalRupees(row.amount_paise)+' INR',url:appOrigin()+'/practice/marketing'}
+  return {title,reference,transaction,reminder:false,text:`${title}.\nAmount: ${transaction.amount}\nReference: ${reference}\nNo real money was collected in this sandbox test.\nOpen CareNest: ${transaction.url}`}
+ }
  if(event.kind==='provider.booking_confirmed'){
   const b=await getDb().one<{doctor_user_id:string;revision:number;status:string;starts_at:string;ends_at:string;kind:string;name:string;eligible:boolean;payment_ok:boolean}>(`SELECT b.*,d.name,d.user_id doctor_user_id,
    (d.status='ACTIVE' AND u.status='ACTIVE' AND u.role='doctor' AND u.kyc_level='verified' AND c.status='ACTIVE' AND (d.verified_at IS NOT NULL OR ($2::boolean AND d.is_demo))) eligible,
@@ -44,7 +49,7 @@ export async function updateMessage(userId:string,eventId:string):Promise<Update
   return {title:'New clinic appointment confirmed',reference,reminder:false,appointment,text:`New clinic appointment confirmed.\nDate: ${appointment.date}\nTime: ${appointment.time}\nType: ${appointment.mode}\nReference: ${reference}\nOpen CareNest: ${appointment.url}`}
  }
  if(event.kind.startsWith('booking.')){
-  const b=await getDb().one<{user_id:string;revision:number;status:string;starts_at:string;ends_at:string;kind:string;name:string;started_at:string|null;future:boolean;reminder_due:boolean;payment_ok:boolean}>(`SELECT b.*,d.name,b.starts_at>clock_timestamp() future,b.starts_at-interval '10 minutes'<=clock_timestamp() reminder_due,
+  const b=await getDb().one<{user_id:string;revision:number;status:string;starts_at:string;ends_at:string;kind:string;name:string;is_demo:boolean;started_at:string|null;future:boolean;reminder_due:boolean;payment_ok:boolean}>(`SELECT b.*,d.name,d.is_demo,b.starts_at>clock_timestamp() future,b.starts_at-interval '10 minutes'<=clock_timestamp() reminder_due,
    (NOT b.payment_required OR EXISTS(SELECT 1 FROM clinic.invoices i WHERE i.booking_id=b.id AND (i.state='PAID' OR i.state='WAIVED' AND i.total_paise=0))) payment_ok
    FROM patient.bookings b JOIN provider.doctors d ON d.id=b.doctor_id WHERE b.id=$1`,[event.subject_id])
   if(!b||b.user_id!==userId)reject('RECIPIENT','Appointment ownership does not match.',403)
@@ -53,7 +58,8 @@ export async function updateMessage(userId:string,eventId:string):Promise<Update
   if(event.kind==='booking.confirmed'&&(!b.future||!b.payment_ok))return null
   const clock=new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',hour:'numeric',minute:'2-digit',hour12:true})
   const appointment={doctor:clean(b.name),date:new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',day:'numeric',month:'short',year:'numeric'}).format(new Date(b.starts_at)),time:clock.format(new Date(b.starts_at))+' - '+clock.format(new Date(b.ends_at))+' IST',mode:b.kind==='video'?'Video consultation':b.kind==='home_visit'?'Home visit':'Clinic visit',url:appOrigin()+(b.kind==='video'?'/consult/'+encodeURIComponent(reference):'/account')}
-  return {title,reference,reminder,appointment,text:`${title}.\nDoctor: ${appointment.doctor}\nDate: ${appointment.date}\nTime: ${appointment.time}\nType: ${appointment.mode}\nReference: ${reference}\n${reminder?'Your appointment starts shortly.\n':''}Open CareNest: ${appointment.url}`}
+  const bookingTitle=b.is_demo?'Demo: '+title:title
+  return {title:bookingTitle,reference,reminder,appointment,text:`${bookingTitle}.\n${b.is_demo?'Sandbox demonstration only; no medical care is arranged.\n':''}Doctor: ${appointment.doctor}\nDate: ${appointment.date}\nTime: ${appointment.time}\nType: ${appointment.mode}\nReference: ${reference}\n${reminder?'Your appointment starts shortly.\n':''}Open CareNest: ${appointment.url}`}
  }
  if(['payment.recorded','payment.refunded','demo.payment_completed','doctor.payout_paid','doctor.payout_reversed'].includes(event.kind)){
   const eventKey=event.event_key??''

@@ -7,7 +7,7 @@ test('clinic confirmations are durable, scoped to the current clinician and excl
  const load=loadServices(db),bookings=load('lib/domain/bookings.ts'),messages=load('lib/domain/appointment-notifications.ts')
  try{
   await addUser(db,'patient','9000000001');await addUser(db,'doctor-user','9000000002','doctor');await db.query("UPDATE patient.users SET name='Private patient' WHERE id='patient'");await db.query("UPDATE patient.users SET kyc_level='verified' WHERE id='doctor-user'")
-  await addDoctor(db,'doctor');await db.query("INSERT INTO clinic.clinics(id,name) VALUES('clinic','Fixture clinic')");await db.query("UPDATE provider.doctors SET user_id='doctor-user',clinic_id='clinic',verified_at=now() WHERE id='doctor'")
+  await addDoctor(db,'doctor');await db.query("INSERT INTO clinic.clinics(id,name) VALUES('clinic','Fixture clinic')");await db.query("UPDATE provider.doctors SET user_id='doctor-user',clinic_id='clinic',verified_at=now() WHERE id='doctor'");await db.query("INSERT INTO clinic.memberships(clinic_id,user_id,role) VALUES('clinic','doctor-user','clinician')")
   await db.query("INSERT INTO provider.appointment_slots(slot_id,doctor_id,slot_start,slot_end) VALUES('slot','doctor',now()+interval '1 day',now()+interval '1 day 30 minutes')")
   const b=await bookings.requestAppointment({actorId:'patient',doctorId:'doctor',slotId:'slot',mode:'clinic',idempotencyKey:'clinic-notice-fixture',consent:true})
   await bookings.respondAppointment({actorId:'doctor-user',bookingId:b.id,decision:'confirmed'})

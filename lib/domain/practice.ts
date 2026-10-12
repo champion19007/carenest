@@ -7,6 +7,7 @@ async function practitioner(tx:Db,actorId:string,write=false){
  const d=await tx.one<{id:string;clinic_id:string;name:string;clinic:string;status:string;verified_at:string|null;is_demo:boolean;role:string;kyc_level:string}>(`SELECT d.*,u.role,u.kyc_level FROM provider.doctors d JOIN patient.users u ON u.id=d.user_id WHERE d.user_id=$1 AND u.status='ACTIVE' ${write?'FOR UPDATE OF d FOR SHARE OF u':'FOR SHARE OF d,u'}`,[actorId])
  if(!d||d.role!=='doctor'||d.kyc_level!=='verified'||d.status!=='ACTIVE'||(!d.verified_at&&!(d.is_demo&&localMode())))reject('FORBIDDEN','Current practitioner access is required.',403)
  if(d.clinic_id&&await tx.one("SELECT id FROM clinic.clinics WHERE id=$1 AND status<>'ACTIVE'",[d.clinic_id]))reject('FORBIDDEN','Current clinic access is required.',403)
+ if(d.clinic_id&&!await tx.one("SELECT user_id FROM clinic.memberships WHERE clinic_id=$1 AND user_id=$2 AND status='ACTIVE' AND role IN ('clinician','administrator') FOR SHARE",[d.clinic_id,actorId]))reject('FORBIDDEN','Current clinic membership is required.',403)
  return d
 }
 export async function practiceData(actorId:string){

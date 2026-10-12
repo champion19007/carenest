@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import './ui-variants.css';
+@import './workspace.css';
 
 @source './**/*.{ts,tsx}';
 @source '../components/**/*.{ts,tsx}';

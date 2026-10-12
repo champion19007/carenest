@@ -1,3 +1,4 @@
+import {workspaceTransaction} from '@/lib/domain/workspace-access'
 import Link from 'next/link'
 import { CalendarClock, IndianRupee, Inbox, Phone, Stethoscope, Users, Video } from 'lucide-react'
 import { AttendedAction } from '@/components/attended-action'
@@ -24,6 +25,7 @@ function ageFrom(dob: string | null) {
 
 export default async function RequestsPage() {
   const user = await requireRole('doctor', '/practice/requests')
+  await workspaceTransaction(user.id,async()=>{})
   const doctor = await findDoctorByUserId(user.id)
 
   if (!doctor) {

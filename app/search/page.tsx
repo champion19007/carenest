@@ -1,3 +1,4 @@
+import {SponsoredClinics} from '@/components/sponsored-clinics'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { MapPin } from 'lucide-react'
@@ -166,7 +167,7 @@ export default async function SearchPage({
           />
         </div>
       ) : (
-        <DoctorResults
+        <><div className="care-container"><SponsoredClinics kind="human"/></div><DoctorResults
           doctors={doctors}
           specialities={specialities}
           languages={languages}
@@ -180,7 +181,7 @@ export default async function SearchPage({
             femaleOnly: Boolean(query.femaleOnly),
             sort: query.sort ?? 'relevance',
           }}
-        />
+        /></>
       )}
 
       {(matches.length>30||Number(params.page)>1)&&<nav aria-label="Result pages" className="care-container flex gap-4 py-6">{Number(params.page)>1&&<Link className="care-button" href={`/search?${new URLSearchParams({...Object.fromEntries(preserved),page:String(Math.max(1,(Number(params.page)||1)-1)),...(rawArea?{area:rawArea}:{})})}`}>Previous page</Link>}{matches.length>30&&<Link className="care-button" href={`/search?${new URLSearchParams({...Object.fromEntries(preserved),page:String((Number(params.page)||1)+1),...(rawArea?{area:rawArea}:{})})}`}>Next page</Link>}</nav>}

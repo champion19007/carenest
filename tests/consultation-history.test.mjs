@@ -12,6 +12,7 @@ test('consultation history reports completed visits without media or foreign rec
   await db.query("INSERT INTO clinic.clinics(id,name) VALUES('clinic','Care clinic')")
   await addDoctor(db,'provider',{name:'Dr History',slug:'history-doctor',video:true})
   await db.query("UPDATE provider.doctors SET user_id='doctor',verified_at=now(),clinic_id='clinic' WHERE id='provider'")
+  await db.query("INSERT INTO clinic.memberships(clinic_id,user_id,role) VALUES('clinic','doctor','clinician')")
   await db.query("INSERT INTO patient.pets(id,owner_id,name,species) VALUES('pet','patient','Milo','dog')")
   await db.query("INSERT INTO patient.family_members(id,user_id,name,relation) VALUES('family','patient','Family member','Mother')")
   const visit=async(id,status='attended',owner='patient',extra={})=>db.query(`INSERT INTO patient.bookings

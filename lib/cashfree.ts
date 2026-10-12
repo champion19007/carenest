@@ -18,13 +18,14 @@ export async function cashfreeRequest(path:string,method='GET',body?:unknown,ide
 export function cashfreeAmount(value:unknown){
  try{if(typeof value!=='number'&&typeof value!=='string')throw new Error();return rupeesToPaise(String(value))}catch{reject('AMOUNT','Unexpected Cashfree amount.',400)}
 }
-export async function cashfreeOrder(id:string,actorId:string,amount:string,currency:string,key:string,recover=false){
+export async function cashfreeOrder(id:string,actorId:string,amount:string,currency:string,key:string,recover=false,returnPath='/account/billing'){
  const value=paise(amount);if(value<100n||value>1000000000n||currency!=='INR')reject('AMOUNT','Cashfree sandbox supports INR invoices from ₹1 to ₹1 crore.',400)
  let order:any
  if(recover){try{order=await cashfreeRequest('orders/'+encodeURIComponent(id))}catch(error){if(!(error instanceof DomainError)||error.code!=='PROVIDER_NOT_FOUND')throw error}}
  if(!order){
   const origin=new URL(process.env.APP_ORIGIN??'http://localhost:3000');if(!['http:','https:'].includes(origin.protocol)||origin.username||origin.password)reject('CONFIGURATION','Set a valid APP_ORIGIN.',503)
-  const returnUrl=new URL('/account/billing',origin);returnUrl.searchParams.set('payment_order',id)
+  if(!['/account/billing','/practice/marketing'].includes(returnPath))reject('CONFIGURATION','Unsupported payment return path.',503)
+  const returnUrl=new URL(returnPath,origin);returnUrl.searchParams.set('payment_order',id)
   order=await cashfreeRequest('orders','POST',{order_id:id,order_amount:Number(decimalRupees(amount)),order_currency:currency,customer_details:{customer_id:createHash('sha256').update(actorId).digest('hex').slice(0,32),customer_phone:'9999999999'},order_meta:{return_url:returnUrl.toString()}},key)
  }
  if(order?.order_id!==id||order.order_currency!==currency||cashfreeAmount(order.order_amount)!==amount||typeof order.payment_session_id!=='string'||!order.payment_session_id||order.payment_session_id.length>4096)reject('PAYMENT_RESPONSE','Unexpected Cashfree order response.',502)

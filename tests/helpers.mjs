@@ -26,7 +26,8 @@ export function schemaStatements() {
   const verify = readFileSync(path.join(process.cwd(), 'lib', 'db', 'verify-schema.ts'), 'utf8')
   const emailAuth = readFileSync(path.join(process.cwd(), 'lib', 'db', 'email-auth-schema.ts'), 'utf8')
   const demoDiscovery = readFileSync(path.join(process.cwd(), 'lib', 'db', 'demo-discovery-schema.ts'), 'utf8')
-  return [src,foundation,extended,maintenance,livekit,messaging,cashfree,paidBooking,fast2sms,appointmentNotifications,providerKyc,verify,emailAuth,demoDiscovery].flatMap(source=>splitStatements(source.slice(source.indexOf('`')+1,source.lastIndexOf('`'))))
+  const doctorWorkspace = readFileSync(path.join(process.cwd(), 'lib', 'db', 'doctor-workspace-schema.ts'), 'utf8')
+  return [src,foundation,extended,maintenance,livekit,messaging,cashfree,paidBooking,fast2sms,appointmentNotifications,providerKyc,verify,emailAuth,demoDiscovery,doctorWorkspace].flatMap(source=>splitStatements(source.slice(source.indexOf('`')+1,source.lastIndexOf('`'))))
 }
 
 export async function freshDb() {

@@ -1,0 +1,4 @@
+'use client'
+import {workspaceCsv} from '@/lib/workspace-csv'
+export function CsvDownload({rows,name}:{rows:(string|number|null)[][];name:string}){return <button className="care-button-secondary workspace-no-print" onClick={()=>{const url=URL.createObjectURL(new Blob([workspaceCsv(rows)],{type:'text/csv;charset=utf-8'})),anchor=document.createElement('a');anchor.href=url;anchor.download=name+'.csv';anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}}>Download CSV</button>}
+export function PrintWorkspace({paper='A4'}:{paper?:'A4'|'A5'}){return <button className="care-button-secondary workspace-no-print" onClick={()=>{const style=document.createElement('style');style.textContent='@page { size: '+paper+'; margin: 12mm; }';document.head.appendChild(style);window.print();style.remove()}}>Print</button>}

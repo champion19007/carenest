@@ -73,3 +73,11 @@ export async function savePrescription(_prev:ClinicalState,form:FormData):Promis
   catch(error){if(error instanceof DomainError)return {error:error.message};throw error}
   revalidatePath('/practice/patients');return {notice:'Prescription saved to this encounter.'}
 }
+export async function saveMedicalHistory(_prev:ClinicalState,form:FormData):Promise<ClinicalState>{return structuredNote(form,'history',['conditions','allergies','surgeries','medicines','family','social'])}
+export async function saveVitals(_prev:ClinicalState,form:FormData):Promise<ClinicalState>{return structuredNote(form,'vitals',['weight','height','bloodPressure','pulse','temperature','respiratoryRate','oxygen'])}
+async function structuredNote(form:FormData,kind:'history'|'vitals',fields:string[]):Promise<ClinicalState>{
+ const user=await requireRole('doctor','/practice/patients')
+ try{await writeClinicalRecord({actorId:user.id,encounterId:String(form.get('encounterId')??''),kind:'chart_notes',requestKey:String(form.get('requestKey')??''),body:{[kind]:Object.fromEntries(fields.map(field=>[field,String(form.get(field)??'')]))}})}
+ catch(error){if(error instanceof DomainError)return {error:error.message};throw error}
+ revalidatePath('/practice/patients');return {notice:kind==='history'?'Signed history saved.':'Measured vitals saved.'}
+}

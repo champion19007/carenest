@@ -1,0 +1,4 @@
+'use client'
+import {decidePracticeStaff,decidePracticeCampaign} from '@/app/actions/workspace'
+import {WorkspaceForm,Check,Field} from './forms'
+export function WorkspaceReview({id,revision,kind}:{id:string;revision:number;kind:'staff'|'campaign'}){return <WorkspaceForm action={kind==='staff'?decidePracticeStaff:decidePracticeCampaign} label="Record review decision"><input name="id" type="hidden" value={id}/><input name="revision" type="hidden" value={revision}/><Field name="decision" label="Decision" defaultValue={kind==='staff'?'REJECTED':'RETURNED'} options={[{value:'APPROVED',label:'Approve'},{value:kind==='staff'?'REJECTED':'RETURNED',label:kind==='staff'?'Reject':'Return for changes'}]}/><Check name="attested" required label={kind==='staff'?'I checked the employee identity, verified account, requested role and clinic authorization.':'I reviewed public business copy, current clinician verification and matching sandbox funding evidence.'}/></WorkspaceForm>}

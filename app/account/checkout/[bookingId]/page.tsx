@@ -13,7 +13,7 @@ export const metadata={title:'Appointment payment · CareNest',robots:{index:fal
 export default async function AppointmentCheckout({params}:{params:Promise<{bookingId:string}>}){
  const {bookingId}=await params,user=await requireUser(`/account/checkout/${encodeURIComponent(bookingId)}`)
  await ensureSchema()
- const b=await getDb().one<{id:string;status:string;kind:string;starts_at:string;ends_at:string;doctor_name:string;slug:string;invoice_id:string;total_paise:string;invoice_state:string;locked_until:string|null;live:boolean}>(`SELECT b.*,d.name doctor_name,d.slug,i.id invoice_id,i.total_paise,i.state invoice_state,s.locked_until,
+ const b=await getDb().one<{id:string;status:string;kind:string;starts_at:string;ends_at:string;doctor_name:string;is_demo:boolean;slug:string;invoice_id:string;total_paise:string;invoice_state:string;locked_until:string|null;live:boolean}>(`SELECT b.*,d.name doctor_name,d.is_demo,d.slug,i.id invoice_id,i.total_paise,i.state invoice_state,s.locked_until,
  s.status='HELD' AND s.reserved_booking_id=b.id AND s.locked_until>clock_timestamp() AND s.slot_start>clock_timestamp() live
  FROM patient.bookings b JOIN provider.doctors d ON d.id=b.doctor_id JOIN clinic.invoices i ON i.booking_id=b.id
  JOIN provider.appointment_slots s ON s.slot_id=b.slot_id WHERE b.id=$1 AND b.user_id=$2 AND b.payment_required=true`,[bookingId,user.id])
@@ -24,6 +24,7 @@ export default async function AppointmentCheckout({params}:{params:Promise<{book
  return <PatientWorkspace title={confirmed?'Appointment scheduled':'Confirm your appointment'} description="Cashfree sandbox · test payments only. No real money is collected.">
   <section className="mx-auto max-w-xl rounded-2xl border border-border bg-card p-6">
    <h2 className="text-xl">{b.doctor_name}</h2><p className="mt-3">{slotDay(b.starts_at)} · {slotTime(b.starts_at)} IST</p>
+   {b.is_demo&&<p className="mt-3 rounded-lg bg-soft p-3 text-sm">Demo appointment with a sample profile. Test payment only; no medical visit is arranged.</p>}
    <p className="mt-2 text-sm">{b.kind.replaceAll('_',' ')} · {Math.round((Date.parse(b.ends_at)-Date.parse(b.starts_at))/60000)} minutes</p>
    <p className="mt-5 text-lg font-semibold">Consultation total: {formatPaise(b.total_paise)}</p>
    {confirmed?<><p role="status" className="mt-4 rounded-xl bg-soft p-4">{b.status==='attended'?'Consultation completed. Your history is available.':'Payment verified. Your appointment is scheduled.'}</p><Link href={`/account?requested=${encodeURIComponent(b.id)}`} className="care-button mt-5">View appointment</Link></>:

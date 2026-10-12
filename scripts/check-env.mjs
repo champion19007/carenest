@@ -35,6 +35,7 @@ export function inspectEnvironment(env,{production=false}={}){
   for(const name of ['META_WHATSAPP_BOOKING_TEMPLATE','META_WHATSAPP_REMINDER_TEMPLATE','META_WHATSAPP_TRANSACTION_TEMPLATE'])if(!/^[a-z][a-z0-9_]{1,511}$/.test(env[name]??''))fail(name,'Save the exact approved template name.');else warn(name,'Configured by name; approval must be checked with Meta.')
  }
  if(env.ENABLE_PAYMENTS==='1'&&(!env.CASHFREE_CLIENT_ID||!env.CASHFREE_CLIENT_SECRET||env.CASHFREE_ENV!=='sandbox'))fail('Cashfree','The MVP requires sandbox credentials and sandbox mode.')
+ if(env.CARENEST_DEMO_BOOKING==='1'&&(env.ENABLE_PAYMENTS!=='1'||env.CASHFREE_ENV!=='sandbox'||!env.CASHFREE_CLIENT_ID||!env.CASHFREE_CLIENT_SECRET))fail('CARENEST_DEMO_BOOKING','Hosted sample booking requires configured Cashfree sandbox checkout.')
  if(env.SENTRY_DSN||env.NEXT_PUBLIC_SENTRY_DSN){for(const name of ['SENTRY_DSN','NEXT_PUBLIC_SENTRY_DSN'])try{const url=new URL(env[name]);if(url.protocol!=='https:'||!url.hostname.endsWith('.sentry.io')||!/^[a-f0-9]+$/i.test(url.username)||url.password||url.port||!/^\/\d+$/.test(url.pathname)||url.search||url.hash)throw new Error();pass(name)}catch{fail(name,'Use the DSN from a separate CareNest Sentry project.')}}else warn('Sentry','Error monitoring is not connected to a project yet.')
  return {production,ok,problems,warnings,passed:problems.length===0}
 }
