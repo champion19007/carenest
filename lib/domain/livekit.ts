@@ -3,6 +3,7 @@ import {AccessToken,RoomServiceClient,TrackSource} from 'livekit-server-sdk'
 import {randomUUID} from 'node:crypto'
 import {ensureSchema,getDb,type Db} from '@/lib/db/client'
 import {localMode,privateKey} from '@/lib/secrets'
+import {hostedDemoVideoHostId} from '@/lib/demo-booking'
 import {reject} from './errors'
 
 export function livekitConfiguration(){
@@ -15,15 +16,15 @@ export function livekitConfiguration(){
 }
 export function livekitConfigured(){try{livekitConfiguration();return true}catch{return false}}
 function client(){const c=livekitConfiguration();return new RoomServiceClient(c.url.replace(/^ws/,'http'),c.key,c.secret,{requestTimeout:8})}
-type Visit={id:string;revision:number;user_id:string;doctor_user:string;starts_at:string;ends_at:string}
+type Visit={id:string;revision:number;user_id:string;doctor_user:string;starts_at:string;ends_at:string;is_demo:boolean}
 async function eligible(db:Db,id:string,actorId?:string):Promise<Visit>{
- const b=await db.one<Visit>(`SELECT b.id,b.revision,b.user_id,d.user_id doctor_user,b.starts_at,b.ends_at FROM patient.bookings b
- JOIN provider.doctors d ON d.id=b.doctor_id JOIN patient.users host ON host.id=d.user_id JOIN patient.users patient ON patient.id=b.user_id
+ const b=await db.one<Visit>(`SELECT b.id,b.revision,b.user_id,host.id doctor_user,b.starts_at,b.ends_at,d.is_demo FROM patient.bookings b
+ JOIN provider.doctors d ON d.id=b.doctor_id JOIN patient.users host ON host.id=CASE WHEN d.is_demo AND NOT $2::boolean THEN $4::text ELSE d.user_id END JOIN patient.users patient ON patient.id=b.user_id
  LEFT JOIN clinic.clinics clinic ON clinic.id=d.clinic_id
  WHERE b.id=$1 AND b.status='confirmed' AND b.kind='video' AND host.status='ACTIVE' AND patient.status='ACTIVE'
- AND host.role='doctor' AND host.kyc_level='verified' AND d.status='ACTIVE' AND (d.verified_at IS NOT NULL OR ($2::boolean AND d.is_demo))
- AND (d.clinic_id IS NULL OR clinic.status='ACTIVE') AND ($3::text IS NULL OR b.user_id=$3 OR d.user_id=$3)
- AND EXISTS(SELECT 1 FROM patient.consents c WHERE c.booking_id=b.id AND c.actor_id=b.user_id AND c.purpose='video-provider' AND c.revoked_at IS NULL)`,[id,localMode(),actorId??null])
+ AND d.status='ACTIVE' AND ((d.is_demo AND NOT $2::boolean AND $4::text IS NOT NULL AND host.id<>b.user_id AND d.video_provider='livekit' AND b.payment_required AND EXISTS(SELECT 1 FROM clinic.invoices i WHERE i.booking_id=b.id AND i.state='PAID')) OR ((NOT d.is_demo OR $2::boolean) AND host.role='doctor' AND host.kyc_level='verified' AND (d.verified_at IS NOT NULL OR ($2::boolean AND d.is_demo))))
+ AND (d.clinic_id IS NULL OR clinic.status='ACTIVE') AND ($3::text IS NULL OR b.user_id=$3 OR host.id=$3)
+ AND EXISTS(SELECT 1 FROM patient.consents c WHERE c.booking_id=b.id AND c.actor_id=b.user_id AND c.purpose='video-provider' AND c.revoked_at IS NULL)`,[id,localMode(),actorId??null,hostedDemoVideoHostId()])
  if(!b)reject('UNAVAILABLE','The consultation or current participant consent is unavailable.',404)
  return b!
 }
@@ -55,7 +56,7 @@ export async function livekitJoin(actorId:string,id:string){
  return getDb().transaction(async tx=>{
   await tx.query('SELECT id FROM patient.bookings WHERE id=$1 FOR SHARE',[id]);const current=await eligible(tx,id,actorId);await inWindow(tx,current)
   const r=await tx.one<{external_id:string}>("SELECT external_id FROM video_sessions WHERE booking_id=$1 AND revision=$2 AND provider='livekit' AND state='READY' FOR SHARE",[id,current.revision]);if(!r?.external_id)reject('PENDING','The consultation room is not ready.',409)
-  const identity=privateKey('livekit-participant',id+':'+current.revision+':'+actorId),role=actorId===current.doctor_user?'Clinician':'Patient / pet owner'
+  const identity=privateKey('livekit-participant',id+':'+current.revision+':'+actorId),role=actorId===current.doctor_user?(current.is_demo&&!localMode()?'Demo host':'Clinician'):'Patient / pet owner'
   const token=new AccessToken(c.key,c.secret,{identity,name:role,ttl:30})
   token.addGrant({roomJoin:true,room:r!.external_id,canPublish:true,canSubscribe:true,canPublishData:false,canUpdateOwnMetadata:false,canPublishSources:[TrackSource.CAMERA,TrackSource.MICROPHONE]})
   await tx.query("INSERT INTO audit_log(actor_id,action,resource) VALUES($1,'livekit:join',$2)",[actorId,id])

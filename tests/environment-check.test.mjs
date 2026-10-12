@@ -17,3 +17,8 @@ test('valid core settings pass without requiring optional providers, and selecte
  assert.equal(inspectEnvironment({...env,SENTRY_DSN:dsn,NEXT_PUBLIC_SENTRY_DSN:dsn},{production:true}).passed,true)
  for(const invalid of [dsn.replace('/456','/not-a-project'),dsn.replace('sentry.io','sentry.io:8443'),dsn.replace('a'.repeat(32),'not-a-public-key')])assert.equal(inspectEnvironment({...env,SENTRY_DSN:invalid,NEXT_PUBLIC_SENTRY_DSN:invalid},{production:true}).passed,false)
 })
+test('hosted video preflight requires secure transport and a designated demo account',()=>{
+ const env={DATABASE_URL:'postgresql://fixture:fixture@database.example.test/carenest',AUTH_SECRET:'a'.repeat(48),DATA_ENCRYPTION_KEY:'b'.repeat(64),APP_URL:'https://carenest.example',APP_ORIGIN:'https://carenest.example',ENABLE_PAYMENTS:'1',CASHFREE_ENV:'sandbox',CASHFREE_CLIENT_ID:'TEST_fixture',CASHFREE_CLIENT_SECRET:'fixture',CARENEST_DEMO_BOOKING:'1',CARENEST_DEMO_VIDEO:'1',CARENEST_DEMO_VIDEO_HOST_ID:'host-fixture',LIVEKIT_URL:'wss://fixture.livekit.cloud',LIVEKIT_API_KEY:'fixture',LIVEKIT_API_SECRET:'fixture-secret-'.repeat(3)}
+ assert.equal(inspectEnvironment(env,{production:true}).passed,true)
+ for(const patch of [{LIVEKIT_URL:'ws://127.0.0.1:7880'},{LIVEKIT_URL:'wss://localhost'},{LIVEKIT_URL:'wss://fixture.livekit.cloud/?key=fixture'},{CARENEST_DEMO_VIDEO_HOST_ID:''},{CARENEST_DEMO_BOOKING:'0'},{LIVEKIT_API_SECRET:'short'}])assert.equal(inspectEnvironment({...env,...patch},{production:true}).passed,false)
+})

@@ -1,7 +1,8 @@
 import 'server-only'
 import { getDb, ensureSchema } from './client'
 import { tokenHash,localMode } from '@/lib/secrets'
-import {hostedDemoBookingEnabled} from '@/lib/demo-booking'
+import {hostedDemoBookingEnabled,hostedDemoVideoHostId} from '@/lib/demo-booking'
+import {livekitConfigured} from '@/lib/domain/livekit'
 
 /**
  * Relational data access.
@@ -348,6 +349,7 @@ function normaliseDoctor(row: DoctorRow): DoctorRow {
   return {
     ...row,
     catalogue_only: row.is_demo&&!localMode()&&!hostedDemoBookingEnabled(),
+    video:row.video&&(!row.is_demo||localMode()||Boolean(hostedDemoVideoHostId()&&livekitConfigured())),
     rating: Number(row.rating),
     reviews_count: Number(row.reviews_count),
     fee: Number(row.fee),
