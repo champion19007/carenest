@@ -1,6 +1,7 @@
 import 'server-only'
 import { getDb, ensureSchema } from './client'
 import { tokenHash,localMode } from '@/lib/secrets'
+import {hostedDemoBookingEnabled} from '@/lib/demo-booking'
 
 /**
  * Relational data access.
@@ -346,7 +347,7 @@ export async function hitRateLimit(
 function normaliseDoctor(row: DoctorRow): DoctorRow {
   return {
     ...row,
-    catalogue_only: row.is_demo&&!localMode(),
+    catalogue_only: row.is_demo&&!localMode()&&!hostedDemoBookingEnabled(),
     rating: Number(row.rating),
     reviews_count: Number(row.reviews_count),
     fee: Number(row.fee),

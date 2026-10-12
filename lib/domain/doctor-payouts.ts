@@ -14,7 +14,7 @@ export async function bindDoctorBeneficiary(adminId:string,doctorId:string,benef
  await verifiedBeneficiary(beneficiaryId)
  await getDb().transaction(async tx=>{
   await administrator(tx,adminId)
-  if(!await tx.one("SELECT d.id FROM provider.doctors d JOIN patient.users u ON u.id=d.user_id WHERE d.id=$1 AND d.status='ACTIVE' AND u.status='ACTIVE' AND u.role='doctor' AND u.kyc_level='verified' AND d.verified_at IS NOT NULL FOR UPDATE OF d",[doctorId]))reject('DOCTOR','An active verified doctor account is required.')
+  if(!await tx.one("SELECT d.id FROM provider.doctors d JOIN patient.users u ON u.id=d.user_id WHERE d.id=$1 AND NOT d.is_demo AND d.status='ACTIVE' AND u.status='ACTIVE' AND u.role='doctor' AND u.kyc_level='verified' AND d.verified_at IS NOT NULL FOR UPDATE OF d",[doctorId]))reject('DOCTOR','An active verified doctor account is required.')
   if(await tx.one("SELECT id FROM doctor_payouts WHERE doctor_id=$1 AND submitted_at IS NOT NULL AND state IN ('SUBMITTING','UNKNOWN','PENDING')",[doctorId]))reject('IN_FLIGHT','Reconcile pending transfers before changing the beneficiary.')
   await tx.query('INSERT INTO doctor_payout_accounts(doctor_id,beneficiary_id,verified_by) VALUES($1,$2,$3) ON CONFLICT(doctor_id) DO UPDATE SET beneficiary_id=$2,verified_by=$3,verified_at=now()',[doctorId,beneficiaryId,adminId])
   await tx.query("UPDATE doctor_payouts SET next_check_at=now() WHERE doctor_id=$1 AND state='WAITING_SETUP'",[doctorId])
@@ -28,14 +28,14 @@ export async function queueDoctorPayouts(){
  SELECT 'dp_'||replace(gen_random_uuid()::text,'-',''),b.id,i.id,p.id,d.id,d.clinic_id,b.fee::bigint*100
  FROM patient.bookings b JOIN clinic.invoices i ON i.booking_id=b.id JOIN payment_orders p ON p.invoice_id=i.id
  JOIN provider.doctors d ON d.id=b.doctor_id WHERE b.status='attended' AND i.state='PAID' AND p.state='CAPTURED'
- AND p.gateway='cashfree' AND b.slot_id IS NOT NULL AND b.fee>=1 AND d.user_id IS NOT NULL AND d.clinic_id IS NOT NULL
+ AND p.gateway='cashfree' AND b.slot_id IS NOT NULL AND b.fee>=1 AND NOT d.is_demo AND d.user_id IS NOT NULL AND d.clinic_id IS NOT NULL
  ON CONFLICT(booking_id) DO NOTHING`)
 }
 async function eligible(tx:Db,p:Payout){
  const booking=await lockPaymentAppointment(tx,p.booking_id)
  const i=await tx.one<{state:string}>('SELECT state FROM clinic.invoices WHERE id=$1 FOR UPDATE',[p.invoice_id])
  const payment=await tx.one<{state:string;amount_paise:string}>('SELECT state,amount_paise FROM payment_orders WHERE id=$1',[p.payment_id])
- const doctor=await tx.one("SELECT d.id FROM provider.doctors d JOIN patient.users u ON u.id=d.user_id JOIN clinic.clinics c ON c.id=d.clinic_id WHERE d.id=$1 AND d.status='ACTIVE' AND d.verified_at IS NOT NULL AND u.role='doctor' AND u.kyc_level='verified' AND u.status='ACTIVE' AND c.status='ACTIVE'",[p.doctor_id])
+ const doctor=await tx.one("SELECT d.id FROM provider.doctors d JOIN patient.users u ON u.id=d.user_id JOIN clinic.clinics c ON c.id=d.clinic_id WHERE d.id=$1 AND NOT d.is_demo AND d.status='ACTIVE' AND d.verified_at IS NOT NULL AND u.role='doctor' AND u.kyc_level='verified' AND u.status='ACTIVE' AND c.status='ACTIVE'",[p.doctor_id])
  const refund=await tx.one("SELECT id FROM refunds WHERE payment_id=$1 AND state NOT IN ('REJECTED','CANCELLED','FAILED') LIMIT 1",[p.payment_id])
  return booking.b.status==='attended'&&i?.state==='PAID'&&payment?.state==='CAPTURED'&&BigInt(payment.amount_paise)>=BigInt(p.amount_paise)&&!!doctor&&!refund
 }

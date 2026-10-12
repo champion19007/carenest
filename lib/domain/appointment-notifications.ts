@@ -49,7 +49,7 @@ export async function updateMessage(userId:string,eventId:string):Promise<Update
   return {title:'New clinic appointment confirmed',reference,reminder:false,appointment,text:`New clinic appointment confirmed.\nDate: ${appointment.date}\nTime: ${appointment.time}\nType: ${appointment.mode}\nReference: ${reference}\nOpen CareNest: ${appointment.url}`}
  }
  if(event.kind.startsWith('booking.')){
-  const b=await getDb().one<{user_id:string;revision:number;status:string;starts_at:string;ends_at:string;kind:string;name:string;started_at:string|null;future:boolean;reminder_due:boolean;payment_ok:boolean}>(`SELECT b.*,d.name,b.starts_at>clock_timestamp() future,b.starts_at-interval '10 minutes'<=clock_timestamp() reminder_due,
+  const b=await getDb().one<{user_id:string;revision:number;status:string;starts_at:string;ends_at:string;kind:string;name:string;is_demo:boolean;started_at:string|null;future:boolean;reminder_due:boolean;payment_ok:boolean}>(`SELECT b.*,d.name,d.is_demo,b.starts_at>clock_timestamp() future,b.starts_at-interval '10 minutes'<=clock_timestamp() reminder_due,
    (NOT b.payment_required OR EXISTS(SELECT 1 FROM clinic.invoices i WHERE i.booking_id=b.id AND (i.state='PAID' OR i.state='WAIVED' AND i.total_paise=0))) payment_ok
    FROM patient.bookings b JOIN provider.doctors d ON d.id=b.doctor_id WHERE b.id=$1`,[event.subject_id])
   if(!b||b.user_id!==userId)reject('RECIPIENT','Appointment ownership does not match.',403)
@@ -58,7 +58,8 @@ export async function updateMessage(userId:string,eventId:string):Promise<Update
   if(event.kind==='booking.confirmed'&&(!b.future||!b.payment_ok))return null
   const clock=new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',hour:'numeric',minute:'2-digit',hour12:true})
   const appointment={doctor:clean(b.name),date:new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',day:'numeric',month:'short',year:'numeric'}).format(new Date(b.starts_at)),time:clock.format(new Date(b.starts_at))+' - '+clock.format(new Date(b.ends_at))+' IST',mode:b.kind==='video'?'Video consultation':b.kind==='home_visit'?'Home visit':'Clinic visit',url:appOrigin()+(b.kind==='video'?'/consult/'+encodeURIComponent(reference):'/account')}
-  return {title,reference,reminder,appointment,text:`${title}.\nDoctor: ${appointment.doctor}\nDate: ${appointment.date}\nTime: ${appointment.time}\nType: ${appointment.mode}\nReference: ${reference}\n${reminder?'Your appointment starts shortly.\n':''}Open CareNest: ${appointment.url}`}
+  const bookingTitle=b.is_demo?'Demo: '+title:title
+  return {title:bookingTitle,reference,reminder,appointment,text:`${bookingTitle}.\n${b.is_demo?'Sandbox demonstration only; no medical care is arranged.\n':''}Doctor: ${appointment.doctor}\nDate: ${appointment.date}\nTime: ${appointment.time}\nType: ${appointment.mode}\nReference: ${reference}\n${reminder?'Your appointment starts shortly.\n':''}Open CareNest: ${appointment.url}`}
  }
  if(['payment.recorded','payment.refunded','demo.payment_completed','doctor.payout_paid','doctor.payout_reversed'].includes(event.kind)){
   const eventKey=event.event_key??''

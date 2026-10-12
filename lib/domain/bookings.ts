@@ -6,6 +6,7 @@ import {homeAddressSnapshot} from './home-visits'
 import {livekitConfigured} from './livekit'
 import { boundedText, reject } from './errors'
 import {cashfreeConfigured} from '@/lib/cashfree'
+import {hostedDemoBookingEnabled} from '@/lib/demo-booking'
 import {workspaceWindowFree} from './workspace-conflicts'
 
 export const REQUEST_HOLD_MINUTES = 30
@@ -28,10 +29,11 @@ async function actor(tx: Db, id: string) {
 }
 async function provider(tx: Db, id: string) {
   const row = await tx.one<Provider>('SELECT * FROM provider.doctors WHERE id=$1 FOR UPDATE', [id])
-  if (!row || row.status !== 'ACTIVE' || (!row.verified_at && !(row.is_demo && localMode()))) {
+  const demoAllowed=localMode()||hostedDemoBookingEnabled()
+  if (!row || row.status !== 'ACTIVE' || (row.is_demo&&!demoAllowed) || (!row.verified_at && !(row.is_demo && demoAllowed))) {
     reject('PROVIDER_UNAVAILABLE', 'This provider is not currently accepting appointments.', 409)
   }
-  if(!(row.is_demo&&localMode())) {
+  if(!(row.is_demo&&demoAllowed)) {
     const account=row.user_id?await tx.one<{role:string;status:string;kyc_level:string}>('SELECT role,status,kyc_level FROM patient.users WHERE id=$1 FOR SHARE',[row.user_id]):undefined
     if(!account||account.status!=='ACTIVE'||account.role!=='doctor'||account.kyc_level!=='verified')reject('PROVIDER_UNAVAILABLE','This provider is not currently accepting appointments.')
   }
@@ -41,6 +43,7 @@ async function provider(tx: Db, id: string) {
 async function practitioner(tx: Db, actorId: string, doctorId: string) {
   const user = await actor(tx, actorId)
   const doctor = await provider(tx, doctorId)
+  if(doctor.is_demo&&!localMode())reject('DEMO_CLINICIAN','Hosted sample bookings do not authorize clinical consultations.',403)
   if (doctor.user_id !== actorId || user.role !== 'doctor' || user.kyc_level !== 'verified') {
     reject('FORBIDDEN', 'An active verified practitioner is required.', 403)
   }
@@ -113,6 +116,7 @@ export async function requestAppointment(input: {
       return existing
     }
     const d = await provider(tx, input.doctorId)
+    if(d.is_demo&&!localMode()&&(!input.paymentRequired||input.mode!=='clinic'))reject('DEMO_MODE','Hosted sample appointments use Cashfree sandbox checkout for a demo clinic visit.',400)
     if(input.paymentRequired&&!d.clinic_id)reject('CLINIC','This provider needs a registered clinic before collecting payment.')
     const home=input.mode==='home_visit'?await homeAddressSnapshot(tx,input.actorId,input.addressId??''):null
     if(home&&!d.clinic_id)reject('CLINIC','A registered dispatch clinic is required for this home visit.')
@@ -186,7 +190,7 @@ export async function confirmPaidAppointment(tx:Db,b:Appointment){
     AND EXISTS(SELECT 1 FROM patient.consents WHERE booking_id=b.id AND purpose='appointment-sharing' AND revoked_at IS NULL)
     AND (b.kind<>'video' OR EXISTS(SELECT 1 FROM patient.consents WHERE booking_id=b.id AND purpose='video-provider' AND revoked_at IS NULL))
     AND (b.patient_for IS NULL OR EXISTS(SELECT 1 FROM patient.family_members f WHERE f.id=b.patient_for AND f.user_id=b.user_id AND f.archived_at IS NULL))
-    AND (b.pet_id IS NULL OR EXISTS(SELECT 1 FROM patient.pets p WHERE p.id=b.pet_id AND p.owner_id=b.user_id AND p.archived_at IS NULL AND p.species=ANY(d.supported_species)))`,[b.id,localMode()])
+    AND (b.pet_id IS NULL OR EXISTS(SELECT 1 FROM patient.pets p WHERE p.id=b.pet_id AND p.owner_id=b.user_id AND p.archived_at IS NULL AND p.species=ANY(d.supported_species)))`,[b.id,localMode()||hostedDemoBookingEnabled()])
   if(!valid)return false
   await tx.query("UPDATE provider.appointment_slots SET status='BOOKED',locked_until=NULL,version=version+1 WHERE slot_id=$1 AND reserved_booking_id=$2",[b.slot_id,b.id])
   await tx.query('INSERT INTO clinic.encounters(id,booking_id,doctor_id,patient_user_id,family_id,pet_id) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(booking_id) DO NOTHING',['enc_'+randomUUID(),b.id,b.doctor_id,b.user_id,b.patient_for,b.pet_id])

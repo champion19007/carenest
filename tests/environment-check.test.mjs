@@ -10,6 +10,8 @@ test('hosted preflight rejects laptop URLs and private settings without exposing
 test('valid core settings pass without requiring optional providers, and selected provider mistakes fail',()=>{
  const env={DATABASE_URL:'postgresql://fixture:fixture@database.example.test/carenest?sslmode=require',AUTH_SECRET:'a'.repeat(48),DATA_ENCRYPTION_KEY:'b'.repeat(64),APP_URL:'https://carenest.example',APP_ORIGIN:'https://carenest.example'}
  assert.equal(inspectEnvironment(env,{production:true}).passed,true)
+ assert.equal(inspectEnvironment({...env,CARENEST_DEMO_BOOKING:'1'},{production:true}).passed,false)
+ assert.equal(inspectEnvironment({...env,CARENEST_DEMO_BOOKING:'1',ENABLE_PAYMENTS:'1',CASHFREE_ENV:'sandbox',CASHFREE_CLIENT_ID:'TEST_fixture',CASHFREE_CLIENT_SECRET:'fixture'},{production:true}).passed,true)
  const selected=inspectEnvironment({...env,SMS_PROVIDER:'twilio-verify',EMAIL_ENABLED:'1',EMAIL_PROVIDER:'gmail',GMAIL_APP_PASSWORD:'invalid'},{production:true});assert.equal(selected.passed,false);assert.ok(selected.problems.some(p=>p.name==='TWILIO_VERIFY_SERVICE_SID'))
  const dsn='https://'+'a'.repeat(32)+'@o123.ingest.de.sentry.io/456'
  assert.equal(inspectEnvironment({...env,SENTRY_DSN:dsn,NEXT_PUBLIC_SENTRY_DSN:dsn},{production:true}).passed,true)

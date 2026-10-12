@@ -19,7 +19,7 @@ import { listReviews } from '@/lib/db/docs'
 import { currentUser } from '@/lib/auth'
 import { Avatar } from '@/components/avatar'
 import { AvailabilityPicker } from '@/components/availability-picker'
-import { openSlots } from '@/lib/db/slots'
+import { openSlots,ensureSlots } from '@/lib/db/slots'
 
 /** Public and indexable — this is how patients arrive from a search engine. */
 export const dynamic = 'force-dynamic'
@@ -55,6 +55,7 @@ export default async function DoctorProfile({ params }: { params: Promise<{ slug
   const { slug } = await params
   const doctor = await findDoctorBySlug(slug)
   if (!doctor) notFound()
+  if(!doctor.catalogue_only)await ensureSlots(doctor.id)
 
   const [reviews, user, slots] = await Promise.all([listReviews(doctor.slug), currentUser(), openSlots(doctor.id)])
   const similarAll = await searchDoctors({

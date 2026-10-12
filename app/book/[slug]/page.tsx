@@ -6,7 +6,8 @@ import { SiteHeader } from '@/components/site-header'
 import { BookingForm } from '@/components/booking-form'
 import { ensureSelfMember, listFamily } from '@/lib/db/family'
 import { findDoctorBySlug } from '@/lib/db/sql'
-import { openSlots } from '@/lib/db/slots'
+import { openSlots,ensureSlots } from '@/lib/db/slots'
+import {localMode} from '@/lib/secrets'
 import { ownedPets } from '@/lib/domain/pets'
 import {ownAddresses} from '@/lib/domain/home-visits'
 import { requireUser, newId } from '@/lib/auth'
@@ -18,6 +19,8 @@ export default async function BookPage({ params, searchParams }: { params: Promi
   const { slug } = await params
   const doctor = await findDoctorBySlug(slug)
   if (!doctor) notFound()
+  if(doctor.catalogue_only)return <main className="care-container py-12"><h1>Demo checkout needs setup</h1><p>Cashfree sandbox booking has not been enabled on this deployment.</p><Link href={`/doctor/${doctor.slug}`}>Back to profile</Link></main>
+  await ensureSlots(doctor.id)
 
   /* Booking is the point where an account becomes necessary. */
   const requested = (await searchParams).slot
@@ -54,8 +57,8 @@ export default async function BookPage({ params, searchParams }: { params: Promi
           <BookingForm
             slug={doctor.slug}
             doctorName={doctor.name}
-            offersVideo={doctor.video}
-            offersHomeVisit={doctor.home_visit}
+            offersVideo={doctor.video&&(!doctor.is_demo||localMode())}
+            offersHomeVisit={doctor.home_visit&&(!doctor.is_demo||localMode())}
             addresses={doctor.home_visit?await ownAddresses(user.id):[]}
             patientName={user.name || `+91 ${user.phone}`}
             family={family}
@@ -68,7 +71,7 @@ export default async function BookPage({ params, searchParams }: { params: Promi
 
           <aside className="h-fit rounded-xl border border-border bg-card p-6">
             <h2 className="text-xl">{doctor.name}</h2>
-            {doctor.is_demo&&<p className="mt-2 text-xs font-semibold text-primary">Sample profile · local demonstration</p>}
+            {doctor.is_demo&&<p className="mt-2 text-sm font-semibold text-primary">Demo appointment · Cashfree test payment only. No real doctor visit or medical care is arranged.</p>}
             <p className="mt-1 text-muted-foreground">{doctor.speciality}</p>
             <p className="mt-1 text-sm text-muted-foreground">{doctor.qualification}</p>
 

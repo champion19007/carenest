@@ -2,6 +2,7 @@ import 'server-only'
 import {randomUUID} from 'node:crypto'
 import {ensureSchema,getDb} from './db/client'
 import {localMode} from './secrets'
+import {hostedDemoBookingEnabled} from './demo-booking'
 import {normalizePhone} from './domain/otp'
 import {consumeLimits} from './domain/rate-limit'
 import {DomainError,reject} from './domain/errors'
@@ -25,7 +26,7 @@ export async function requestTwilioVerifyOtp(rawPhone:string){
  const phone=normalizePhone(rawPhone);if(!phone)reject('PHONE','Enter a valid Indian mobile number.',400)
  const c=configuration();await ensureSchema();const intent=randomUUID()
  await getDb().transaction(async tx=>{
-  if(localMode()){
+  if(localMode()||hostedDemoBookingEnabled()){
    const cap=Number(process.env.TWILIO_VERIFY_LOCAL_DAILY_LIMIT??2)
    if(!Number.isInteger(cap)||cap<1||cap>10)reject('BUDGET','Choose a Twilio OTP demo cap between one and ten per day.',503)
    const budget=await consumeLimits([{bucket:'twilio-verify-demo',key:'global',limit:cap,seconds:86400}],tx)
