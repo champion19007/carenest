@@ -350,6 +350,7 @@ function normaliseDoctor(row: DoctorRow): DoctorRow {
     ...row,
     catalogue_only: row.is_demo&&!localMode()&&!hostedDemoBookingEnabled(),
     video:row.video&&(!row.is_demo||localMode()||Boolean(hostedDemoVideoHostId()&&livekitConfigured())),
+    home_visit:row.home_visit&&(!row.is_demo||localMode()),
     rating: Number(row.rating),
     reviews_count: Number(row.reviews_count),
     fee: Number(row.fee),
@@ -407,7 +408,7 @@ export async function searchDoctors(query: DoctorQuery = {}): Promise<DoctorRow[
   if (query.maxExperience !== undefined) where.push(`experience <= ${p(query.maxExperience)}`)
   if (query.video) where.push('video = true')
   if (query.cashless) where.push('cashless = true')
-  if (query.homeVisit) where.push('home_visit = true')
+  if (query.homeVisit) where.push(`home_visit = true AND (NOT is_demo OR ${p(localMode())})`)
   if (query.femaleOnly) where.push(`gender = 'Female'`)
   if (query.species) where.push(`${p(query.species)} = ANY(supported_species)`)
 

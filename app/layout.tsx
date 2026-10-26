@@ -40,9 +40,7 @@ const themeBootScript = `
 (function () {
   try {
     var stored = localStorage.getItem('carenest-theme');
-    var dark = stored
-      ? stored === 'dark'
-      : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var dark = stored === 'light' ? false : stored === 'dark' ? true : window.matchMedia('(prefers-color-scheme: dark)').matches;
     if (dark) document.documentElement.classList.add('dark');
   } catch (e) {}
 })();

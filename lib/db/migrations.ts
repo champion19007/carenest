@@ -14,6 +14,7 @@ import {VERIFY_SCHEMA} from './verify-schema'
 import {EMAIL_AUTH_SCHEMA} from './email-auth-schema'
 import {DEMO_DISCOVERY_SCHEMA} from './demo-discovery-schema'
 import {DOCTOR_WORKSPACE_SCHEMA} from './doctor-workspace-schema'
+import {HOME_CARE_SCHEMA} from './home-care-schema'
 import type { Db } from './adapters'
 export const migrations = [
   { version: '0001-legacy', sql: SCHEMA },
@@ -31,6 +32,7 @@ export const migrations = [
   { version: '0013-email-code-login', sql: EMAIL_AUTH_SCHEMA },
   { version: '0014-hosted-demo-catalogue', sql: DEMO_DISCOVERY_SCHEMA },
   { version: '0015-doctor-workspace', sql: DOCTOR_WORKSPACE_SCHEMA },
+  { version: '0016-home-care-requests', sql: HOME_CARE_SCHEMA },
 ]
 export const LATEST_MIGRATION = migrations.at(-1)!.version
 export async function applyMigrations(db: Db) {

@@ -24,6 +24,7 @@ const specs:Spec[]=[
  {table:'support_cases',column:'detail',context:r=>'support:'+r.id},
  {table:'clinic.people',column:'encrypted_identity',context:r=>'person:'+r.id},
  {table:'patient.addresses',column:'encrypted_address',context:r=>'address:'+r.id},
+ {table:'patient.home_care_requests',column:'encrypted_details',context:r=>'home-care:'+r.id},
  {table:'patient.bookings',column:'encrypted_home_address',context:r=>'booking-home:'+r.id},
  {table:'patient.privacy_requests',column:'encrypted_detail',context:r=>'privacy:'+r.id},
  {table:'patient.privacy_requests',column:'encrypted_decision',context:r=>'privacy-decision:'+r.id},

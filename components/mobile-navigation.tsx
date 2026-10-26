@@ -1,13 +1,13 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { CalendarDays, Home, PawPrint, Search, UserRound } from 'lucide-react'
+import { CalendarDays, Home, HeartHandshake, Search, UserRound } from 'lucide-react'
 
 const links = [
   { href: '/', label: 'Home', Icon: Home },
   { href: '/account', label: 'Visits', Icon: CalendarDays },
   { href: '/search', label: 'Find care', Icon: Search },
-  { href: '/pets', label: 'Pets', Icon: PawPrint },
+  { href: '/home-care', label: 'Home care', Icon: HeartHandshake },
   { href: '/account/profile', label: 'Profile', Icon: UserRound },
 ]
 export function MobileNavigation() {
