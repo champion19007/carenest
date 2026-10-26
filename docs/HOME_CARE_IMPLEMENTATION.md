@@ -59,7 +59,7 @@ For a persistent hosted database, back up and inspect the intended CareNest targ
 
 ## Verification evidence
 
-- The regression suite passed 370 tests before the final dependency updates, with 74.73% line, 77.61% branch and 80.66% function coverage. Final dependency/build results are reported separately with the release.
+- GitHub's exact-commit verification passed **373 tests**, type checks, dependency audits and the production build: [verification run](https://github.com/champion19007/carenest/actions/runs/40370631489). Coverage was 75.56% lines, 77.63% branches and 80.94% functions. The local post-update regression run also passed 371 tests before the last two focused regression cases were added.
 - Targeted tests execute the request service against disposable PostgreSQL-compatible databases: ownership, consent, valid dates/PINs, idempotent retries, encrypted persistence, atomic budgets, MFA review, stale revisions and cancellation.
 - Twenty focused tests passed after the dependency updates, including privacy restriction, hosted discovery, review-control progression and real key rotation. The PR records the final full-suite result.
 - Retention tests check active-request erasure protection and redaction. The actual key-rotation command tests readability of the new envelope after rotation.
