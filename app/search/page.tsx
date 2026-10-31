@@ -99,6 +99,7 @@ export default async function SearchPage({
     minExperience,
     maxExperience,
     video: params.video === '1',
+    homeVisit: params.home === '1',
     cashless: params.cashless === '1',
     femaleOnly: params.female === '1',
     sort: (params.sort as DoctorQuery['sort']) ?? 'relevance',
@@ -132,7 +133,7 @@ export default async function SearchPage({
         <div className="mx-auto max-w-[1320px] px-5 py-8 lg:px-8">
           <p className="eyebrow">Find a doctor</p>
           <h1 className="mt-3 text-3xl sm:text-4xl">
-            {area ? `Doctors in ${area.name}` : 'Doctors near you'}
+            {query.homeVisit ? 'Doctors for home visits' : area ? `Doctors in ${area.name}` : 'Find your doctor'}
           </h1>
 
           {area ? (
@@ -145,7 +146,7 @@ export default async function SearchPage({
           )}
 
           <div className="mt-6 max-w-3xl">
-            <DiscoverySearch key={`${symptomText}|${rawArea}`} defaultQuery={symptomText} defaultArea={rawArea} />
+            <DiscoverySearch key={`${symptomText}|${rawArea}`} defaultQuery={symptomText} defaultArea={rawArea} preserved={preserved.toString()} />
           </div>
           <div className="mt-5"><SpecialtyChips /></div>
         </div>
@@ -177,6 +178,7 @@ export default async function SearchPage({
             fees,
             experience,
             video: Boolean(query.video),
+            homeVisit: Boolean(query.homeVisit),
             cashless: Boolean(query.cashless),
             femaleOnly: Boolean(query.femaleOnly),
             sort: query.sort ?? 'relevance',

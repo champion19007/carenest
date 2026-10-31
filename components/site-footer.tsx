@@ -5,6 +5,7 @@ const links = [
   { href: '/search', label: 'Find doctors' },
   { href: '/search?video=1', label: 'Video consultations' },
   { href: '/pets', label: 'Pet care' },
+  { href: '/home-care', label: 'Nurses & home care' },
   { href: '/account', label: 'My appointments' },
   { href: '/for-providers', label: 'For doctors and clinics' },
   { href: '/help', label: 'Help centre' },

@@ -1,0 +1,19 @@
+import Link from 'next/link'
+import {ArrowRight,HeartHandshake,House,Stethoscope,PawPrint} from 'lucide-react'
+import {SiteHeader} from '@/components/site-header'
+import {SiteFooter} from '@/components/site-footer'
+import {Photo} from '@/components/photo'
+import {photos} from '@/lib/images'
+import {homeCareOptions} from '@/lib/home-care'
+
+export const metadata={title:'Nurses, home visits and care homes · CareNest',description:'Request nursing, doctor or veterinarian home visits, residential elder care or pet boarding and assisted stays.'}
+const icons={nursing:HeartHandshake,doctor_visit:Stethoscope,care_home:House}
+export default async function HomeCare({searchParams}:{searchParams:Promise<{for?:string}>}){
+ const pet=(await searchParams).for==='pet',audience=pet?'pet':'human'
+ return <main className="min-h-screen bg-background"><SiteHeader/><div className="care-container pb-16 pt-8 sm:pt-12">
+  <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground"><Link href="/" className="hover:underline">Home</Link><span aria-hidden="true"> / </span>Home care</nav>
+  <section className="care-home-intro"><div><p className="care-kicker">Care beyond the clinic</p><h1 className="care-title mt-3">{pet?'Their home. Their comfort.':'Care, in a familiar place.'}</h1><p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground">{pet?'Veterinary visits, nursing support and assisted stays for the animals you call family.':'Find nursing support, doctor home visits and residential care for yourself or someone you care for.'}</p><nav className="care-segments mt-6" aria-label="Care for"><Link href="/home-care" aria-current={!pet?'page':undefined} className={!pet?'selected':''}>For people</Link><Link href="/home-care?for=pet" aria-current={pet?'page':undefined} className={pet?'selected':''}><PawPrint className="size-4"/>For pets</Link></nav></div><Photo photo={pet?photos.petDog:photos.heroConsult} ratio={1.5} width={620} scrim="none" className="care-home-photo rounded-xl"/></section>
+  <section className="mt-10 sm:mt-14" aria-labelledby="home-care-services"><h2 id="home-care-services" className="text-2xl">What support do you need?</h2><div className="care-service-list mt-5">{homeCareOptions.map(option=>{const Icon=icons[option.id];return <article key={option.id}><span className="care-service-icon"><Icon className="size-6"/></span><div><p className="text-sm text-muted-foreground">{option.detail}</p><h3 className="mt-1 text-xl">{pet?option.petLabel:option.label}</h3><p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">{pet?option.petDescription:option.description}</p><div className="mt-4 flex flex-wrap gap-3">{option.id==='doctor_visit'&&<Link className="care-button" href={pet?'/pets?home=1':'/search?home=1'}>Find {pet?'vets':'doctors'} for home visits<ArrowRight className="size-4"/></Link>}<Link className={option.id==='doctor_visit'?'care-secondary':'care-button'} href={`/home-care/request?service=${option.id}&for=${audience}`}>{option.id==='care_home'?'Request a stay':option.id==='nursing'?'Request nursing care':'Ask about a visit'}<ArrowRight className="size-4"/></Link></div></div><p className="text-sm text-muted-foreground">{option.id==='doctor_visit'?'Listed doctors show their own fees.':'Availability and fees reviewed on request.'}</p></article>})}</div></section>
+  <section className="care-home-note mt-8"><h2 className="text-lg">A request starts the conversation.</h2><p className="mt-2 text-sm leading-7 text-muted-foreground">Your care request is saved to your account for review. It does not reserve a nurse, visit or residential place. A care team must confirm suitability, availability and fees before you make any arrangement.</p><Link className="care-text-link mt-3" href="/account/home-care">Track my care requests<ArrowRight className="size-4"/></Link></section>
+ </div><SiteFooter/></main>
+}

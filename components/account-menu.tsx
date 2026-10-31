@@ -131,13 +131,13 @@ export function AuthButtons() {
     <>
       <Link
         href="/sign-in"
-        className="hidden min-h-11 items-center rounded-lg border border-primary px-5 font-semibold text-primary transition-colors hover:bg-soft sm:inline-flex"
+        className="hidden min-h-11 items-center rounded-lg px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-soft hover:text-foreground sm:inline-flex"
       >
         Log in
       </Link>
       <Link
         href="/sign-up"
-        className="inline-flex min-h-11 items-center rounded-lg bg-cta px-5 font-semibold text-cta-foreground transition-opacity hover:opacity-90"
+        className="inline-flex min-h-11 items-center rounded-lg bg-cta px-4 text-sm font-medium text-cta-foreground transition-opacity hover:opacity-90"
       >
         Sign up
       </Link>

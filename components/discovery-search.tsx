@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation'
 import { useState, type FormEvent } from 'react'
 import { Brain, HeartPulse, MapPin, Search, Smile, Sparkles, Stethoscope } from 'lucide-react'
 
-export function DiscoverySearch({ defaultQuery = '', defaultArea = '' }: { defaultQuery?: string; defaultArea?: string }) {
+export function DiscoverySearch({ defaultQuery = '', defaultArea = '', preserved = '' }: { defaultQuery?: string; defaultArea?: string; preserved?:string }) {
   const router = useRouter()
   const [query, setQuery] = useState(defaultQuery)
   const [area, setArea] = useState(defaultArea)
   function submit(event: FormEvent) {
     event.preventDefault()
-    const params = new URLSearchParams()
+    const params = new URLSearchParams(preserved)
+    params.delete('page');params.delete('q');params.delete('area')
     if (query.trim()) params.set('q', query.trim())
     if (area.trim()) params.set('area', area.trim())
     router.push(`/search${params.size ? `?${params}` : ''}`)

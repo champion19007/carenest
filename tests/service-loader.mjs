@@ -14,7 +14,8 @@ export function loadServices(db, overrides = {}) {
     const mod = { exports: {} }
     cache.set(filename, mod)
     const source = ts.transpileModule(fs.readFileSync(filename, 'utf8'), {
-      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
+      fileName:filename,
+      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx:ts.JsxEmit.ReactJSX, esModuleInterop: true },
     }).outputText
     function localRequire(name) {
       if (Object.hasOwn(overrides, name)) return overrides[name]

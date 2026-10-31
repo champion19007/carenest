@@ -1,8 +1,9 @@
 'use client'
 
 import { EmptyArt } from '@/components/empty-art'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import {
   SlidersHorizontal,
   X,
@@ -25,6 +26,7 @@ export type InitialFilters = {
   fees: string
   experience: string
   video: boolean
+  homeVisit?: boolean
   cashless: boolean
   femaleOnly: boolean
   sort: string
@@ -50,6 +52,17 @@ export function DoctorResults({
   const params = useSearchParams()
   const [pending, startTransition] = useTransition()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const dialog=useRef<HTMLDialogElement>(null)
+  useEffect(()=>{
+    if(!drawerOpen){dialog.current?.close();return}
+    dialog.current?.showModal()
+    const old=document.body.style.overflow
+    document.body.style.overflow='hidden'
+    const desktop=window.matchMedia('(min-width: 1024px)')
+    const close=()=>{if(desktop.matches)setDrawerOpen(false)}
+    desktop.addEventListener('change',close)
+    return()=>{document.body.style.overflow=old;desktop.removeEventListener('change',close)}
+  },[drawerOpen])
 
   function apply(mutate: (next: URLSearchParams) => void) {
     const next = new URLSearchParams(params.toString())
@@ -83,6 +96,7 @@ export function DoctorResults({
     (initial.fees ? 1 : 0) +
     (initial.experience ? 1 : 0) +
     (initial.video ? 1 : 0) +
+    (initial.homeVisit ? 1 : 0) +
     (initial.cashless ? 1 : 0) +
     (initial.femaleOnly ? 1 : 0)
 
@@ -103,6 +117,7 @@ export function DoctorResults({
 
       <div className="max-h-[calc(100vh-12rem)] overflow-y-auto px-5 py-2">
         <Group title="Quick filters" hint="Narrow to the format of appointment you want.">
+          <Toggle label="Offers home visits" checked={Boolean(initial.homeVisit)} onChange={()=>toggleFlag('home',!initial.homeVisit)}/>
           <Toggle
             label="Offers video consultation"
             checked={initial.video}
@@ -229,10 +244,11 @@ export function DoctorResults({
             {doctors.length === 0 && (
               <div className="rounded-xl border border-dashed border-border p-12 text-center">
                 <EmptyArt />
-                <p className="mt-6 text-lg font-semibold">No doctors match these filters</p>
+                <p className="mt-6 text-lg font-semibold">{initial.homeVisit?'No home-visit doctors match this search':'No doctors match these filters'}</p>
                 <p className="mt-2 text-muted-foreground">
-                  Try widening the fee range or removing a speciality.
+                  {initial.homeVisit?'You can submit a care request for review, or adjust your search. Availability still needs confirmation.':'Try widening the fee range or removing a speciality.'}
                 </p>
+                {initial.homeVisit&&<Link className="care-button mt-5" href="/home-care/request?service=doctor_visit">Request a home visit</Link>}
                 <button
                   type="button"
                   onClick={() => startTransition(() => router.push('/search', { scroll: false }))}
@@ -246,21 +262,14 @@ export function DoctorResults({
         </section>
       </div>
 
-      {drawerOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setDrawerOpen(false)}
-            aria-hidden="true"
-          />
-          <div className="absolute inset-y-0 left-0 w-[min(22rem,88vw)] overflow-y-auto bg-background p-5">
+      <dialog ref={dialog} className="care-filter-dialog" aria-label="Doctor filters" onCancel={()=>setDrawerOpen(false)} onClose={()=>setDrawerOpen(false)}>
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-xl">Filters</h2>
               <button
                 type="button"
                 onClick={() => setDrawerOpen(false)}
                 aria-label="Close filters"
-                className="inline-flex size-10 items-center justify-center rounded-lg border border-border"
+                className="inline-flex size-11 items-center justify-center rounded-lg border border-input"
               >
                 <X className="size-5" />
               </button>
@@ -273,9 +282,7 @@ export function DoctorResults({
             >
               Show {doctors.length} doctors
             </button>
-          </div>
-        </div>
-      )}
+      </dialog>
     </div>
   )
 }
@@ -293,7 +300,7 @@ function Group({
 }) {
   return (
     <div className={last ? 'py-4' : 'border-b border-border py-4'}>
-      <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">{title}</h3>
+      <h3 className="text-sm font-semibold">{title}</h3>
       {hint && <p className="mt-1 text-xs leading-5 text-muted-foreground">{hint}</p>}
       <div className="mt-2">{children}</div>
     </div>
@@ -312,7 +319,7 @@ function Toggle({
   type?: 'checkbox' | 'radio'
 }) {
   return (
-    <label className="flex cursor-pointer items-center gap-3 py-1.5">
+    <label className="flex min-h-11 cursor-pointer items-center gap-3 py-2">
       <input
         type={type}
         checked={checked}

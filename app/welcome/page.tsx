@@ -46,7 +46,7 @@ export default async function WelcomePage({
 
           <p className="mt-7 flex items-start gap-2 border-t border-border pt-5 text-sm text-muted-foreground">
             <ShieldCheck className="mt-0.5 size-4 shrink-0 text-accent" />
-            Your number is already verified. This only adds your name to the account.
+            Your sign-in code was accepted. This only adds your name to the account.
           </p>
         </div>
       </section>
