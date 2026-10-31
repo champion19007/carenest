@@ -2,19 +2,8 @@ import { photoUrl, type photos } from '@/lib/images'
 
 type Photo = (typeof photos)[keyof typeof photos]
 
-/**
- * A photograph, cropped to a ratio and tinted into the brand palette.
- *
- * Stock photography is lit for whatever room it was shot in, so dropping it
- * straight onto the page makes a site look like a collage of other people's
- * brands. The scrim — a gradient built from `--primary` — pulls every photo
- * towards navy in the light theme and violet in the dark one, which is what
- * makes a mixed set read as one product.
- *
- * Rendered as a plain `img` rather than `next/image` because
- * `images.unoptimized` is on: Unsplash resizes on its own CDN, so Next would
- * add a hop without adding anything.
- */
+// Unsplash supplies resized sources; a neutral scrim keeps overlaid text
+// independent of the theme's changing link colour.
 export function Photo({
   photo,
   ratio = 16 / 9,
@@ -37,9 +26,9 @@ export function Photo({
 }) {
   const scrimClass = {
     none: '',
-    soft: 'after:absolute after:inset-0 after:bg-gradient-to-tr after:from-primary/45 after:via-primary/10 after:to-transparent',
+    soft: 'after:absolute after:inset-0 after:bg-black/10',
     strong:
-      'after:absolute after:inset-0 after:bg-gradient-to-t after:from-primary/85 after:via-primary/45 after:to-primary/10',
+      'after:absolute after:inset-0 after:bg-black/75',
   }[scrim]
 
   return (

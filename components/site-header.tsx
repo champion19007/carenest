@@ -32,8 +32,8 @@ export function SiteHeader() {
     document.addEventListener('mousedown', onClick)
     return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('mousedown', onClick) }
   }, [])
-  return <header ref={root} className="relative z-50 border-b border-border bg-card">
-    <div className="care-container flex min-h-20 items-center justify-between gap-3 py-3">
+  return <header ref={root} className="site-header relative z-50 border-b border-border bg-background">
+    <div className="care-container flex min-h-18 items-center justify-between gap-3 py-2">
       <Logo />
       <nav aria-label="Main navigation" className="hidden items-center gap-1 xl:flex">{navLinks.map(({ href, label }) => <Link key={href} href={href} className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-medium hover:bg-soft ${path === href ? 'text-primary' : 'text-muted-foreground'}`}>{href === '/pets' && <PawPrint className="size-4" />}{label}</Link>)}</nav>
       <div className="flex items-center gap-2">

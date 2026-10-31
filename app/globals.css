@@ -9,10 +9,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  /* Inter for everything readable, Plus Jakarta Sans for headings. Both are
-     humanist sans faces — the register healthcare products want. */
+  /* One type family keeps discovery, forms and clinic tools in the same register. */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -47,93 +46,72 @@
   --color-banner-foreground: var(--banner-foreground);
   --color-banner-muted: var(--banner-muted);
 
-  --radius-lg: 0.625rem;
-  --radius-xl: 0.875rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.625rem;
+  --radius-2xl: 0.75rem;
+  --radius-3xl: 0.875rem;
 }
 
-/* ---------------------------------------------------------- light theme */
+/* Neutral surfaces and violet links; status colours carry their existing meaning. */
 :root {
   color-scheme: light;
-
-  --background: #f7f8fa;
-  --foreground: #17212f;
+  --background: #fafafa;
+  --foreground: #202124;
   --card: #ffffff;
-  --card-foreground: #17212f;
+  --card-foreground: #202124;
   --popover: #ffffff;
-  --popover-foreground: #0e1533;
-
-  /* Deep navy carries the brand in light mode. */
-  --primary: #174cbf;
+  --popover-foreground: #202124;
+  --primary: #5455b6;
   --primary-foreground: #ffffff;
-  --soft: #edf2fd;
-
-  --cta: #245ee0;
+  --soft: #eeeef8;
+  --cta: #282930;
   --cta-foreground: #ffffff;
-
-  --secondary: #eaf3ff;
-  --secondary-foreground: #075ac9;
-
-  /* Marigold accent for badges, ratings and highlights. */
-  --accent: #f5a524;
-  --accent-foreground: #2a1a00;
-
-  --muted: #f4f6fb;
-  --muted-foreground: #526071;
-  --surface: #eef1f5;
+  --secondary: #f0f0f3;
+  --secondary-foreground: #3d3e47;
+  --accent: #5455b6;
+  --accent-foreground: #ffffff;
+  --muted: #f2f2f4;
+  --muted-foreground: #62636e;
+  --surface: #f3f3f5;
   --elevated: #ffffff;
-
-  --border: #dce1e8;
-  --input: #84909f;
-  --ring: #245ee0;
-
-  --success: #1a7f5a;
-  --warning: #b4530a;
-
-  --banner: #122d56;
-  --banner-foreground: #ffffff;
-  --banner-muted: #c3ccea;
+  --border: #e0e0e5;
+  --input: #8b8c96;
+  --ring: #6465ca;
+  --success: #19734c;
+  --warning: #92500d;
+  --banner: #f0f0f3;
+  --banner-foreground: #202124;
+  --banner-muted: #62636e;
 }
-
-/* ----------------------------------------------------------- dark theme */
 .dark {
   color-scheme: dark;
-
-  --background: #10151c;
-  --foreground: #edf2f8;
-  --card: #18202b;
-  --card-foreground: #edf2f8;
-  --popover: #18202b;
-  --popover-foreground: #edf2f8;
-
-  /* A lighter blue keeps controls legible after dark. */
-  --primary: #9cbeff;
-  --primary-foreground: #0b2448;
-  --soft: #222d3a;
-
-  --cta: #245ee0;
-  --cta-foreground: #ffffff;
-
-  --secondary: #1b3150;
-  --secondary-foreground: #b9d8ff;
-
-  --accent: #f5a524;
-  --accent-foreground: #2a1a00;
-
-  --muted: #1b2a41;
-  --muted-foreground: #aab7c7;
-  --surface: #161d27;
-  --elevated: #222d3a;
-
-  --border: #354151;
-  --input: #748399;
-  --ring: #9cbeff;
-
-  --success: #3ddc97;
-  --warning: #f5a524;
-
-  --banner: #101d31;
-  --banner-foreground: #ece8fb;
-  --banner-muted: #aabbd2;
+  --background: #0c0d0f;
+  --foreground: #eeeff1;
+  --card: #131416;
+  --card-foreground: #eeeff1;
+  --popover: #1b1c20;
+  --popover-foreground: #eeeff1;
+  --primary: #b7b8ff;
+  --primary-foreground: #17172b;
+  --soft: #222230;
+  --cta: #e8e8ec;
+  --cta-foreground: #17181c;
+  --secondary: #222327;
+  --secondary-foreground: #d7d7df;
+  --accent: #b7b8ff;
+  --accent-foreground: #17172b;
+  --muted: #1a1b1f;
+  --muted-foreground: #a0a1ac;
+  --surface: #191a1e;
+  --elevated: #222327;
+  --border: #2d2e34;
+  --input: #747681;
+  --ring: #aaaaff;
+  --success: #72d4a0;
+  --warning: #e9b76b;
+  --banner: #101113;
+  --banner-foreground: #eeeff1;
+  --banner-muted: #a0a1ac;
 }
 
 * {
@@ -158,24 +136,18 @@ a {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Headings use the display face at tight tracking. Referencing
-   `--font-jakarta` directly (not the `--font-display` theme token) because
-   `@theme inline` inlines its values into utilities rather than emitting
-   custom properties. */
-h1,
-h2,
-h3 {
-  font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
-  font-weight: 700;
-  letter-spacing: -0.022em;
-  line-height: 1.18;
+h1, h2, h3 {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 550;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
 }
 
 /* Small label above a section heading. */
 .eyebrow {
   font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  font-weight: 500;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted-foreground);
 }
@@ -251,14 +223,14 @@ h3 {
 .discovery-hero,.dark .discovery-hero { background: var(--background); }
 .discovery-search { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; border: 1px solid var(--input); border-radius: .65rem; background: var(--card); padding: .4rem; }
 .discovery-search:focus-within { outline: 2px solid var(--ring); outline-offset: 2px; }
-.appointment-banner { border-radius: 1.5rem; padding: 1.5rem; color: white; background: radial-gradient(ellipse at 0% 0%, #5ab2ff70, transparent 65%), linear-gradient(120deg, #096ada, #0674fa); box-shadow: 0 8px 22px #0866d925; }
-.pet-discovery { background: linear-gradient(120deg, var(--card), var(--surface)); }
-.specialty-chip { display: inline-flex; align-items: center; gap: .6rem; flex-shrink: 0; padding: .5rem .9rem .5rem .5rem; min-height: 3.5rem; border: 1px solid var(--border); border-radius: 1rem; background: var(--card); font-size: .8rem; font-weight: 500; transition: border-color 160ms; }
+.appointment-banner { border: 1px solid var(--border); border-radius: .75rem; padding: 1.5rem; color: var(--foreground); background: var(--card); }
+.pet-discovery { background: var(--background); }
+.specialty-chip { display: inline-flex; align-items: center; gap: .6rem; flex-shrink: 0; padding: .5rem .9rem .5rem .5rem; min-height: 3.5rem; border: 1px solid var(--border); border-radius: .5rem; background: var(--card); font-size: .875rem; font-weight: 500; transition: border-color 160ms; }
 .specialty-chip:hover { border-color: var(--primary); }
 .specialty-blue,.specialty-pink,.specialty-peach,.specialty-purple,.specialty-teal { color: var(--foreground); background: var(--surface); }
 .provider-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
 .provider-compact { min-width: 0; overflow: hidden; border: 1px solid var(--border); border-radius: .75rem; background: var(--card); }
-.provider-portrait { position: relative; display: flex; min-height: 10rem; align-items: center; justify-content: center; margin: .5rem .5rem 0; border-radius: 1rem; background: radial-gradient(ellipse at 70% 10%, #c3dbff55, transparent), var(--surface); }
+.provider-portrait { position: relative; display: flex; min-height: 10rem; align-items: center; justify-content: center; margin: .5rem .5rem 0; border-radius: 1rem; background: var(--surface); }
 .provider-list { min-width: 0; border: 1px solid var(--border); border-radius: .75rem; background: var(--card); padding: 1.25rem; display:flex; flex-direction:column; }
 .provider-list > :last-child { margin-top:auto; padding-top:1rem; }
 .mobile-care-nav { display: none; }
@@ -282,7 +254,7 @@ a:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid
   .mobile-care-link { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 3.5rem; gap: .3rem; font-size: .75rem; color: var(--muted-foreground); }
   .mobile-care-link.is-active { color: var(--primary); font-weight: 600; }
   .mobile-care-search { margin: 0 .1rem; border-radius: .5rem; color: var(--cta-foreground); background: var(--cta); }
-  .mobile-care-search.is-active { color: white; }
+  .mobile-care-search.is-active { color: var(--cta-foreground); }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition-duration: 0ms !important; } }
 
@@ -320,3 +292,54 @@ button:disabled{cursor:wait;opacity:.65}
 input:focus-visible,textarea:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
 @media(max-width:1023px){.care-welcome{gap:2rem}.care-welcome-photo{display:none}.care-welcome{grid-template-columns:1fr;max-width:850px;padding-block:2.5rem}.care-entry-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.care-entry:nth-child(2){border-right:0}.care-entry:nth-child(-n+2){border-bottom:1px solid var(--border)}.care-home-intro{gap:2rem}.care-home-preview{gap:2rem}}
 @media(max-width:639px){.care-entry{padding:1rem;gap:.6rem}.care-entry>svg:last-child{display:none}.care-entry h2{font-size:.875rem}.care-entry p{font-size:.75rem}.care-welcome h1{font-size:2.2rem}.care-welcome{padding-block:2rem}.care-home-preview,.care-home-intro{grid-template-columns:1fr;gap:1.5rem}.care-home-photo{height:11rem;aspect-ratio:auto!important}.care-home-preview{padding-block:2.5rem}.care-service-list>article{grid-template-columns:auto minmax(0,1fr);gap:1rem}.care-service-list>article>p{grid-column:2}.care-next-visit{flex-wrap:wrap;gap:1rem;padding:1rem}.care-next-visit .care-button{width:100%}.care-home-note{padding:1rem}.care-service-list .care-button,.care-service-list .care-secondary{width:100%}.care-segments>a,.care-segments>label{padding:.5rem .8rem}}
+
+/* The landing page is a working care finder, not an illustrated product mockup. */
+.care-hero { padding-block: clamp(3rem, 7vw, 6.5rem) 2.75rem; }
+.care-hero h1 { max-width: 56rem; margin-top: 1.25rem; font-size: clamp(2.5rem, 5.4vw, 4.5rem); line-height: 1.06; font-weight: 500; letter-spacing: -.055em; text-wrap: balance; }
+.care-hero h1 span { color: var(--muted-foreground); }
+.care-hero-copy { display: flex; align-items: end; justify-content: space-between; gap: 2rem; margin-top: 1.75rem; }
+.care-hero-copy > p { max-width: 30rem; font-size: 1rem; line-height: 1.8; color: var(--muted-foreground); }
+.care-hero-links { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; }
+.care-finder { border: 1px solid var(--border); border-radius: .875rem; background: var(--card); }
+.care-finder-top { padding: 1.5rem; }
+.care-finder-caption { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: 1.25rem; }
+.care-finder-caption h2 { font-size: .95rem; font-weight: 550; letter-spacing: -.02em; }
+.care-finder-caption p { font-size: .8125rem; color: var(--muted-foreground); }
+.care-finder .care-entry-grid { border: 0; border-top: 1px solid var(--border); border-radius: 0 0 .875rem .875rem; background: var(--card); }
+.care-finder .discovery-search { border-color: var(--input); border-radius: .5rem; box-shadow: 0 1px 2px #00000004; }
+.care-entry { transition: background-color 140ms ease; }
+.care-entry > svg:first-child { width: 1.125rem; height: 1.125rem; color: var(--primary); }
+.care-entry h2 { font-weight: 500; }
+.care-home-preview { margin-top: 1.5rem; padding-block: 4rem; }
+.care-home-preview h2 { font-size: clamp(1.65rem, 3vw, 2.25rem); font-weight: 500; letter-spacing: -.04em; }
+.care-panel, .provider-list, .provider-compact { box-shadow: 0 1px 2px #00000003; }
+.provider-list, .provider-compact { transition: border-color 150ms ease; }
+.provider-list:hover, .provider-compact:hover { border-color: var(--input); }
+.provider-list h3 { font-weight: 550; letter-spacing: -.02em; }
+.provider-avatar { border-radius: .6rem; }
+.care-status { font-size: .75rem; padding: .15rem .4rem; border: 1px solid var(--border); border-radius: .25rem; }
+.care-button { font-weight: 500; box-shadow: inset 0 1px 0 #ffffff12, 0 1px 2px #00000008; }
+.care-secondary { font-weight: 500; }
+.care-service-icon { border: 1px solid var(--border); background: var(--card); width: 2.75rem; height: 2.75rem; }
+.care-home-note { border: 1px solid var(--border); border-radius: .5rem; background: var(--surface); }
+.care-next-visit { border-left-width: 1px; }
+.care-kicker { font-size: .8125rem; }
+.site-header nav a { font-weight: 450; }
+.care-home-photo img { filter: saturate(.72); }
+.specialty-chip > span:first-child { border-radius: .375rem; background: var(--surface); }
+.care-segments { border-color: var(--input); border-radius: .5rem; }
+.care-segments .selected { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 25%, transparent); }
+a, button { touch-action: manipulation; }
+a:active, button:active { transition-duration: 0ms; }
+@media (max-width: 767px) {
+  .care-hero { padding-top: 2.75rem; padding-bottom: 2rem; }
+  .care-hero-copy { display: block; margin-top: 1.25rem; }
+  .care-hero-links { margin-top: .75rem; }
+  .care-finder-top { padding: 1rem; }
+  .care-finder-caption { margin-bottom: 1rem; }
+  .care-finder-caption p { max-width: 19rem; }
+  .care-home-preview { padding-block: 2.5rem; }
+  .mobile-care-nav { background: var(--card); box-shadow: none; }
+  .mobile-care-search { color: var(--primary); background: var(--soft); }
+  .mobile-care-search.is-active { color: var(--primary); }
+}

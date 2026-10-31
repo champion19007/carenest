@@ -1,14 +1,8 @@
-import { Inter, Plus_Jakarta_Sans } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { MobileNavigation } from '@/components/mobile-navigation'
 import {siteOrigin} from '@/lib/site-origin'
-
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  variable: '--font-jakarta',
-  display: 'swap',
-})
 
 /** Body and UI text — Inter is built for screens and small sizes. */
 const inter = Inter({
@@ -26,8 +20,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#e8f3ff' },
-    { media: '(prefers-color-scheme: dark)', color: '#0c1525' },
+    { media: '(prefers-color-scheme: light)', color: '#fafafa' },
+    { media: '(prefers-color-scheme: dark)', color: '#0c0d0f' },
   ],
   userScalable: true,
 }
@@ -56,7 +50,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>
-      <body className={`${inter.variable} ${jakarta.variable} font-sans`}>
+      <body className={`${inter.variable} font-sans`}>
         {children}
         <MobileNavigation />
       </body>
